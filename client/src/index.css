@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+/* Enable class-based dark mode */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --color-background: #050816;
+    --color-surface: #0b1220;
+    --color-card: #111827;
+    --color-border: #243244;
+
+    --color-primary: #6366f1;
+    --color-secondary: #06b6d4;
+
+    --color-text: #f8fafc;
+    --color-muted: #94a3b8;
+
+    --radius-card: 24px;
+}
+
+:root {
+    color-scheme: dark;
+}
+
+html {
+    scroll-behavior: smooth;
+    background: #030712;
+}
+
+body {
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at top left, rgba(59, 130, 246, 0.12), transparent 35%),
+        radial-gradient(circle at top right, rgba(139, 92, 246, 0.10), transparent 35%),
+        linear-gradient(180deg, #030712 0%, #0b1120 45%, #020617 100%);
+    color: #f8fafc;
+    font-family: Inter, sans-serif;
+}
+
+#root {
+    min-height: 100vh;
+}
+
+::selection {
+    background: #3b82f6;
+    color: white;
+}
+
+* {
+    transition:
+        background-color 0.25s ease,
+        border-color 0.25s ease,
+        color 0.25s ease;
+}
+
+@utility glass {
+    @apply rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl;
+}
+
+@utility section-padding {
+    @apply px-6 md:px-10 lg:px-20;
+}
+
+@utility gradient-text {
+    background: linear-gradient(90deg, #60a5fa, #a855f7);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+@utility glow {
+    box-shadow:
+        0 0 20px rgba(59, 130, 246, 0.35),
+        0 0 60px rgba(59, 130, 246, 0.15);
+}
