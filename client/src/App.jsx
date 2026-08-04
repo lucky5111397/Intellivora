@@ -12,7 +12,7 @@ import InterviewHistory from "./pages/InterviewHistory";
 import Resume from "./pages/Resume";
 
 // NEW
-export const ServerUrl = import.meta.env.VITE_SERVER_URL ||
+export const ServerUrl = import.meta.env.VITE_SERVER_URL;
 function App() {
 
   const dispatch = useDispatch()
