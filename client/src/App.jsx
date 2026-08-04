@@ -12,7 +12,7 @@ import InterviewHistory from "./pages/InterviewHistory";
 import Resume from "./pages/Resume";
 
 // NEW
-export const ServerUrl = import.meta.env.VITE_SERVER_URL || "https://genai-8u8n.onrender.com";
+export const ServerUrl = import.meta.env.VITE_SERVER_URL || https://intellivora.onrender.com ;
 
 function App() {
 
