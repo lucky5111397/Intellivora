@@ -1,208 +1,727 @@
-# INTELLIVORA – AI Interview Simulator
+# INTELLIVORA — AI Interview Simulator
 
-## Project Description
-INTELLIVORA is a web application that helps job seekers prepare for technical interviews. Users can upload a PDF resume, have it analysed by an LLM, generate interview questions tailored to their role and experience, answer those questions, and receive AI‑driven feedback and a performance report. The system uses a credit‑based model where AI‑heavy operations (resume analysis, question generation, answer evaluation) deduct credits that can be purchased via Razorpay.
+> An AI-powered interview preparation platform that analyzes resumes, generates personalized interview questions, evaluates candidate responses, and provides detailed performance insights.
 
-## Key Features
-- **User authentication** – JWT stored in an httpOnly cookie (Google‑style sign‑in).
-- **Resume upload** – PDF upload (max 5 MB) via Multer.
-- **PDF text extraction** – `pdfjs-dist` parses the uploaded PDF on the server.
-- **AI‑powered resume analysis** – OpenRouter (model `gpt‑4o‑mini`) extracts role, experience, projects, and skills; costs 200 credits per analysis.
-- **Interview configuration** – Choose role, experience level, interview mode, and plan (short/medium/long) which determines question count and credit cost.
-- **AI‑generated interview questions** – Prompted to OpenRouter with strict formatting rules; question count matches selected plan.
-- **Answer submission & evaluation** – Answers are sent to OpenRouter for scoring (confidence, communication, correctness) and feedback; scores stored per question.
-- **Interview scoring & report** – Aggregates per‑question scores into a final score and provides a detailed report endpoint.
-- **Interview history** – Users can list past interviews and view individual reports.
-- **Credit system & payments** – Razorpay integration creates orders, verifies signatures, and adds credits to the user record.
-- **Security basics** – CORS whitelist, JWT verification middleware, server‑side input validation, file‑type checks, and httpOnly cookies.
+INTELLIVORA is a full-stack web application designed to simulate technical and HR interview experiences using Generative AI.
 
-## Tech Stack
-### Frontend
-- React 18 + Vite
-- Tailwind CSS
-- React Router DOM
-- Redux Toolkit (`userSlice`)
-- Axios for API calls
-- React Icons
-
-### Backend
-- Node.js (ESM) + Express 5
-- MongoDB Atlas via Mongoose
-- dotenv, cors, cookie‑parser, jsonwebtoken
-- Multer for file uploads
-- pdfjs‑dist for PDF parsing
-- axios (for OpenRouter calls)
-
-### Database
-- MongoDB Atlas (collections: `users`, `interviews`, `payments`)
-
-### Authentication
-- JWT generated in `controllers/auth.controller.js`
-- Stored in httpOnly cookie (`token`)
-- Middleware extracts `req.userId` for protected routes
-
-### AI / GenAI
-- OpenRouter API (`https://openrouter.ai/api/v1/chat/completions`)
-- Model `openai/gpt-4o-mini`
-- Wrapper `services/openRouter.service.js`
-- Used for resume analysis, question generation, and answer evaluation
-
-### Payment
-- Razorpay (`services/razorpay.service.js`)
-- Credit purchase flow (`controllers/payment.controller.js`)
-
-### Deployment / Infrastructure
-- Frontend built with `vite build` → static files served on any CDN (e.g., Render, Vercel)
-- Backend runs on Node (default port 8000) and connects to MongoDB Atlas
-- Environment variables defined in `.env` files (server only) for DB URL, JWT secret, OpenRouter key, Razorpay keys, client URL, Gemini key (unused in current code)
-
-## How It Works
-```mermaid
-flowchart TD
-    U[User] -->|opens| FE[React Frontend]
-    FE -->|calls| BE[Express Backend]
-    BE -->|auth middleware| Auth[JWT Verification]
-    Auth -->|allows| API[Protected API Endpoints]
-    API -->|reads/writes| DB[MongoDB]
-    API -->|calls| AI[OpenRouter LLM]
-    API -->|creates| Payment[Razorpay]
-    FE -->|receives data| UI[UI Components]
-```
-
-## Resume Analysis Flow
-```mermaid
-flowchart TD
-    R[User uploads PDF] -->|Multer| Upload[Server uploads file]
-    Upload -->|pdfjs‑dist| Extract[Extract text from PDF]
-    Extract -->|POST /api/resume/analyze| AIAnalyse[OpenRouter LLM]
-    AIAnalyse -->|JSON response| Result[Resume insights]
-    Result -->|credits deducted| DB[Update user credits]
-    Result --> FE[Display insights]
-```
-
-## Interview Flow
-```mermaid
-flowchart TD
-    C[User configures interview] -->|POST /api/interview/generate| QGen[OpenRouter generates questions]
-    QGen -->|stores| DB[Interview document]
-    DB --> FE[Show questions]
-    FE -->|POST /api/interview/answer| Eval[OpenRouter evaluates answer]
-    Eval -->|stores feedback & scores| DB
-    FE -->|POST /api/interview/finish| Finish[Calculate final score]
-    Finish --> FE[Show report]
-    DB -->|GET /api/interview/history| History[Interview list]
-```
-
-## System Architecture
-```mermaid
-graph LR
-    subgraph Client
-        FE[React SPA]
-    end
-    subgraph Server
-        BE[Express] -->|Mongoose| Mongo[MongoDB Atlas]
-        BE -->|axios| AI[OpenRouter (gpt‑4o‑mini)]
-        BE -->|razorpay SDK| Pay[Razorpay]
-    end
-    FE -->|HTTPS| BE
-    BE -->|CORS whitelist| FE
-    classDef cloud fill:#eef,stroke:#333,stroke-width:1px;
-    class Mongo,AI,Pay cloud;
-```
-
-## Project Structure
-```
-INTELLIVORA/
-├─ client/                      # React front‑end
-│   ├─ src/
-│   │   ├─ components/          # UI components (Navbar, ResumeUploader, etc.)
-│   │   ├─ pages/               # Page routes (Home, Auth, Resume, Interview, Report, History, Pricing)
-│   │   ├─ redux/               # Redux slices (userSlice)
-│   │   ├─ utils/               # Helper functions
-│   │   └─ App.jsx, main.jsx
-│   └─ package.json, vite.config.js, tailwind.config.js
-├─ server/                      # Express back‑end
-│   ├─ Controllers/            # Route handlers (auth, user, resume, interview, payment)
-│   ├─ Models/                 # Mongoose schemas (user, interview, payment)
-│   ├─ Routes/                 # Express routers (auth, user, resume, interview, payment)
-│   ├─ Services/               # AI service (openRouter), Razorpay service, PDF extractor, resume analysis
-│   ├─ Middlewares/            # errorHandler, auth verification
-│   ├─ Config/                 # DB connection helper
-│   ├─ index.js                # Server entry point
-│   └─ .env (not edited)       # env vars for DB, JWT, OpenRouter, Razorpay
-└─ README.md                   # **This file (updated)**
-```
-
-## Installation & Setup
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/Intellivora.git
-   cd Intellivora
-   ```
-2. **Backend**
-   ```bash
-   cd server
-   npm install          # installs express, mongoose, etc.
-   # Create a .env file (copy from .env.example if present) and fill the required variables
-   npm run dev          # starts the server on PORT (default 8000)
-   ```
-3. **Frontend**
-   ```bash
-   cd ../client
-   npm install          # installs react, vite, tailwind, redux, etc.
-   npm run dev          # starts Vite dev server (http://localhost:5173)
-   ```
-4. **Environment variables** – see the *Environment Variables* section below for required names.
-5. **Open the app** – visit `http://localhost:5173` (frontend) while the backend is running.
-
-## Environment Variables (required)
-- `MONGODB_URL` – MongoDB Atlas connection string.
-- `JWT_SECRET` – Secret used to sign JWTs.
-- `OPENROUTER_API_KEY` – Key for OpenRouter API calls.
-- `RAZORPAY_KEY_ID` – Razorpay public key.
-- `RAZORPAY_KEY_SECRET` – Razorpay secret for signature verification.
-- `CLIENT_URL` – Front‑end URL (used in CORS whitelist).
-- `PORT` – Port for the Express server (defaults to 8000 if omitted).
-
-## API Overview
-| Route | Method | Purpose |
-|-------|--------|---------|
-| `/api/auth/google` | POST | Google‑style sign‑in, returns JWT cookie and user record. |
-| `/api/auth/logout` | POST | Clears JWT cookie. |
-| `/api/user/current-user` | GET | Returns authenticated user data (used on app load). |
-| `/api/resume/upload` | POST (multipart) | Handles PDF upload via Multer. |
-| `/api/resume/extract` | POST | Extracts text from previously uploaded PDF. |
-| `/api/resume/analyze` | POST | AI analysis of extracted text (costs 200 credits). |
-| `/api/interview/generate` | POST | Generates interview questions based on role, experience, etc. |
-| `/api/interview/answer` | POST | Submits an answer and receives AI evaluation. |
-| `/api/interview/finish` | POST | Finalises interview, calculates aggregate scores. |
-| `/api/interview/history` | GET | Lists a user’s past interviews. |
-| `/api/interview/report/:id` | GET | Retrieves detailed report for a specific interview. |
-| `/api/payment/create-order` | POST | Creates a Razorpay order and deducts credits. |
-| `/api/payment/verify` | POST | Verifies Razorpay signature and adds credits. |
-
-## Screenshots / Demo
-*Screenshots and a live demo URL will be added soon.*
-
-## Security Notes
-- **Authentication** – JWT stored in an `httpOnly` cookie; server validates token on each protected request.
-- **Authorization** – All interview, resume, and payment routes verify `req.userId`.
-- **CORS** – Whitelisted origins include `http://localhost:5173`, `http://localhost:5174`, and the value of `CLIENT_URL`.
-- **Input validation** – Multer restricts upload size (< 5 MB) and accepts only PDF MIME type.
-- **Secrets** – API keys and secrets are kept in `.env` and never committed.
-- **Error handling** – Central `errorHandler` middleware returns generic messages; stack traces are logged server‑side only.
-
-## Future Scope
-- Add vector‑store or RAG for deeper document retrieval.
-- Support video‑based interview recordings.
-- Implement role‑based admin dashboards.
-- Add multi‑language support for prompts and UI.
-- Introduce OAuth providers beyond Google.
-
-## Author
-**Lucky Gupta**
-
-School of Management Sciences, Lucknow
+It combines **resume analysis, personalized question generation, AI-based answer evaluation, interview scoring, interview history, and credit-based payments** into a single platform.
 
 ---
-*This README reflects the current implementation of the INTELLIVORA repository. All statements are derived from the source code as of the latest commit.*
+
+## Overview
+
+INTELLIVORA provides an end-to-end interview preparation workflow:
+
+```text
+Resume Upload
+     ↓
+Resume Analysis
+     ↓
+Interview Configuration
+     ↓
+AI Question Generation
+     ↓
+Answer Submission
+     ↓
+AI Evaluation
+     ↓
+Performance Scoring
+     ↓
+Detailed Interview Report
+```
+
+Users can configure an interview according to their **target role, experience level, interview type, and selected plan**, practice answering AI-generated questions, and receive feedback on their performance.
+
+---
+
+## Key Features
+
+### Resume Analysis
+
+- PDF resume upload with validation
+- Server-side PDF text extraction
+- AI-powered resume analysis
+- Resume score and ATS score
+- Interview-readiness score
+- Strengths and weaknesses
+- Missing skills identification
+- Personalized improvement suggestions
+- Resume-based interview question generation
+
+### AI Interview Simulator
+
+- Interview configuration based on:
+  - Target role
+  - Experience level
+  - Interview type
+  - Interview plan
+- AI-generated interview questions
+- Interactive question-and-answer workflow
+- AI-based answer evaluation
+- Per-question scoring and feedback
+- Final interview score
+- Detailed performance report
+
+### Interview History
+
+- View previous interviews
+- Access individual interview reports
+- Store interview questions, answers, evaluations, and scores
+
+### Credit System
+
+AI-intensive operations use a credit-based system.
+
+Credits are consumed for operations such as:
+
+- Resume analysis
+- Interview question generation
+- Answer evaluation
+
+### Razorpay Payments
+
+- Credit purchase through Razorpay
+- Server-side order creation
+- Payment signature verification
+- Credit balance update after successful verification
+
+### Authentication & Security
+
+- Google authentication using Firebase
+- JWT-based backend authentication
+- JWT stored in an `httpOnly` cookie
+- Protected API routes
+- CORS origin whitelist
+- Server-side validation
+- PDF file-type validation
+- File-size restrictions
+- Environment-based secret management
+
+---
+
+# System Architecture
+
+INTELLIVORA follows a client-server architecture with a dedicated service layer for external integrations and business logic.
+
+```mermaid
+flowchart LR
+
+    USER["User"] --> FE["React Frontend"]
+
+    FE -->|Axios / HTTPS| BE["Express Backend"]
+
+    BE --> AUTH["Authentication Middleware"]
+
+    AUTH --> API["API Controllers"]
+
+    API --> SERVICES["Service Layer"]
+
+    SERVICES --> DB["MongoDB Atlas"]
+    SERVICES --> AI["OpenRouter LLM"]
+    SERVICES --> PAY["Razorpay"]
+
+    DB --> SERVICES
+    AI --> SERVICES
+    PAY --> SERVICES
+
+    SERVICES --> API
+    API --> FE
+```
+
+### Request Flow
+
+```text
+React Frontend
+      ↓
+Axios Request
+      ↓
+Express Route
+      ↓
+Authentication Middleware
+      ↓
+Controller
+      ↓
+Service Layer
+      ↓
+MongoDB / OpenRouter / Razorpay
+      ↓
+API Response
+      ↓
+React Frontend
+```
+
+---
+
+# Interview Flow
+
+The interview module is the core functionality of INTELLIVORA.
+
+The workflow starts with interview configuration, checks credit availability, generates questions using the LLM, evaluates each answer, and finally produces a performance report.
+
+```mermaid
+flowchart TD
+
+    START["Start Interview"] --> CONFIG["Configure Interview"]
+
+    CONFIG --> ROLE["Select Target Role"]
+    ROLE --> EXP["Select Experience Level"]
+    EXP --> TYPE["Select Interview Type"]
+    TYPE --> PLAN["Select Interview Plan"]
+
+    PLAN --> CREDIT{"Sufficient Credits?"}
+
+    CREDIT -->|No| PAYMENT["Purchase Credits"]
+    PAYMENT --> CREDIT
+
+    CREDIT -->|Yes| GENERATE["Generate Interview Questions"]
+
+    GENERATE --> AI["OpenRouter LLM"]
+
+    AI --> STORE["Store Interview"]
+
+    STORE --> QUESTION["Display Question"]
+
+    QUESTION --> ANSWER["Submit Answer"]
+
+    ANSWER --> EVALUATE["AI Answer Evaluation"]
+
+    EVALUATE --> FEEDBACK["Score & Feedback"]
+
+    FEEDBACK --> MORE{"More Questions?"}
+
+    MORE -->|Yes| QUESTION
+    MORE -->|No| FINISH["Finish Interview"]
+
+    FINISH --> SCORE["Calculate Final Score"]
+
+    SCORE --> REPORT["Generate Performance Report"]
+
+    REPORT --> HISTORY["Save Interview"]
+
+    HISTORY --> RESULT["Display Report"]
+```
+
+### Interview Process
+
+1. User configures the interview.
+2. Backend validates the request and available credits.
+3. Interview questions are generated through OpenRouter.
+4. Generated questions are stored with the interview.
+5. User answers each question.
+6. Each answer is sent to the backend for AI evaluation.
+7. The evaluation produces scores and feedback.
+8. The process continues until all questions are completed.
+9. The backend calculates the final interview score.
+10. The completed interview and evaluation data are available through the report and history APIs.
+
+---
+
+# Resume Analysis Flow
+
+The resume module processes the uploaded PDF on the backend before sending the extracted information to the AI service.
+
+```mermaid
+flowchart TD
+
+    USER["User"] --> UPLOAD["Upload PDF"]
+
+    UPLOAD --> VALIDATE["Validate File"]
+
+    VALIDATE --> STORAGE["Store Uploaded File"]
+
+    STORAGE --> EXTRACT["Extract Text"]
+
+    EXTRACT --> PDFJS["pdfjs-dist"]
+
+    PDFJS --> TEXT["Extracted Resume Text"]
+
+    TEXT --> ANALYZE["Resume Analysis Service"]
+
+    ANALYZE --> AI["OpenRouter LLM"]
+
+    AI --> RESULT["Structured Resume Analysis"]
+
+    RESULT --> DB["MongoDB"]
+
+    RESULT --> UI["Display Resume Insights"]
+
+    UI --> QUESTIONS["Personalized Interview Questions"]
+```
+
+### Resume Analysis Output
+
+The AI analysis can provide:
+
+- Resume score
+- ATS score
+- Interview-readiness score
+- Strengths
+- Weaknesses
+- Missing skills
+- Improvement suggestions
+- Personalized interview questions
+
+The current implementation uses a structured AI response so that the frontend can consume the analysis consistently.
+
+---
+
+# AI Architecture
+
+OpenRouter is used as the AI gateway for the application's Generative AI functionality.
+
+**Model:** `openai/gpt-4o-mini`
+
+AI requests are handled by the backend through a dedicated service layer.
+
+```mermaid
+flowchart LR
+
+    CLIENT["React Client"] --> SERVER["Express Backend"]
+
+    SERVER --> SERVICE["OpenRouter Service"]
+
+    SERVICE --> API["OpenRouter API"]
+
+    API --> MODEL["GPT-4o-mini"]
+
+    MODEL --> RESPONSE["AI Response"]
+
+    RESPONSE --> SERVICE
+
+    SERVICE --> SERVER
+
+    SERVER --> CLIENT
+```
+
+### AI Use Cases
+
+#### 1. Resume Analysis
+
+The LLM analyzes extracted resume text and generates structured insights about the candidate's:
+
+- Skills
+- Experience
+- Projects
+- Strengths
+- Weaknesses
+- Missing skills
+- ATS compatibility
+- Interview readiness
+
+#### 2. Interview Question Generation
+
+Questions are generated according to the interview configuration, including:
+
+- Target role
+- Experience level
+- Interview type
+- Selected plan
+- Relevant resume information
+
+#### 3. Answer Evaluation
+
+Candidate answers are evaluated for:
+
+- Correctness
+- Confidence
+- Communication
+- Overall response quality
+- Feedback
+- Areas for improvement
+
+---
+
+# Payment & Credit Flow
+
+INTELLIVORA uses Razorpay for purchasing additional credits.
+
+```mermaid
+flowchart TD
+
+    USER["User"] --> PLAN["Select Credit Plan"]
+
+    PLAN --> ORDER["Create Razorpay Order"]
+
+    ORDER --> CHECKOUT["Razorpay Checkout"]
+
+    CHECKOUT --> PAYMENT["Payment Completed"]
+
+    PAYMENT --> VERIFY["Server-side Signature Verification"]
+
+    VERIFY --> VALID{"Payment Valid?"}
+
+    VALID -->|Yes| CREDITS["Update User Credits"]
+
+    VALID -->|No| FAILED["Reject Payment"]
+
+    CREDITS --> USER
+```
+
+### Payment Process
+
+1. User selects a credit plan.
+2. Backend creates a Razorpay order.
+3. Razorpay Checkout handles the payment.
+4. Payment details are returned to the application.
+5. Backend verifies the Razorpay signature.
+6. Credits are updated only after successful verification.
+
+---
+
+# Tech Stack
+
+## Frontend
+
+- **React 18**
+- **Vite**
+- **Tailwind CSS**
+- **React Router DOM**
+- **Redux Toolkit**
+- **Axios**
+- **React Icons**
+
+## Backend
+
+- **Node.js**
+- **Express 5**
+- **MongoDB Atlas**
+- **Mongoose**
+- **Firebase Authentication**
+- **JWT**
+- **Multer**
+- **pdfjs-dist**
+- **Axios**
+- **dotenv**
+- **cookie-parser**
+- **CORS**
+
+## AI
+
+- **OpenRouter**
+- **OpenAI GPT-4o-mini**
+
+## Payments
+
+- **Razorpay**
+
+---
+
+# Backend Architecture
+
+The backend follows a modular structure separating routing, controllers, services, models, and middleware.
+
+```text
+server/
+│
+├── controllers/
+│   ├── auth.controller.js
+│   ├── user.controller.js
+│   ├── resume.controller.js
+│   ├── interview.controller.js
+│   └── payment.controller.js
+│
+├── models/
+│   ├── user.model.js
+│   ├── interview.model.js
+│   └── payment.model.js
+│
+├── Routes/
+│   ├── auth.route.js
+│   ├── user.route.js
+│   ├── resume.route.js
+│   ├── interview.route.js
+│   └── payment.route.js
+│
+├── services/
+│   ├── openRouter.service.js
+│   ├── resume.service.js
+│   ├── resumeAnalysis.service.js
+│   ├── pdfExtractor.service.js
+│   └── razorpay.service.js
+│
+├── middlewares/
+│   ├── auth.middleware.js
+│   ├── uploadResume.js
+│   └── errorHandler.js
+│
+├── Config/
+│   └── db.js
+│
+└── index.js
+```
+
+> Folder names in the diagram should match the actual repository casing.
+
+---
+
+# Frontend Architecture
+
+```text
+client/
+│
+└── src/
+    │
+    ├── components/
+    │   ├── Navbar
+    │   ├── ResumeUploader
+    │   └── ...
+    │
+    ├── pages/
+    │   ├── Home
+    │   ├── Auth
+    │   ├── Resume
+    │   ├── Interview
+    │   ├── Report
+    │   ├── History
+    │   ├── Pricing
+    │   └── ...
+    │
+    ├── redux/
+    │   └── userSlice
+    │
+    ├── utils/
+    │
+    ├── App.jsx
+    └── main.jsx
+```
+
+---
+
+# Database Design
+
+INTELLIVORA uses **MongoDB Atlas** with Mongoose for persistent application data.
+
+### Users
+
+Stores user-related information such as:
+
+- User identity
+- Authentication information
+- Credit balance
+- User-specific data
+
+### Interviews
+
+Stores:
+
+- Interview configuration
+- Generated questions
+- Candidate answers
+- AI evaluations
+- Question-level scores
+- Final score
+- Report information
+
+### Payments
+
+Stores payment-related information associated with credit purchases.
+
+---
+
+# API Overview
+
+| Module | Method | Endpoint | Purpose |
+|---|---|---|---|
+| Auth | POST | `/api/auth/google` | Authenticate user |
+| Auth | POST | `/api/auth/logout` | Logout user |
+| User | GET | `/api/user/current-user` | Get authenticated user |
+| Resume | POST | `/api/resume/upload` | Upload PDF resume |
+| Resume | POST | `/api/resume/extract` | Extract resume text |
+| Resume | POST | `/api/resume/analyze` | Analyze resume using AI |
+| Interview | POST | `/api/interview/generate` | Generate interview questions |
+| Interview | POST | `/api/interview/answer` | Evaluate submitted answer |
+| Interview | POST | `/api/interview/finish` | Complete interview |
+| Interview | GET | `/api/interview/history` | Get interview history |
+| Interview | GET | `/api/interview/report/:id` | Get interview report |
+| Payment | POST | `/api/payment/create-order` | Create Razorpay order |
+| Payment | POST | `/api/payment/verify` | Verify payment |
+
+---
+
+# Authentication Flow
+
+INTELLIVORA uses Firebase Authentication for Google sign-in and JWT for backend authorization.
+
+```mermaid
+flowchart LR
+
+    USER["User"] --> GOOGLE["Google Sign-In"]
+
+    GOOGLE --> FIREBASE["Firebase Authentication"]
+
+    FIREBASE --> CLIENT["React Client"]
+
+    CLIENT --> BACKEND["Express Backend"]
+
+    BACKEND --> JWT["Generate JWT"]
+
+    JWT --> COOKIE["httpOnly Cookie"]
+
+    COOKIE --> PROTECTED["Protected API Requests"]
+```
+
+Protected backend routes verify the JWT before accessing user-specific resources.
+
+---
+
+# Security
+
+The application implements security measures at both the frontend and backend levels.
+
+### Authentication
+
+- Firebase-based Google authentication
+- JWT-based backend authorization
+- `httpOnly` authentication cookie
+- Protected API endpoints
+
+### API Security
+
+- CORS origin whitelist
+- Server-side input validation
+- User authorization checks
+- Centralized error handling
+
+### File Security
+
+- PDF-only upload validation
+- Maximum upload size of 5 MB
+- Server-side file handling
+
+### Payment Security
+
+- Razorpay signature verification performed on the backend
+- Secret credentials stored only in environment variables
+
+### Secret Management
+
+Sensitive credentials are stored through environment variables:
+
+```text
+MongoDB credentials
+JWT secret
+OpenRouter API key
+Razorpay credentials
+```
+
+They should never be committed to the repository.
+
+---
+
+# Project Structure
+
+```text
+INTELLIVORA/
+│
+├── client/              # React frontend
+│
+├── server/              # Node.js + Express backend
+│
+└── README.md
+```
+
+---
+
+# Getting Started
+
+## Prerequisites
+
+- Node.js 18+
+- MongoDB Atlas
+- Firebase project
+- OpenRouter API key
+- Razorpay account
+
+## Clone Repository
+
+```bash
+git clone https://github.com/lucky5111397/Intellivora.git
+cd Intellivora
+```
+
+## Backend Setup
+
+```bash
+cd server
+npm install
+npm run dev
+```
+
+Backend:
+
+```text
+http://localhost:8000
+```
+
+## Frontend Setup
+
+Open another terminal:
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
+Frontend:
+
+```text
+http://localhost:5173
+```
+
+---
+
+# Environment Variables
+
+Create a `.env` file inside the `server` directory.
+
+```env
+MONGODB_URL=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret
+OPENROUTER_API_KEY=your_openrouter_api_key
+RAZORPAY_KEY_ID=your_razorpay_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_key_secret
+CLIENT_URL=http://localhost:5173
+PORT=8000
+```
+
+For the frontend:
+
+```env
+VITE_SERVER_URL=http://localhost:8000
+```
+
+> Do not commit `.env` files or API credentials to GitHub.
+
+---
+
+# Project Highlights
+
+The project demonstrates practical implementation of:
+
+- Full-stack React development
+- REST API development with Express
+- MongoDB data modeling with Mongoose
+- JWT-based authentication
+- Firebase Google authentication
+- PDF processing
+- Generative AI integration
+- Prompt-based structured AI responses
+- AI-powered interview evaluation
+- Credit-based application logic
+- Razorpay payment integration
+- Server-side payment verification
+- Protected API architecture
+
+---
+
+# Author
+
+**Lucky Gupta**
+
+B.Tech Student  
+School of Management Sciences, Lucknow
+
+**GitHub:** [lucky5111397](https://github.com/lucky5111397)
+
+---
