@@ -17,9 +17,6 @@ function Step2Interview({ interviewData, onFinish }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const questions = interviewData?.questions || [];
   const userName = interviewData?.userName || "Candidate";
-  console.log("Step2Interview Loaded");
-  console.log("Interview Data:", interviewData);
-  console.log("Questions:", questions);
   const [isIntroPhase, setIsIntroPhase] = useState(true);
   const [isMicOn, setIsMicOn] = useState(true);
   const recognitionRef = useRef(null);
@@ -37,38 +34,17 @@ function Step2Interview({ interviewData, onFinish }) {
   const [selectedVoice, setSelectedVoice] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [thinkingStep, setThinkingStep] = useState(0);
-  const [subtitle, setSubtitle] = useState("");
+  const [_subtitle, setSubtitle] = useState("");
   const [showExitDialog, setShowExitDialog] = useState(false);
 
   const videoRef = useRef(null);
   const webcamRef = useRef(null);
   const webcamStream = useRef(null);
-  const [cameraOn, setCameraOn] = useState(false);
-  (
-    interviewData?.cameraEnabled || false
+  const [cameraOn, setCameraOn] = useState(
+    Boolean(interviewData?.cameraEnabled)
   );
 
   const currentQuestion = questions[currentIndex];
-  console.log("========== DEBUG ==========");
-  console.log(interviewData);
-  console.log(questions);
-  console.log(currentQuestion);
-  console.log(currentQuestion?.question);
-  console.log("===========================");
-  console.log("Current Question Object:", currentQuestion);
-
-  console.log("Questions:", questions);
-  console.log("Current Index:", currentIndex);
-  console.log("Current Question:", currentQuestion);
-  console.log("Feedback:", feedback);
-
-  if (!questions.length) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading Interview...
-      </div>
-    );
-  }
 
   useEffect(() => {
     const loadVoices = () => {
@@ -283,6 +259,7 @@ function Step2Interview({ interviewData, onFinish }) {
 
     recognition.onerror = (e) => {
       console.log(e);
+      console.error("Speech recognition error:", e?.error || e);
     };
 
     recognitionRef.current = recognition;
@@ -331,6 +308,7 @@ function Step2Interview({ interviewData, onFinish }) {
       toast.success("Camera enabled.");
     } catch (error) {
       console.log(error);
+      console.error("Camera error:", error?.message || error);
       toast.error("Camera permission denied.");
     }
   };
@@ -375,10 +353,15 @@ function Step2Interview({ interviewData, onFinish }) {
       setFeedback(result.data.feedback)
       speakText(result.data.feedback)
       setIsSubmitting(false)
+      setFeedback(result.data.feedback);
+      speakText(result.data.feedback);
+      setIsSubmitting(false);
     } catch (error) {
       console.log(error)
       setIsSubmitting(false)
 
+      console.error("Submit answer error:", error?.message || error);
+      setIsSubmitting(false);
     }
   };
 
@@ -413,6 +396,7 @@ function Step2Interview({ interviewData, onFinish }) {
       }
     } catch (error) {
       console.log(error);
+      console.error("Fullscreen error:", error?.message || error);
       toast.error("Fullscreen is not supported.");
     }
   };
@@ -437,6 +421,7 @@ function Step2Interview({ interviewData, onFinish }) {
       onFinish(result.data);
     } catch (error) {
       console.log(error);
+      console.error("Finish interview error:", error?.message || error);
     }
   };
 
@@ -564,6 +549,13 @@ function Step2Interview({ interviewData, onFinish }) {
     }
   }, [interviewData]);
 
+  if (!questions.length) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0B1220] text-slate-400">
+        Loading Interview...
+      </div>
+    );
+  }
 
   return (
     <>

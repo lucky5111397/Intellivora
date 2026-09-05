@@ -22,8 +22,8 @@ import { ServerUrl } from "../App";
 
 // Interview Setup Form
 function Step1SetUp({ onStart }) {
-  const userData = useSelector((state) => state.user);
-  const dispatch = useDispatch()
+  const { userData } = useSelector((state) => state.user);
+  const dispatch = useDispatch();
   const [role, setRole] = useState("");
   const [experience, setExperience] = useState("");
   const [mode, setMode] = useState("Technical");
@@ -105,9 +105,11 @@ function Step1SetUp({ onStart }) {
       console.log("Response:", error.response?.data);
       console.log(error);
 
+      console.error("Failed to analyze resume:", error?.response?.data?.message || error?.message || error);
       setAnalyzing(false);
 
       toast.error("Failed to analyze resume. Please try again.");
+      toast.error(error?.response?.data?.message || "Failed to analyze resume. Please try again.");
     }
   }
 
@@ -160,9 +162,11 @@ function Step1SetUp({ onStart }) {
       console.log("Response:", error.response?.data);
       console.log(error);
 
+      console.error("Failed to generate interview:", error?.response?.data?.message || error?.message || error);
       setLoading(false);
 
       toast.error("Failed to generate interview. Please try again.");
+      toast.error(error?.response?.data?.message || "Failed to generate interview. Please try again.");
     }
   };
 

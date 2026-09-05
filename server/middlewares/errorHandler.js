@@ -1,6 +1,7 @@
 import multer from "multer";
 
 function errorHandler(err, req, res, next) {
+  console.error(`[ERROR HANDLER] ${req.method} ${req.originalUrl}:`, err.message || err);
   if (res.headersSent) {
     return next(err);
   }
@@ -21,7 +22,7 @@ function errorHandler(err, req, res, next) {
   }
 
   if (err && err.message) {
-    return res.status(err.status || 400).json({
+    return res.status(err.statusCode || err.status || 400).json({
       success: false,
       message: err.message,
     });

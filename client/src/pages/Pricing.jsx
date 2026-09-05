@@ -110,6 +110,7 @@ function Pricing() {
                         navigate("/");
                     } catch (error) {
                         console.log(error);
+                        console.error("Payment verification failed:", error?.message || error);
                         toast.error("Payment verification failed!");
                     }
                 },
@@ -125,12 +126,18 @@ function Pricing() {
                 },
             };
 
+            if (typeof window.Razorpay !== "function") {
+                toast.error("Payment gateway is loading. Please check your connection and try again.");
+                setLoadingPlan(null);
+                return;
+            }
+
             const rzp = new window.Razorpay(options);
             rzp.open();
 
             setLoadingPlan(null);
         } catch (error) {
-            console.log(error);
+            console.error("Payment initiation failed:", error?.message || error);
             setLoadingPlan(null);
 
             toast.error("Unable to start payment. Please try again.");

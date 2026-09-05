@@ -1,52 +1,56 @@
-import jwt from "jsonwebtoken"
+import jwt from "jsonwebtoken";
 
 const isAuth = async (req, res, next) => {
-    try {
+  try {
+    let token = req.cookies?.token;
 
-        console.log("===== isAuth CALLED =====");
-        console.log("Headers Cookie:", req.headers.cookie);
-        console.log("Cookies:", req.cookies);
-
-        let { token } = req.cookies;
-
-        if (!token) {
-            return res.status(400).json({
-                message: "user does not have a token"
-            });
-        }
-
-        console.log("Headers Cookie:", req.headers.cookie);
-        console.log("Cookies:", req.cookies);
-        console.log("Token:", token);
-        console.log("Token Type:", typeof token);
-
-        if (typeof token !== "string") {
-            return res.status(400).json({
-                message: "Invalid token format",
-                token,
-                type: typeof token,
-            });
-        }
-
-        const verifyToken = jwt.verify(token, process.env.JWT_SECRET);
-
-        if (!verifyToken) {
-            return res.status(400).json({
-                message: "user does not have a valid token"
-            });
-        }
-
-        req.userId = verifyToken.userId;
-
-        next();
-
-    } catch (error) {
-        console.log(error);
-
-        return res.status(500).json({
-            message: error.message
-        });
+    if (!token && req.headers?.authorization?.startsWith("Bearer ")) {
+      token = req.headers.authorization.split(" ")[1];
     }
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. No token provided.",
+      });
+    }
+
+    if (typeof token !== "string" || !token.trim()) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token format.",
+      });
+    }
+
+    let verifyToken;
+    try {
+      verifyToken = jwt.verify(token.trim(), process.env.JWT_SECRET);
+    } catch (jwtErr) {
+      return res.status(401).json({
+        success: false,
+        message:
+          jwtErr.name === "TokenExpiredError"
+            ? "Authentication token has expired. Please sign in again."
+            : "Invalid authentication token.",
+      });
+    }
+
+    if (!verifyToken || !verifyToken.userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token payload.",
+      });
+    }
+
+    req.userId = verifyToken.userId;
+    next();
+  } catch (error) {
+    console.error("[isAuth] Unexpected error:", error.message);
+    return res.status(401).json({
+      success: false,
+      message: "Authentication failed.",
+    });
+  }
 };
 
 export default isAuth;

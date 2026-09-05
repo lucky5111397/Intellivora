@@ -18,6 +18,7 @@ export const askAI = async (messages) => {
           Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
           "Content-Type": "application/json",
         },
+        timeout: 25000,
       }
     );
 
@@ -26,12 +27,15 @@ export const askAI = async (messages) => {
       throw new Error("AI returned empty response.");
     }
     return content
+    return content;
   } catch (error) {
     console.error("========== OPENROUTER ERROR ==========");
     console.error("Status:", error.response?.status);
     console.error("Data:", error.response?.data);
     console.error("Message:", error.message);
 
+    console.error("[OpenRouter] Request failed:", error.response?.status, error.message);
+    console.error("[OpenRouter] Request failed:", error.response?.status || 500, error.message);
     throw error;
   }
 };

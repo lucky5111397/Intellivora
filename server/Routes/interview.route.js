@@ -24,6 +24,11 @@ interviewRouter.post(
   isAuth,
   generateQuestion
 );
+interviewRouter.post(
+  "/create-interview",
+  isAuth,
+  generateQuestion
+);
 
 interviewRouter.post(
   "/submit-answer",

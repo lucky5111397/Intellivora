@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import { FaCoins } from "react-icons/fa";
 import { HiOutlineLogout } from "react-icons/hi";
 import { FaUserAstronaut } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { ServerUrl } from "../App";
 import { setUserData } from "../redux/userSlice";
@@ -13,6 +13,7 @@ import { toast } from "sonner";
 function Navbar() {
     const { userData } = useSelector((state) => state.user);
     const navigate = useNavigate();
+    const location = useLocation();
     const dispatch = useDispatch();
 
     const [showCreditPopup, setShowCreditPopup] = useState(false);
@@ -33,6 +34,7 @@ function Navbar() {
             navigate("/");
         } catch (error) {
             console.log(error);
+            console.error("Logout error:", error?.message || error);
 
             toast.error("Failed to logout. Please try again.");
         }
@@ -40,6 +42,17 @@ function Navbar() {
 
     return (
         <div className="sticky top-0 z-50 flex justify-center px-4 pt-4 backdrop-blur-xl">
+            {/* Backdrop dismissal for popups */}
+            {(showCreditPopup || showUserPopup) && (
+                <div
+                    className="fixed inset-0 z-[99990]"
+                    onClick={() => {
+                        setShowCreditPopup(false);
+                        setShowUserPopup(false);
+                    }}
+                />
+            )}
+
             <motion.div
                 initial={{ opacity: 0, y: -40 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -66,6 +79,32 @@ justify-between">
                         Intellivora
                     </h1>
                 </div>
+
+                {/* Desktop Navigation Links */}
+                <nav className="hidden lg:flex items-center gap-1 bg-white/5 border border-white/10 rounded-2xl px-2 py-1">
+                    {[
+                        { name: "Aptitude", path: "/aptitude" },
+                        { name: "Interview", path: "/interview" },
+                        { name: "ATS Resume", path: "/resume" },
+                        { name: "Pricing", path: "/pricing" },
+                        { name: "History", path: "/history" },
+                    ].map((item) => {
+                        const isActive = location.pathname === item.path || (item.path !== "/" && location.pathname.startsWith(item.path + "/"));
+                        return (
+                            <button
+                                key={item.path}
+                                onClick={() => navigate(item.path)}
+                                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                                    isActive
+                                        ? "bg-gradient-to-r from-blue-600 to-violet-600 text-white shadow-sm"
+                                        : "text-slate-300 hover:text-white hover:bg-white/5"
+                                }`}
+                            >
+                                {item.name}
+                            </button>
+                        );
+                    })}
+                </nav>
 
                 {/* Right Side */}
                 <div className="flex items-center gap-4">
@@ -244,6 +283,7 @@ duration-300
 "
                                 >
                                     Interview History
+                                    Activity History
                                 </button>
 
                                 <button

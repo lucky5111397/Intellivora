@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Environment configurations
+.env
+.env.*
+client/.env
+server/.env
+!.env.example
+!client/.env.example
+!server/.env.example
+
+# Production builds
+client/dist/
+client/dist-ssr/
+
+# Runtime and uploads
+uploads/
+uploads/**
+server/uploads/
+server/uploads/resumes/
+server/uploads/temp/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# System and Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.local
+

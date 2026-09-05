@@ -80,6 +80,8 @@ const interviewSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+interviewSchema.index({ userId: 1, createdAt: -1 });
+
 const Interview = mongoose.model("Interview", interviewSchema);
 
 export default Interview;

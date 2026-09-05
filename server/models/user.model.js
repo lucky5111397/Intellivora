@@ -10,7 +10,15 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
       unique: true,
-      required: true,
+      sparse: true,
+      required: false,
+    },
+
+    phone: {
+      type: String,
+      unique: true,
+      sparse: true,
+      required: false,
     },
 
     credits: {

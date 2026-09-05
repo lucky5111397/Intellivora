@@ -5,12 +5,10 @@ import { motion } from "motion/react";
 import {
   BsRobot,
   BsMic,
-  BsClock,
   BsBarChart,
-  BsFileEarmarkText,
 } from "react-icons/bs";
 import { HiSparkles } from "react-icons/hi";
-import { ArrowRight, FileText, Clock } from "lucide-react";
+import { ArrowRight, FileText, Clock, Calculator } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Footer from "../components/Footer";
 
@@ -140,6 +138,16 @@ shadow-[0_0_40px_rgba(59,130,246,0.20)]
               >
                 <Clock size={18} className="text-white" />
                 Interview History
+              </motion.button>
+              <motion.button
+                type="button"
+                onClick={() => navigate("/aptitude")}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
+                className="group inline-flex h-14 w-full max-w-[260px] items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#1E293B] to-[#334155] px-6 text-sm font-semibold text-white shadow transition-all duration-300 hover:-translate-y-1 hover:scale-[1.03] hover:shadow-2xl hover:shadow-[0_18px_50px_rgba(28,36,48,0.18)]"
+              >
+                <Calculator size={18} className="text-white" />
+                Aptitude
               </motion.button>
             </div>
           </div>
@@ -335,6 +343,7 @@ shadow-[0_0_40px_rgba(59,130,246,0.20)]
                   </div>
                 </motion.div>
               ))}
+
             </div>
           </div>
 

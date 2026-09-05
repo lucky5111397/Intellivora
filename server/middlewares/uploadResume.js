@@ -20,8 +20,10 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  const isPdf = file.mimetype === "application/pdf" || file.originalname.toLowerCase().endsWith(".pdf");
-  if (!isPdf) {
+  const isPdfMime = file.mimetype === "application/pdf" || file.mimetype === "application/x-pdf";
+  const isPdfExt = (file.originalname || "").toLowerCase().endsWith(".pdf");
+
+  if (!isPdfMime && !isPdfExt) {
     const error = new multer.MulterError("LIMIT_UNEXPECTED_FILE");
     error.message = "Only PDF files are allowed.";
     return cb(error, false);

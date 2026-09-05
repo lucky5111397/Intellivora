@@ -1,8 +1,13 @@
-import React from "react";
-import { BsRobot } from "react-icons/bs";
-import { IoSparklesSharp } from "react-icons/io5";
-import { motion } from "motion/react";
-import { FcGoogle } from "react-icons/fc";
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import {
+  BsCheckCircleFill,
+  BsShieldLockFill,
+  BsGraphUpArrow,
+  BsFileEarmarkCheckFill,
+} from "react-icons/bs";
+import { FaPhoneAlt } from "react-icons/fa";
+import { HiArrowRight } from "react-icons/hi";
 import { auth, provider } from "../utils/firebase";
 import { ServerUrl } from "../App";
 import axios from "axios";
@@ -13,30 +18,17 @@ import BrandLogo from "../components/auth/BrandLogo";
 import GlassCard from "../components/auth/GlassCard";
 import GoogleButton from "../components/auth/GoogleButton";
 import AuthDivider from "../components/auth/AuthDivider";
-import TextField from "../components/auth/TextField";
-import { useState } from "react";
-import { MdPassword } from "react-icons/md";
-import { HiOutlineArrowRight } from "react-icons/hi";
-import {
-  BsCheckCircleFill,
-  BsShieldLockFill,
-  BsGraphUpArrow,
-  BsFileEarmarkCheckFill,
-} from "react-icons/bs";
 import AuroraBackground from "../components/auth/AuroraBackground";
 import FloatingStats from "../components/auth/FloatingStats";
 import { toast } from "sonner";
 import PhoneLogin from "../components/auth/PhoneLogin";
-import { AnimatePresence } from "motion/react";
+import OTPInput from "../components/auth/OTPInput";
 import {
   signInWithPopup,
   signOut,
   RecaptchaVerifier,
   signInWithPhoneNumber,
 } from "firebase/auth";
-import OTPInput from "../components/auth/OTPInput";
-import { FaPhoneAlt } from "react-icons/fa";
-import { HiArrowRight } from "react-icons/hi";
 
 function Auth({ isModel = false }) {
   const [confirmationResult, setConfirmationResult] = useState(null);
@@ -86,6 +78,7 @@ function Auth({ isModel = false }) {
       navigate("/");
     } catch (error) {
       console.log(error);
+      console.error("Google authentication error:", error?.message || error);
 
       dispatch(setUserData(null));
 
@@ -135,6 +128,7 @@ function Auth({ isModel = false }) {
       setAuthMode("verify");
     } catch (error) {
       console.log(error);
+      console.error("Failed to send OTP:", error?.message || error);
       toast.error("Failed to send OTP");
     }
   };
@@ -145,14 +139,41 @@ function Auth({ isModel = false }) {
         return;
       }
 
-      await confirmationResult.confirm(otp);
+      const userCredential = await confirmationResult.confirm(otp);
+      const firebaseUser = userCredential.user;
+
+      console.log("Firebase phone auth success:", firebaseUser);
+
+      // Call backend to create/find user and get JWT token
+      const result = await axios.post(
+        ServerUrl + "/api/auth/phone",
+        {
+          name: firebaseUser.displayName || "User",
+          email: firebaseUser.email || firebaseUser.phoneNumber,
+          phone: firebaseUser.phoneNumber,
+        },
+        {
+          withCredentials: true,
+        }
+      );
+
+      console.log("Backend phone auth response:", result.data);
+
+      dispatch(setUserData(result.data));
 
       toast.success("Login Successful");
 
       navigate("/");
     } catch (error) {
       console.log(error);
-      toast.error("Invalid OTP");
+      console.error("Phone verification error:", error?.message || error);
+      if (error.response?.status === 403) {
+        toast.error("Access Denied. You are not authorized to use this application.");
+      } else if (error.code === "auth/invalid-verification-code") {
+        toast.error("Invalid OTP");
+      } else {
+        toast.error("Login failed. Please try again.");
+      }
     }
   };
   return (

@@ -11,7 +11,7 @@ export const askGemini = async (messages) => {
             .join("\n\n");
 
         const response = await ai.models.generateContent({
-           model: "gemini-2.5-flash-lite",
+            model: "gemini-2.5-flash-lite",
             contents: prompt,
         });
 
@@ -23,23 +23,7 @@ export const askGemini = async (messages) => {
 
         return text.trim();
     } catch (error) {
-        console.error("===== GEMINI ERROR =====");
-
-        if (error.status) {
-            console.error("Status:", error.status);
-        }
-
-        if (error.message) {
-            console.error("Message:", error.message);
-        }
-
-        if (error.error) {
-            console.error("Error:", JSON.stringify(error.error, null, 2));
-        }
-
-        console.error(JSON.stringify(error, null, 2));
-
+        console.error("[Gemini] Request failed:", error.status || error.message);
         throw error;
     }
-
-}
+};

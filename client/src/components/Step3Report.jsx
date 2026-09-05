@@ -20,6 +20,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 function Step3Report({ report }) {
+  const navigate = useNavigate();
 
   if (!report) {
     return (
@@ -31,9 +32,6 @@ function Step3Report({ report }) {
     );
   }
 
-  console.log("Report Data:", report);
-
-  const navigate = useNavigate();
   const {
     finalScore = 0,
     confidence = 0,
@@ -88,20 +86,16 @@ function Step3Report({ report }) {
   }
 
   let recommendation = "";
-  let recommendationColor = "";
 
   if (finalScore >= 8) {
     recommendation =
       "You are ready for real interviews. Continue practicing advanced questions and maintain your confidence.";
-    recommendationColor = "emerald";
   } else if (finalScore >= 5) {
     recommendation =
       "You have a solid foundation. Improve communication and answer structure before attending interviews.";
-    recommendationColor = "yellow";
   } else {
     recommendation =
       "Focus on improving technical knowledge, confidence, and structured communication before applying.";
-    recommendationColor = "red";
   }
 
   const score = finalScore;

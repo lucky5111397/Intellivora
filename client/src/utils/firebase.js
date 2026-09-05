@@ -7,12 +7,12 @@ import {
 } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAC7_xiC3rWxX4HOaPT81PyVeO-dPCLTCE",
-  authDomain: "interviewiq-f3c32.firebaseapp.com",
-  projectId: "interviewiq-f3c32",
-  storageBucket: "interviewiq-f3c32.firebasestorage.app",
-  messagingSenderId: "102787741097",
-  appId: "1:102787741097:web:d10186bf27e369838d00b8"
+  apiKey: import.meta.env.VITE_FIREBASE_APIKEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 const app = initializeApp(firebaseConfig);
