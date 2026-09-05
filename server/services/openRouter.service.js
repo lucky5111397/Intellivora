@@ -1,41 +1,57 @@
 import axios from "axios";
 
+const MODELS = [
+  "openai/gpt-oss-20b:free",
+  "nvidia/nemotron-3-super:free",
+  "google/gemma-3-27b-it:free",
+  "meta-llama/llama-3.3-70b-instruct:free",
+];
+
 export const askAI = async (messages) => {
-  try {
-    console.log("===== CALLING OPENROUTER =====");
-    console.log("API KEY:", process.env.OPENROUTER_API_KEY);
+  let lastError = null;
 
-    const response = await axios.post(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        model: "openai/gpt-4o-mini",
-        messages,
-        max_tokens: 3500,
-        temperature: 0.7,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          "Content-Type": "application/json",
+  for (const model of MODELS) {
+    try {
+      console.log(`===== CALLING OPENROUTER: ${model} =====`);
+
+      const response = await axios.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        {
+          model,
+          messages,
+          max_tokens: 3500,
+          temperature: 0.7,
         },
-        timeout: 25000,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          timeout: 25000,
+        }
+      );
+
+      const content = response.data?.choices?.[0]?.message?.content;
+
+      if (content?.trim()) {
+        console.log(`✅ ${model} responded successfully`);
+        return content;
       }
-    );
 
-    const content = response.data?.choices?.[0]?.message?.content;
-    if (!content || !content.trim()) {
-      throw new Error("AI returned empty response.");
+      throw new Error(`${model} returned an empty response.`);
+    } catch (error) {
+      lastError = error;
+
+      console.error(`❌ ${model} failed`);
+      console.error("Status:", error.response?.status);
+      console.error("Message:", error.message);
+
+      console.log("➡️ Trying next free model...");
     }
-    return content
-    return content;
-  } catch (error) {
-    console.error("========== OPENROUTER ERROR ==========");
-    console.error("Status:", error.response?.status);
-    console.error("Data:", error.response?.data);
-    console.error("Message:", error.message);
-
-    console.error("[OpenRouter] Request failed:", error.response?.status, error.message);
-    console.error("[OpenRouter] Request failed:", error.response?.status || 500, error.message);
-    throw error;
   }
+
+  throw new Error(
+    lastError?.response?.data?.error?.message ||
+      "All configured free AI models failed."
+  );
 };
