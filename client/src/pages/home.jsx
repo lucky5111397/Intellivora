@@ -154,9 +154,9 @@ shadow-[0_0_40px_rgba(59,130,246,0.20)]
                 onClick={() => navigate("/aptitude")}
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.98 }}
-                className="group inline-flex h-14 w-full max-w-[260px] items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#1E293B] to-[#334155] px-6 text-sm font-semibold text-white shadow transition-all duration-300 hover:-translate-y-1 hover:scale-[1.03] hover:shadow-2xl hover:shadow-[0_18px_50px_rgba(28,36,48,0.18)]"
+                className="group inline-flex h-14 w-full max-w-[260px] items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-[#D97706] via-[#F59E0B] to-[#F97316] px-6 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:scale-[1.03] hover:shadow-2xl hover:shadow-[0_20px_60px_rgba(217,119,6,0.22)] cursor-pointer"
               >
-                <Calculator size={18} className="text-white" />
+                <Calculator size={18} className="text-white transition-transform duration-300 group-hover:scale-110" />
                 Aptitude
               </motion.button>
             </div>
