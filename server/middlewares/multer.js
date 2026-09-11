@@ -8,13 +8,10 @@ fs.mkdirSync(tempUploadPath, { recursive: true });
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "public");
     cb(null, tempUploadPath);
   },
 
   filename: function (req, file, cb) {
-    const filename = Date.now() + "-" + file.originalname;
-    cb(null, filename);
     const uniqueId = crypto.randomUUID();
     const timestamp = Date.now();
     const safeName = (file.originalname || "resume.pdf").replace(/[^a-zA-Z0-9._-]/g, "-");

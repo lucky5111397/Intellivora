@@ -190,7 +190,6 @@ export default function AptitudeResult() {
     );
   }
 
-  if (!result) return null;
   if (!result) {
     return (
       <div className="min-h-screen bg-apt-bg flex flex-col items-center justify-center p-6 text-apt-text">
