@@ -201,8 +201,6 @@ Intellivora/
 │   ├── .env.example            # Server environment configuration template
 │   └── package.json            # Server dependencies and scripts
 │
-├── docs/                       # Technical specifications and architectural baselines
-│   └── architecture/           # Module architectural design documents
 ├── .gitignore                  # Global version control exclusions
 └── README.md                   # Platform documentation
 ```
