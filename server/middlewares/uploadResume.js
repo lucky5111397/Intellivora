@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import multer from "multer";
 import crypto from "crypto";
+import { validatePdfFile } from "../utils/pdfValidator.js";
 
 const uploadBasePath = path.resolve("uploads", "resumes");
 fs.mkdirSync(uploadBasePath, { recursive: true });
@@ -23,12 +24,31 @@ const fileFilter = (req, file, cb) => {
   const isPdfMime = file.mimetype === "application/pdf" || file.mimetype === "application/x-pdf";
   const isPdfExt = (file.originalname || "").toLowerCase().endsWith(".pdf");
 
-  if (!isPdfMime && !isPdfExt) {
+  if (!isPdfMime || !isPdfExt) {
     const error = new multer.MulterError("LIMIT_UNEXPECTED_FILE");
     error.message = "Only PDF files are allowed.";
     return cb(error, false);
   }
   cb(null, true);
+};
+
+export const verifyPdfMagicBytes = async (req, res, next) => {
+  if (!req.file?.path) {
+    return next();
+  }
+  const isValid = await validatePdfFile(req.file.path);
+  if (!isValid) {
+    try {
+      await fs.promises.unlink(req.file.path);
+    } catch (err) {
+      console.warn("[uploadResume] Could not unlink invalid file:", err.message);
+    }
+    return res.status(400).json({
+      success: false,
+      message: "Invalid file content: File is not a valid PDF document (magic byte signature mismatch).",
+    });
+  }
+  next();
 };
 
 const uploadResume = multer({
@@ -40,3 +60,4 @@ const uploadResume = multer({
 });
 
 export default uploadResume;
+

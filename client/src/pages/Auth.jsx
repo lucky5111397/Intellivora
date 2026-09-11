@@ -40,28 +40,14 @@ function Auth({ isModel = false }) {
   // Handle Google authentication
   const handleGoogleAuth = async () => {
     try {
-      console.log("Button clicked");
-
       const response = await signInWithPopup(auth, provider);
-      console.log("Firebase Login Success:", response);
-
       const user = response.user;
-
-
-      console.log("Calling Backend...");
-
-      const allowedEmails =
-        import.meta.env.VITE_ALLOWED_EMAILS?.split(",").map((email) => email.trim()) || [];
-
-      if (!allowedEmails.includes(user.email)) {
-        await signOut(auth);
-        toast.error("Access Denied. You are not authorized to use this application.");
-        return;
-      }
+      const idToken = await user.getIdToken();
 
       const result = await axios.post(
         ServerUrl + "/api/auth/google",
         {
+          idToken,
           name: user.displayName,
           email: user.email,
         },
@@ -69,25 +55,23 @@ function Auth({ isModel = false }) {
           withCredentials: true,
         }
       );
-      console.log("Backend Response:", result.data);
 
       dispatch(setUserData(result.data));
-
       toast.success("Login Successful");
-
       navigate("/");
     } catch (error) {
-      console.log(error);
       console.error("Google authentication error:", error?.message || error);
-
       dispatch(setUserData(null));
 
-      if (error.code === "auth/popup-closed-by-user") {
+      if (error.response?.status === 403) {
+        await signOut(auth).catch(() => {});
+        toast.error("Access Denied. You are not authorized to use this application.");
+      } else if (error.code === "auth/popup-closed-by-user") {
         toast.info("Login cancelled.");
       } else if (error.code === "auth/network-request-failed") {
         toast.error("Network error. Please check your internet connection.");
       } else {
-        toast.error("Login failed. Please try again.");
+        toast.error(error.response?.data?.message || "Login failed. Please try again.");
       }
     }
   };
@@ -141,15 +125,15 @@ function Auth({ isModel = false }) {
 
       const userCredential = await confirmationResult.confirm(otp);
       const firebaseUser = userCredential.user;
-
-      console.log("Firebase phone auth success:", firebaseUser);
+      const idToken = await firebaseUser.getIdToken();
 
       // Call backend to create/find user and get JWT token
       const result = await axios.post(
         ServerUrl + "/api/auth/phone",
         {
+          idToken,
           name: firebaseUser.displayName || "User",
-          email: firebaseUser.email || firebaseUser.phoneNumber,
+          email: firebaseUser.email || `${firebaseUser.phoneNumber}@phone.local`,
           phone: firebaseUser.phoneNumber,
         },
         {
@@ -157,22 +141,17 @@ function Auth({ isModel = false }) {
         }
       );
 
-      console.log("Backend phone auth response:", result.data);
-
       dispatch(setUserData(result.data));
-
       toast.success("Login Successful");
-
       navigate("/");
     } catch (error) {
-      console.log(error);
       console.error("Phone verification error:", error?.message || error);
       if (error.response?.status === 403) {
         toast.error("Access Denied. You are not authorized to use this application.");
       } else if (error.code === "auth/invalid-verification-code") {
         toast.error("Invalid OTP");
       } else {
-        toast.error("Login failed. Please try again.");
+        toast.error(error.response?.data?.message || "Login failed. Please try again.");
       }
     }
   };

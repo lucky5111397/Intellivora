@@ -9,6 +9,7 @@ import {
   getInterviewReport,
   submitAnswer,
   deleteInterview,
+  getInterviewById,
 } from "../controllers/interview.controller.js";
 const interviewRouter = express.Router();
 
@@ -42,8 +43,9 @@ interviewRouter.post(
   finishInterview
 );
 
-interviewRouter.get("/get-interviews", isAuth, getMyInterviews)
+interviewRouter.get("/get-interviews", isAuth, getMyInterviews);
 interviewRouter.get("/report/:id", isAuth, getInterviewReport);
+interviewRouter.get("/:id", isAuth, getInterviewById);
 interviewRouter.delete(
   "/delete-interview/:id",
   isAuth,

@@ -238,6 +238,7 @@ const gdSessionSchema = new mongoose.Schema(
 gdSessionSchema.index({ userId: 1, idempotencyKey: 1 }, { unique: true });
 gdSessionSchema.index({ userId: 1, createdAt: -1 });
 gdSessionSchema.index({ userId: 1, status: 1 });
+gdSessionSchema.index({ userId: 1, status: 1, createdAt: -1 });
 
 const GDSession = mongoose.model("GDSession", gdSessionSchema);
 

@@ -105,11 +105,11 @@ export const verifyPayment = async (req, res) => {
       });
     }
 
-    const payment = await Payment.findOne({
+    const existingPayment = await Payment.findOne({
       razorpayOrderId: razorpay_order_id,
     });
 
-    if (!payment) {
+    if (!existingPayment) {
       return res.status(404).json({
         success: false,
         message: "Payment record not found.",
@@ -117,15 +117,31 @@ export const verifyPayment = async (req, res) => {
     }
 
     // Enforce user ownership
-    if (payment.userId.toString() !== req.userId.toString()) {
+    if (existingPayment.userId.toString() !== req.userId.toString()) {
       return res.status(403).json({
         success: false,
         message: "Unauthorized: Payment does not belong to the authenticated user.",
       });
     }
 
-    // Replay/idempotency protection
-    if (payment.status === "paid") {
+    // Atomic CAS to prevent double-credit race conditions
+    // Only transitions status if not already 'paid'
+    const updatedPayment = await Payment.findOneAndUpdate(
+      {
+        razorpayOrderId: razorpay_order_id,
+        status: { $ne: "paid" },
+      },
+      {
+        $set: {
+          status: "paid",
+          razorpayPaymentId: razorpay_payment_id,
+        },
+      },
+      { new: true }
+    );
+
+    // Replay/idempotency protection: if not modified, payment was already paid
+    if (!updatedPayment) {
       const currentUser = await User.findById(req.userId);
       return res.status(200).json({
         success: true,
@@ -135,16 +151,11 @@ export const verifyPayment = async (req, res) => {
       });
     }
 
-    // Update payment record
-    payment.status = "paid";
-    payment.razorpayPaymentId = razorpay_payment_id;
-    await payment.save();
-
-    // Add credits to user
+    // Only the single atomic winner increments user credits
     const updatedUser = await User.findByIdAndUpdate(
-      payment.userId,
+      updatedPayment.userId,
       {
-        $inc: { credits: payment.credits },
+        $inc: { credits: updatedPayment.credits },
       },
       { new: true }
     );
@@ -160,5 +171,80 @@ export const verifyPayment = async (req, res) => {
       success: false,
       message: "Failed to verify Razorpay payment.",
     });
+  }
+};
+
+/**
+ * Razorpay Webhook Handler for asynchronous server-to-server confirmation.
+ * Verifies signature using RAZORPAY_WEBHOOK_SECRET (or RAZORPAY_KEY_SECRET fallback)
+ * and atomically credits user accounts for order.paid and payment.captured events.
+ */
+export const handleRazorpayWebhook = async (req, res) => {
+  try {
+    const signature = req.headers["x-razorpay-signature"];
+    const webhookSecret =
+      process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET;
+
+    if (!webhookSecret) {
+      console.warn("[Razorpay Webhook] Webhook secret not configured.");
+      return res.status(500).json({ success: false, message: "Webhook secret not configured." });
+    }
+
+    if (!signature) {
+      return res.status(400).json({ success: false, message: "Missing webhook signature." });
+    }
+
+    const payload = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+    const expectedSignature = crypto
+      .createHmac("sha256", webhookSecret)
+      .update(payload)
+      .digest("hex");
+
+    const expectedBuf = Buffer.from(expectedSignature, "utf8");
+    const receivedBuf = Buffer.from(String(signature), "utf8");
+    const isValid =
+      expectedBuf.length === receivedBuf.length &&
+      crypto.timingSafeEqual(expectedBuf, receivedBuf);
+
+    if (!isValid) {
+      return res.status(400).json({ success: false, message: "Invalid webhook signature." });
+    }
+
+    const event = typeof req.body === "object" ? req.body : JSON.parse(req.body);
+    const eventType = event.event;
+
+    if (eventType === "payment.captured" || eventType === "order.paid") {
+      const paymentEntity = event.payload?.payment?.entity;
+      const orderId = paymentEntity?.order_id || event.payload?.order?.entity?.id;
+      const paymentId = paymentEntity?.id;
+
+      if (orderId) {
+        const updatedPayment = await Payment.findOneAndUpdate(
+          {
+            razorpayOrderId: orderId,
+            status: { $ne: "paid" },
+          },
+          {
+            $set: {
+              status: "paid",
+              razorpayPaymentId: paymentId || `webhook_${Date.now()}`,
+            },
+          },
+          { new: true }
+        );
+
+        if (updatedPayment) {
+          await User.findByIdAndUpdate(updatedPayment.userId, {
+            $inc: { credits: updatedPayment.credits },
+          });
+          console.log(`[Razorpay Webhook] Credited ${updatedPayment.credits} credits for order ${orderId}`);
+        }
+      }
+    }
+
+    return res.status(200).json({ status: "ok" });
+  } catch (err) {
+    console.error("[Razorpay Webhook] Error:", err.message);
+    return res.status(500).json({ success: false, message: "Webhook processing error." });
   }
 };

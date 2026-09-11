@@ -1,11 +1,22 @@
 import multer from "multer";
 
 function errorHandler(err, req, res, next) {
-  console.error(`[ERROR HANDLER] ${req.method} ${req.originalUrl}:`, err.message || err);
+  const isProd = process.env.NODE_ENV === "production";
+  console.error(`[ERROR HANDLER] ${req.method} ${req.originalUrl}:`, err.stack || err.message || err);
+
   if (res.headersSent) {
     return next(err);
   }
 
+  // Handle CORS rejection
+  if (err.message === "Not allowed by CORS") {
+    return res.status(403).json({
+      success: false,
+      message: "CORS request origin rejected.",
+    });
+  }
+
+  // Handle Multer upload errors
   if (err instanceof multer.MulterError) {
     let status = 400;
     let message = err.message || "File upload error.";
@@ -21,16 +32,22 @@ function errorHandler(err, req, res, next) {
     });
   }
 
-  if (err && err.message) {
-    return res.status(err.statusCode || err.status || 400).json({
+  // Check for explicit operational HTTP status codes (4xx)
+  const explicitStatus = err.statusCode || err.status;
+  if (explicitStatus && explicitStatus >= 400 && explicitStatus < 500) {
+    return res.status(explicitStatus).json({
       success: false,
-      message: err.message,
+      message: err.message || "Client request error.",
     });
   }
 
-  return res.status(500).json({
+  // 500 Internal Server Errors - Never leak raw DB / stack traces in production
+  const statusCode = explicitStatus && explicitStatus >= 500 ? explicitStatus : 500;
+  return res.status(statusCode).json({
     success: false,
-    message: "Internal Server Error",
+    message: isProd
+      ? "An unexpected internal server error occurred. Please try again later."
+      : err.message || "Internal Server Error",
   });
 }
 
