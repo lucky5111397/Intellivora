@@ -188,4 +188,63 @@ describe("GD Overview & Setup Configuration (GD-05)", () => {
       assert.equal(recommended.minutes, 10);
     });
   });
+
+  // =============================================================
+  // 4. Authentication & Credit Guard State Resolution
+  // =============================================================
+  describe("Authentication & Credit State Resolution", () => {
+    const GD_CREDIT_COST = 150;
+
+    function resolveSetupAuthState(userData) {
+      const isAuthenticated = Boolean(userData);
+      const userCredits = userData?.credits ?? 0;
+      const hasSufficientCredits = isAuthenticated && userCredits >= GD_CREDIT_COST;
+
+      return {
+        isAuthenticated,
+        userCredits: isAuthenticated ? userCredits : null,
+        hasSufficientCredits,
+        primaryAction: !isAuthenticated
+          ? { type: "navigate_auth", route: "/auth", label: "Sign In to Start Discussion" }
+          : hasSufficientCredits
+          ? { type: "enter_chamber", label: "Enter Discussion Chamber", disabled: false }
+          : { type: "insufficient_credits", topUpRoute: "/pricing", disabled: true },
+      };
+    }
+
+    it("should show authentication-required state and navigate to /auth when user is unauthenticated", () => {
+      const state = resolveSetupAuthState(null);
+      assert.equal(state.isAuthenticated, false);
+      assert.equal(state.hasSufficientCredits, false);
+      assert.equal(state.userCredits, null, "Should not display user credit balance for unauthenticated users");
+      assert.equal(state.primaryAction.type, "navigate_auth");
+      assert.equal(state.primaryAction.route, "/auth");
+      assert.equal(state.primaryAction.label, "Sign In to Start Discussion");
+    });
+
+    it("should navigate to /auth when authentication action is triggered", () => {
+      const state = resolveSetupAuthState(undefined);
+      assert.equal(state.isAuthenticated, false);
+      assert.equal(state.primaryAction.route, "/auth");
+    });
+
+    it("should show insufficient-credit state with top-up action when authenticated user has < 150 credits", () => {
+      const state = resolveSetupAuthState({ _id: "user-1", credits: 50 });
+      assert.equal(state.isAuthenticated, true);
+      assert.equal(state.userCredits, 50);
+      assert.equal(state.hasSufficientCredits, false);
+      assert.equal(state.primaryAction.type, "insufficient_credits");
+      assert.equal(state.primaryAction.topUpRoute, "/pricing");
+      assert.equal(state.primaryAction.disabled, true);
+    });
+
+    it("should allow entering discussion chamber when authenticated user has >= 150 credits", () => {
+      const state = resolveSetupAuthState({ _id: "user-1", credits: 300 });
+      assert.equal(state.isAuthenticated, true);
+      assert.equal(state.userCredits, 300);
+      assert.equal(state.hasSufficientCredits, true);
+      assert.equal(state.primaryAction.type, "enter_chamber");
+      assert.equal(state.primaryAction.disabled, false);
+    });
+  });
 });

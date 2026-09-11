@@ -15,6 +15,7 @@ import {
   AlertCircle,
   ShieldAlert,
   Sliders,
+  LogIn,
 } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import { useGD } from "../context/gdContext";
@@ -34,6 +35,9 @@ export default function GDSetup() {
   const { userData } = useSelector((state) => state.user);
   const { initSession, loading, error, clearError } = useGD();
 
+  // Authentication state
+  const isAuthenticated = Boolean(userData);
+
   // Configuration Form State
   const [selectedCategory, setSelectedCategory] = useState("Technology & AI");
   const [currentTopicIndex, setCurrentTopicIndex] = useState(0);
@@ -42,9 +46,9 @@ export default function GDSetup() {
   const [durationMinutes, setDurationMinutes] = useState(10);
   const [formErrors, setFormErrors] = useState({});
 
-  // Credit calculation
+  // Credit calculation (authenticated users only)
   const userCredits = userData?.credits ?? 0;
-  const hasSufficientCredits = userCredits >= GD_CREDIT_COST;
+  const hasSufficientCredits = isAuthenticated && userCredits >= GD_CREDIT_COST;
 
   // Active topic resolution
   const topicsForCategory = useMemo(() => {
@@ -79,6 +83,12 @@ export default function GDSetup() {
   // Submission handler
   const handleEnterChamber = async (e) => {
     e.preventDefault();
+
+    if (!isAuthenticated) {
+      toast.error("Please sign in to start a Group Discussion.");
+      navigate("/auth");
+      return;
+    }
 
     if (!hasSufficientCredits) {
       toast.error("Insufficient credits. Please top up your balance to start this simulation.");
@@ -578,71 +588,108 @@ export default function GDSetup() {
                 </div>
               </div>
 
-              {/* Credit Cost Guard */}
-              <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.06] mb-4 flex flex-col gap-2">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-1.5 text-slate-300">
-                    <Coins className="w-4 h-4 text-amber-400" />
-                    <span className="font-semibold">Session Simulation Cost</span>
-                  </div>
-                  <span className="font-bold text-white text-sm">{GD_CREDIT_COST} Credits</span>
-                </div>
-
-                <div className="flex items-center justify-between text-xs pt-1 border-t border-white/[0.04]">
-                  <span className="text-slate-400">Your Available Balance</span>
-                  <span
-                    className={`font-semibold ${
-                      hasSufficientCredits ? "text-emerald-400" : "text-rose-400"
-                    }`}
-                  >
-                    {userCredits} Credits
-                  </span>
-                </div>
-
-                {!hasSufficientCredits && (
-                  <div className="mt-1 p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex flex-col gap-1.5">
-                    <div className="flex items-center gap-1.5 font-semibold">
-                      <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0" />
-                      <span>Insufficient Credits</span>
+              {/* Credit Cost Guard / Authentication Guard */}
+              {!isAuthenticated ? (
+                <div className="p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20 mb-4 flex flex-col gap-2.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-1.5 text-indigo-300 font-semibold">
+                      <LogIn className="w-4 h-4 text-indigo-400" />
+                      <span>Authentication Required</span>
                     </div>
-                    <p className="text-[11px] text-rose-300/90 leading-tight">
-                      You need at least {GD_CREDIT_COST} credits to enter the discussion chamber.
-                    </p>
-                    <Link
-                      to="/pricing"
-                      className="mt-1 inline-flex items-center justify-center gap-1 py-1.5 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors"
-                    >
-                      <span>Top Up Credits</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
+                    <span className="text-[11px] text-slate-400">{GD_CREDIT_COST} Credits / Session</span>
                   </div>
-                )}
-              </div>
+
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    You must be signed in to configure discussion parameters and enter the simulation chamber.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate("/auth")}
+                    className="mt-1 w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors shadow-md shadow-indigo-600/20 cursor-pointer"
+                  >
+                    <span>Sign In to Continue</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.06] mb-4 flex flex-col gap-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-1.5 text-slate-300">
+                      <Coins className="w-4 h-4 text-amber-400" />
+                      <span className="font-semibold">Session Simulation Cost</span>
+                    </div>
+                    <span className="font-bold text-white text-sm">{GD_CREDIT_COST} Credits</span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs pt-1 border-t border-white/[0.04]">
+                    <span className="text-slate-400">Your Available Balance</span>
+                    <span
+                      className={`font-semibold ${
+                        hasSufficientCredits ? "text-emerald-400" : "text-rose-400"
+                      }`}
+                    >
+                      {userCredits} Credits
+                    </span>
+                  </div>
+
+                  {!hasSufficientCredits && (
+                    <div className="mt-1 p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex flex-col gap-1.5">
+                      <div className="flex items-center gap-1.5 font-semibold">
+                        <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0" />
+                        <span>Insufficient Credits</span>
+                      </div>
+                      <p className="text-[11px] text-rose-300/90 leading-tight">
+                        You need at least {GD_CREDIT_COST} credits to enter the discussion chamber.
+                      </p>
+                      <Link
+                        to="/pricing"
+                        className="mt-1 inline-flex items-center justify-center gap-1 py-1.5 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors"
+                      >
+                        <span>Top Up Credits</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Primary CTA Button */}
               <div className="flex flex-col gap-2">
-                <button
-                  type="button"
-                  onClick={handleEnterChamber}
-                  disabled={loading || !hasSufficientCredits}
-                  className={`w-full py-3.5 px-6 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 shadow-lg transition-all active:scale-[0.99] ${
-                    loading || !hasSufficientCredits
-                      ? "bg-slate-800 text-slate-500 cursor-not-allowed border border-white/5"
-                      : "bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white shadow-indigo-600/30 border border-white/10"
-                  }`}
-                >
-                  {loading ? (
-                    <>
-                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Initializing Chamber...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Enter Discussion Chamber</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
+                {!isAuthenticated ? (
+                  <button
+                    type="button"
+                    onClick={() => navigate("/auth")}
+                    className="w-full py-3.5 px-6 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 shadow-lg transition-all bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white shadow-indigo-600/30 border border-white/10 active:scale-[0.99] cursor-pointer"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    <span>Sign In to Start Discussion</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleEnterChamber}
+                    disabled={loading || !hasSufficientCredits}
+                    className={`w-full py-3.5 px-6 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 shadow-lg transition-all active:scale-[0.99] ${
+                      loading || !hasSufficientCredits
+                        ? "bg-slate-800 text-slate-500 cursor-not-allowed border border-white/5"
+                        : "bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white shadow-indigo-600/30 border border-white/10 cursor-pointer"
+                    }`}
+                  >
+                    {loading ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Initializing Chamber...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Enter Discussion Chamber</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                )}
 
                 <div className="flex items-center justify-center gap-1.5 text-slate-500 text-[11px] pt-1">
                   <span>Session encrypted · Real-time multi-agent speech synthesis</span>

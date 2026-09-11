@@ -233,4 +233,83 @@ describe("GD Lobby and Live Discussion Room (GD-06)", () => {
       assert.equal(turnsReached, true);
     });
   });
+
+  // =============================================================
+  // 6. Live Room Session Access & Aborted Guard
+  // =============================================================
+  describe("Live Room Session Access & Aborted Status Guards", () => {
+    function evaluateRoomSessionGuard(session) {
+      if (!session) {
+        return { action: "wait_loading", allowRoomUsage: false };
+      }
+
+      if (session.status === "aborted") {
+        return {
+          action: "redirect_overview",
+          route: "/gd",
+          replace: true,
+          toastMessage: "This discussion session has been terminated.",
+          allowRoomUsage: false,
+        };
+      }
+
+      if (session.status === "completed") {
+        return {
+          action: "redirect_analysis",
+          route: `/gd/analysis/${session._id}`,
+          replace: true,
+          allowRoomUsage: false,
+        };
+      }
+
+      if (session.status === "setup" || session.status === "lobby") {
+        return {
+          action: "transition_in_progress",
+          allowRoomUsage: true,
+        };
+      }
+
+      if (session.status === "in_progress") {
+        return {
+          action: "render_live_chamber",
+          allowRoomUsage: true,
+        };
+      }
+
+      return { action: "unknown", allowRoomUsage: false };
+    }
+
+    it("should redirect to /gd and prevent room usage when session is aborted", () => {
+      const guard = evaluateRoomSessionGuard({ _id: "sess-aborted", status: "aborted" });
+      assert.equal(guard.action, "redirect_overview");
+      assert.equal(guard.route, "/gd");
+      assert.equal(guard.replace, true);
+      assert.equal(guard.allowRoomUsage, false);
+      assert.equal(guard.toastMessage, "This discussion session has been terminated.");
+    });
+
+    it("should continue working normally for active in_progress sessions", () => {
+      const guard = evaluateRoomSessionGuard({ _id: "sess-active", status: "in_progress" });
+      assert.equal(guard.action, "render_live_chamber");
+      assert.equal(guard.allowRoomUsage, true);
+    });
+
+    it("should transition setup/lobby sessions to in_progress and allow room usage", () => {
+      const guardSetup = evaluateRoomSessionGuard({ _id: "sess-setup", status: "setup" });
+      assert.equal(guardSetup.action, "transition_in_progress");
+      assert.equal(guardSetup.allowRoomUsage, true);
+
+      const guardLobby = evaluateRoomSessionGuard({ _id: "sess-lobby", status: "lobby" });
+      assert.equal(guardLobby.action, "transition_in_progress");
+      assert.equal(guardLobby.allowRoomUsage, true);
+    });
+
+    it("should redirect completed sessions to analysis screen", () => {
+      const guard = evaluateRoomSessionGuard({ _id: "sess-done", status: "completed" });
+      assert.equal(guard.action, "redirect_analysis");
+      assert.equal(guard.route, "/gd/analysis/sess-done");
+      assert.equal(guard.replace, true);
+      assert.equal(guard.allowRoomUsage, false);
+    });
+  });
 });

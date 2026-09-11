@@ -88,6 +88,11 @@ export default function GDRoom() {
     loadSession(id)
       .then((res) => {
         const sess = res?.session;
+        if (sess?.status === "aborted") {
+          toast.info("This discussion session has been terminated.");
+          navigate("/gd", { replace: true });
+          return;
+        }
         if (sess?.status === "setup" || sess?.status === "lobby") {
           enterRoom(id).catch(() => {});
         } else if (sess?.status === "completed") {
@@ -96,6 +101,14 @@ export default function GDRoom() {
       })
       .catch(() => {});
   }, [id, loadSession, enterRoom, navigate]);
+
+  // Guard against aborted session in active state
+  useEffect(() => {
+    if (session?.status === "aborted") {
+      toast.info("This discussion session has been terminated.");
+      navigate("/gd", { replace: true });
+    }
+  }, [session?.status, navigate]);
 
   // 2. Start microphone diagnostics stream on mount
   useEffect(() => {
@@ -314,6 +327,18 @@ export default function GDRoom() {
   const handleInjectCitation = (text) => {
     setInputPrompt((prev) => (prev ? `${prev} ${text}` : text));
   };
+
+  // Prevent room from being usable if session is aborted
+  if (session?.status === "aborted") {
+    return (
+      <div className="min-h-screen bg-[#080b12] text-slate-100 flex flex-col items-center justify-center gap-4">
+        <div className="w-12 h-12 rounded-full border-4 border-indigo-500/20 border-t-indigo-400 animate-spin" />
+        <p className="text-slate-400 text-sm font-medium">
+          This session was terminated. Redirecting to discussion workspace...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#080b12] text-slate-100 flex flex-col selection:bg-indigo-500/20 selection:text-indigo-300">
