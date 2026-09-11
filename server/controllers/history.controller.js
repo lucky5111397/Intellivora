@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Interview from "../models/interview.model.js";
 import AptitudeAttempt from "../models/aptitudeAttempt.model.js";
+import GDSession from "../models/gdSession.model.js";
 import { findCategory, findTopic } from "../config/aptitudeSyllabus.js";
 import { updateProgress } from "../services/aptitude.service.js";
 
@@ -8,9 +9,10 @@ export const getUnifiedHistory = async (req, res) => {
   try {
     const userId = req.userId;
 
-    const [interviews, aptitudeAttempts] = await Promise.all([
+    const [interviews, aptitudeAttempts, gdSessions] = await Promise.all([
       Interview.find({ userId }).sort({ createdAt: -1 }).lean(),
       AptitudeAttempt.find({ userId, status: { $in: ["submitted", "expired"] } }).sort({ createdAt: -1 }).lean(),
+      GDSession.find({ userId, status: "completed" }).sort({ createdAt: -1 }).lean(),
     ]);
 
     const normalizedInterviews = interviews.map((item) => ({
@@ -56,7 +58,25 @@ export const getUnifiedHistory = async (req, res) => {
       };
     });
 
-    const combined = [...normalizedInterviews, ...normalizedAptitude].sort(
+    const normalizedGD = (gdSessions || []).map((item) => ({
+      id: item._id,
+      _id: item._id,
+      type: "gd",
+      module: "gd",
+      title: item.topic || "Group Discussion",
+      subtitle: `${item.category || ""} • ${item.difficulty || "mid"}`.trim(),
+      topic: item.topic,
+      category: item.category,
+      difficulty: item.difficulty,
+      durationMinutes: item.durationMinutes || 10,
+      score: item.evaluation?.overallScore || 0,
+      finalScore: item.evaluation?.overallScore || 0,
+      status: item.status || "completed",
+      createdAt: item.createdAt,
+      route: `/gd/analysis/${item._id}`,
+    }));
+
+    const combined = [...normalizedInterviews, ...normalizedAptitude, ...normalizedGD].sort(
       (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
     );
 
@@ -85,6 +105,10 @@ export const deleteHistoryItem = async (req, res) => {
       const deleted = await Interview.findOneAndDelete({ _id: id, userId });
       if (!deleted) return res.status(404).json({ message: "Interview not found" });
       return res.json({ message: "Interview deleted successfully" });
+    } else if (type === "gd") {
+      const deleted = await GDSession.findOneAndDelete({ _id: id, userId });
+      if (!deleted) return res.status(404).json({ message: "Group discussion session not found" });
+      return res.json({ message: "Group discussion deleted successfully" });
     } else {
       return res.status(400).json({ message: "Invalid history item type" });
     }

@@ -69,6 +69,11 @@ function InterviewHistory() {
                     `${ServerUrl}/api/history/aptitude/${selectedItem.id}`,
                     { withCredentials: true }
                 );
+            } else if (selectedItem.type === "gd") {
+                await axios.delete(
+                    `${ServerUrl}/api/history/gd/${selectedItem.id}`,
+                    { withCredentials: true }
+                );
             } else {
                 // Try unified history delete or fallback to delete-interview
                 try {
@@ -248,6 +253,12 @@ function InterviewHistory() {
                             >
                                 Practice Aptitude
                             </button>
+                            <button
+                                onClick={() => navigate("/gd")}
+                                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 font-semibold text-sm hover:scale-105 transition cursor-pointer"
+                            >
+                                Try Group Discussion
+                            </button>
                         </div>
                     </div>
                 ) : filteredItems.length === 0 ? (
@@ -259,7 +270,8 @@ function InterviewHistory() {
                     <div className="grid gap-6">
                         {filteredItems.map((item, index) => {
                             const isAptitude = item.type === "aptitude";
-                            const targetRoute = item.route || (isAptitude ? `/aptitude/result/${item._id || item.id}` : `/report/${item._id || item.id}`);
+                            const isGD = item.type === "gd";
+                            const targetRoute = item.route || (isGD ? `/gd/analysis/${item._id || item.id}` : isAptitude ? `/aptitude/result/${item._id || item.id}` : `/report/${item._id || item.id}`);
                             const itemId = item._id || item.id;
 
                             return (
@@ -272,11 +284,13 @@ function InterviewHistory() {
                                         <div>
                                             <div className="flex items-center gap-2 mb-2">
                                                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
-                                                    isAptitude
+                                                    isGD
+                                                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                                                        : isAptitude
                                                         ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
                                                         : "bg-blue-500/20 text-blue-300 border border-blue-500/30"
                                                 }`}>
-                                                    {isAptitude ? "Aptitude Assessment" : "Mock Interview"}
+                                                    {isGD ? "Group Discussion" : isAptitude ? "Aptitude Assessment" : "Mock Interview"}
                                                 </span>
                                             </div>
 
@@ -285,7 +299,21 @@ function InterviewHistory() {
                                             </h3>
 
                                             <div className="text-sm mt-2 flex flex-wrap gap-2 items-center">
-                                                {isAptitude ? (
+                                                {isGD ? (
+                                                    <>
+                                                        <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
+                                                            {item.category || item.subtitle}
+                                                        </span>
+                                                        {item.difficulty && (
+                                                            <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-300 capitalize">
+                                                                {item.difficulty}
+                                                            </span>
+                                                        )}
+                                                        <span className="rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300">
+                                                            {item.durationMinutes || 10} Mins
+                                                        </span>
+                                                    </>
+                                                ) : isAptitude ? (
                                                     <>
                                                         <span className="rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs font-medium text-violet-300">
                                                             {item.subtitle || item.category}
@@ -328,7 +356,9 @@ function InterviewHistory() {
                                                 {/* SCORE */}
                                                 <div className="min-w-[90px] text-center font-family-jetbrains">
                                                     <p className="text-3xl font-bold text-emerald-400">
-                                                        {isAptitude
+                                                        {isGD
+                                                            ? `${item.finalScore ?? item.score ?? 0}/100`
+                                                            : isAptitude
                                                             ? `${item.score}/${item.totalMarks || 10}`
                                                             : `${item.finalScore || 0}/10`
                                                         }
@@ -341,7 +371,9 @@ function InterviewHistory() {
                                                         <div
                                                             className="h-full rounded-full bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400"
                                                             style={{
-                                                                width: isAptitude
+                                                                width: isGD
+                                                                    ? `${Math.min(100, Math.max(0, item.finalScore ?? item.score ?? 0))}%`
+                                                                    : isAptitude
                                                                     ? `${item.totalMarks ? Math.min(100, Math.max(0, (item.score / item.totalMarks) * 100)) : 0}%`
                                                                     : `${(item.finalScore || 0) * 10}%`,
                                                             }}
@@ -380,7 +412,7 @@ function InterviewHistory() {
                                                 <button
                                                     className="rounded-xl bg-gradient-to-r from-blue-600 via-violet-600 to-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_0_20px_rgba(59,130,246,.25)] transition-all duration-300 group-hover:scale-105 cursor-pointer"
                                                 >
-                                                    {isAptitude ? "View Result →" : "View Report →"}
+                                                    {isGD ? "View Analysis →" : isAptitude ? "View Result →" : "View Report →"}
                                                 </button>
 
                                             </div>
