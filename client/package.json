@@ -10,7 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@alptugidin/react-circular-progress-bar": "^1.1.4",
     "@reduxjs/toolkit": "^2.12.0",
     "@tailwindcss/vite": "^4.3.1",
     "axios": "^1.18.1",
@@ -20,7 +19,6 @@
     "jspdf-autotable": "^5.0.8",
     "lucide-react": "^1.27.0",
     "motion": "^12.42.0",
-    "pdfjs-dist": "^6.1.200",
     "react": "^19.2.7",
     "react-circular-progressbar": "^2.2.0",
     "react-dom": "^19.2.7",

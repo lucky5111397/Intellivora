@@ -50,24 +50,29 @@ export const useMediaStream = () => {
 
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-      const checkVolume = () => {
+      let lastUpdate = 0;
+      const checkVolume = (timestamp) => {
         if (!isMountedRef.current || !analyserRef.current) return;
 
-        analyserRef.current.getByteFrequencyData(dataArray);
+        const now = timestamp || (typeof performance !== "undefined" ? performance.now() : Date.now());
+        if (now - lastUpdate >= 66) { // ~15 Hz throttling
+          lastUpdate = now;
+          analyserRef.current.getByteFrequencyData(dataArray);
 
-        let sum = 0;
-        for (let i = 0; i < dataArray.length; i++) {
-          sum += dataArray[i];
+          let sum = 0;
+          for (let i = 0; i < dataArray.length; i++) {
+            sum += dataArray[i];
+          }
+          const average = sum / dataArray.length;
+          // Normalize 0..128 to 0..100
+          const normalized = Math.min(100, Math.round((average / 128) * 100));
+
+          setAudioLevel(normalized);
         }
-        const average = sum / dataArray.length;
-        // Normalize 0..128 to 0..100
-        const normalized = Math.min(100, Math.round((average / 128) * 100));
-
-        setAudioLevel(normalized);
         animationFrameRef.current = requestAnimationFrame(checkVolume);
       };
 
-      checkVolume();
+      animationFrameRef.current = requestAnimationFrame(checkVolume);
     } catch (audioErr) {
       console.warn("[useMediaStream] AudioContext setup failed:", audioErr.message);
     }

@@ -36,6 +36,8 @@ function Step2Interview({ interviewData, onFinish }) {
   const [thinkingStep, setThinkingStep] = useState(0);
   const [_subtitle, setSubtitle] = useState("");
   const [showExitDialog, setShowExitDialog] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
+  const [finishError, setFinishError] = useState(null);
 
   const videoRef = useRef(null);
   const webcamRef = useRef(null);
@@ -401,6 +403,8 @@ function Step2Interview({ interviewData, onFinish }) {
   };
 
   const finishInterview = async () => {
+    setIsFinishing(true);
+    setFinishError(null);
     stopMic();
     stopCamera();
     setIsMicOn(false);
@@ -416,11 +420,15 @@ function Step2Interview({ interviewData, onFinish }) {
         }
       );
 
-      console.log(result.data);
+      toast.success("Interview completed! Generating report...");
       onFinish(result.data);
     } catch (error) {
-      console.log(error);
       console.error("Finish interview error:", error?.message || error);
+      const msg = error.response?.data?.message || "Failed to finalize interview. Please check your connection and retry.";
+      setFinishError(msg);
+      toast.error(msg);
+    } finally {
+      setIsFinishing(false);
     }
   };
 
@@ -1174,6 +1182,7 @@ p-6
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={handleNext}
+                  disabled={isFinishing}
                   className="
 mt-6
 w-full
@@ -1186,13 +1195,28 @@ py-4
 font-semibold
 text-white
 shadow-[0_0_30px_rgba(59,130,246,.30)]
+disabled:opacity-60
 "
                 >
-                  {currentIndex + 1 === questions.length
+                  {isFinishing
+                    ? "Finalizing Interview..."
+                    : currentIndex + 1 === questions.length
                     ? "Finish Interview"
                     : "Next Question"}
                 </motion.button>
 
+                {finishError && (
+                  <div className="mt-4 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-center">
+                    <p className="text-sm text-red-300 font-medium mb-2">{finishError}</p>
+                    <button
+                      onClick={finishInterview}
+                      disabled={isFinishing}
+                      className="px-4 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-white text-xs font-semibold transition"
+                    >
+                      {isFinishing ? "Retrying..." : "Retry Finishing Interview"}
+                    </button>
+                  </div>
+                )}
               </motion.div>
 
             )}

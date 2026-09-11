@@ -7,35 +7,48 @@ import { generateAptitudeQuestions } from "./aiQuestionGenerator.service.js";
 
 const difficultyName = (value) => String(value || "medium").toLowerCase();
 
+let isSeeded = false;
+
 export async function ensureSeedQuestions() {
-  const operations = localQuestions.map((item) => {
-    const category = item.category || categoryForTopic(item.topicId) || "quantitative";
-    return {
-      updateOne: {
-        filter: { sourceId: item.id },
-        update: {
-          $set: {
-            sourceId: item.id,
-            category,
-            topic: item.topicId,
-            question: item.question,
-            options: item.options.map((text, index) => ({ key: String.fromCharCode(65 + index), text })),
-            correctOptionKey: String.fromCharCode(65 + item.correctAnswer),
-            explanation: item.explanation || "",
-            difficulty: difficultyName(item.difficulty),
-            marks: 1,
-            negativeMarks: 0.25,
-            active: true,
-            tags: item.tags || [],
-            source: "local-seed",
-            estimatedTimeSeconds: 60,
+  if (isSeeded) return;
+  try {
+    const existingCount = await AptitudeQuestion.countDocuments({ source: "local-seed" });
+    if (existingCount >= localQuestions.length) {
+      isSeeded = true;
+      return;
+    }
+    const operations = localQuestions.map((item) => {
+      const category = item.category || categoryForTopic(item.topicId) || "quantitative";
+      return {
+        updateOne: {
+          filter: { sourceId: item.id },
+          update: {
+            $set: {
+              sourceId: item.id,
+              category,
+              topic: item.topicId,
+              question: item.question,
+              options: item.options.map((text, index) => ({ key: String.fromCharCode(65 + index), text })),
+              correctOptionKey: String.fromCharCode(65 + item.correctAnswer),
+              explanation: item.explanation || "",
+              difficulty: difficultyName(item.difficulty),
+              marks: 1,
+              negativeMarks: 0.25,
+              active: true,
+              tags: item.tags || [],
+              source: "local-seed",
+              estimatedTimeSeconds: 60,
+            },
           },
+          upsert: true,
         },
-        upsert: true,
-      },
-    };
-  });
-  if (operations.length) await AptitudeQuestion.bulkWrite(operations, { ordered: false });
+      };
+    });
+    if (operations.length) await AptitudeQuestion.bulkWrite(operations, { ordered: false });
+    isSeeded = true;
+  } catch (err) {
+    console.error("[ensureSeedQuestions] Error seeding aptitude questions:", err.message);
+  }
 }
 
 export async function listCategories(userId) {

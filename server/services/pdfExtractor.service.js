@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
+import { hasPdfMagicBytes } from "../utils/pdfValidator.js";
 
 const resumeUploadPath = path.resolve("uploads", "resumes");
 
@@ -39,6 +40,12 @@ export const extractTextFromPdf = async (uploadId) => {
     } catch (fsError) {
       const error = new Error("Unable to read the uploaded PDF file.");
       error.status = 500;
+      throw error;
+    }
+
+    if (!hasPdfMagicBytes(fileBuffer)) {
+      const error = new Error("Invalid file content: Not a valid PDF document (magic byte signature mismatch).");
+      error.status = 400;
       throw error;
     }
 

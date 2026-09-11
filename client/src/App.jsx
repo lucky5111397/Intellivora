@@ -1,31 +1,38 @@
-import React, { useEffect } from "react";
+import React, { useEffect, Suspense, lazy } from "react";
 import { Route, Routes } from "react-router-dom";
 import Home from "./pages/home";
 import Auth from "./pages/Auth";
 import axios from "axios";
-import InterviewPage from "./pages/InterviewPage";
 import { useDispatch } from "react-redux";
 import { setUserData } from "./redux/userSlice";
-import Pricing from "./pages/Pricing";
-import InterviewReport from "./pages/InterviewReport";
-import InterviewHistory from "./pages/InterviewHistory";
-import Resume from "./pages/Resume";
-import Aptitude from "./pages/Aptitude";
-import AptitudeDashboard from "./aptitude/pages/AptitudeDashboard";
-import TopicSelection from "./aptitude/pages/TopicSelection";
-import TestSetup from "./aptitude/pages/TestSetup";
-import TestScreen from "./aptitude/pages/TestScreen";
-import AptitudeResult from "./aptitude/pages/AptitudeResult";
-import GD from "./pages/GD";
-import GDOverview from "./gd/pages/GDOverview";
-import GDSetup from "./gd/pages/GDSetup";
-import GDLobby from "./gd/pages/GDLobby";
-import GDRoom from "./gd/pages/GDRoom";
-import GDAnalysis from "./gd/pages/GDAnalysis";
 import { auth } from "./utils/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
+const InterviewPage = lazy(() => import("./pages/InterviewPage"));
+const Pricing = lazy(() => import("./pages/Pricing"));
+const InterviewReport = lazy(() => import("./pages/InterviewReport"));
+const InterviewHistory = lazy(() => import("./pages/InterviewHistory"));
+const Resume = lazy(() => import("./pages/Resume"));
+const Aptitude = lazy(() => import("./pages/Aptitude"));
+const AptitudeDashboard = lazy(() => import("./aptitude/pages/AptitudeDashboard"));
+const TopicSelection = lazy(() => import("./aptitude/pages/TopicSelection"));
+const TestSetup = lazy(() => import("./aptitude/pages/TestSetup"));
+const TestScreen = lazy(() => import("./aptitude/pages/TestScreen"));
+const AptitudeResult = lazy(() => import("./aptitude/pages/AptitudeResult"));
+const GD = lazy(() => import("./pages/GD"));
+const GDOverview = lazy(() => import("./gd/pages/GDOverview"));
+const GDSetup = lazy(() => import("./gd/pages/GDSetup"));
+const GDLobby = lazy(() => import("./gd/pages/GDLobby"));
+const GDRoom = lazy(() => import("./gd/pages/GDRoom"));
+const GDAnalysis = lazy(() => import("./gd/pages/GDAnalysis"));
+
 export const ServerUrl = import.meta.env.VITE_SERVER_URL;
+
+const PageLoader = () => (
+  <div className="min-h-screen bg-[#070b14] flex items-center justify-center">
+    <div className="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+  </div>
+);
 
 function App() {
   const dispatch = useDispatch();
@@ -53,30 +60,32 @@ function App() {
   }, [dispatch]);
 
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/auth" element={<Auth />} />
-      <Route path="/interview" element={<InterviewPage />} />
-      <Route path="/history" element={<InterviewHistory />} />
-      <Route path="/pricing" element={<Pricing />} />
-      <Route path="/resume" element={<Resume />} />
-      <Route path="/aptitude" element={<Aptitude />}>
-        <Route index element={<AptitudeDashboard />} />
-        <Route path="topics" element={<TopicSelection />} />
-        <Route path="setup" element={<TestSetup />} />
-        <Route path="test" element={<TestScreen />} />
-        <Route path="result" element={<AptitudeResult />} />
-        <Route path="result/:attemptId" element={<AptitudeResult />} />
-      </Route>
-      <Route path="/gd" element={<GD />}>
-        <Route index element={<GDOverview />} />
-        <Route path="setup" element={<GDSetup />} />
-        <Route path="lobby/:id" element={<GDLobby />} />
-        <Route path="room/:id" element={<GDRoom />} />
-        <Route path="analysis/:id" element={<GDAnalysis />} />
-      </Route>
-      <Route path="/report/:id" element={<InterviewReport />} />
-    </Routes>
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/interview" element={<InterviewPage />} />
+        <Route path="/history" element={<InterviewHistory />} />
+        <Route path="/pricing" element={<Pricing />} />
+        <Route path="/resume" element={<Resume />} />
+        <Route path="/aptitude" element={<Aptitude />}>
+          <Route index element={<AptitudeDashboard />} />
+          <Route path="topics" element={<TopicSelection />} />
+          <Route path="setup" element={<TestSetup />} />
+          <Route path="test" element={<TestScreen />} />
+          <Route path="result" element={<AptitudeResult />} />
+          <Route path="result/:attemptId" element={<AptitudeResult />} />
+        </Route>
+        <Route path="/gd" element={<GD />}>
+          <Route index element={<GDOverview />} />
+          <Route path="setup" element={<GDSetup />} />
+          <Route path="lobby/:id" element={<GDLobby />} />
+          <Route path="room/:id" element={<GDRoom />} />
+          <Route path="analysis/:id" element={<GDAnalysis />} />
+        </Route>
+        <Route path="/report/:id" element={<InterviewReport />} />
+      </Routes>
+    </Suspense>
   );
 }
 

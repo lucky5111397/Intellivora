@@ -10,9 +10,18 @@ export const getUnifiedHistory = async (req, res) => {
     const userId = req.userId;
 
     const [interviews, aptitudeAttempts, gdSessions] = await Promise.all([
-      Interview.find({ userId }).sort({ createdAt: -1 }).lean(),
-      AptitudeAttempt.find({ userId, status: { $in: ["submitted", "expired"] } }).sort({ createdAt: -1 }).lean(),
-      GDSession.find({ userId, status: "completed" }).sort({ createdAt: -1 }).lean(),
+      Interview.find({ userId })
+        .select("_id role experience mode finalScore status createdAt")
+        .sort({ createdAt: -1 })
+        .lean(),
+      AptitudeAttempt.find({ userId, status: { $in: ["submitted", "expired"] } })
+        .select("_id category topic difficulty score totalMarks accuracy correctCount incorrectCount skippedCount timeTakenSeconds status createdAt")
+        .sort({ createdAt: -1 })
+        .lean(),
+      GDSession.find({ userId, status: "completed" })
+        .select("_id topic category difficulty durationMinutes evaluation.overallScore status createdAt")
+        .sort({ createdAt: -1 })
+        .lean(),
     ]);
 
     const normalizedInterviews = interviews.map((item) => ({

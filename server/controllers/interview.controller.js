@@ -4,6 +4,8 @@ import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 import { askAI } from "../services/openRouter.service.js";
 import Interview from "../models/interview.model.js";
 import User from "../models/user.model.js";
+import { cleanAndParseJson } from "../utils/jsonParser.js";
+import { hasPdfMagicBytes } from "../utils/pdfValidator.js";
 
 export const analyzeResume = async (req, res) => {
   const filepath = req.file?.path;
@@ -16,6 +18,14 @@ export const analyzeResume = async (req, res) => {
     }
 
     const fileBuffer = await fs.promises.readFile(filepath);
+
+    if (!hasPdfMagicBytes(fileBuffer)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid file content: File is not a valid PDF document (magic bytes signature mismatch).",
+      });
+    }
+
     const uint8Array = new Uint8Array(fileBuffer);
 
     const pdf = await pdfjsLib.getDocument({
@@ -55,11 +65,12 @@ export const analyzeResume = async (req, res) => {
     ];
 
     const aiResponse = await askAI(messages);
-    const cleanedAi = (aiResponse || "")
-      .replace(/^```(?:json)?\s*/im, "")
-      .replace(/\s*```$/im, "")
-      .trim();
-    const parsed = JSON.parse(cleanedAi);
+    const parsed = cleanAndParseJson(aiResponse, {
+      role: "Software Engineer",
+      experience: "Mid Level",
+      projects: [],
+      skills: [],
+    });
 
     return res.json({
       role: parsed.role,
@@ -87,6 +98,9 @@ export const analyzeResume = async (req, res) => {
 
 export const generateQuestion = async (req, res) => {
   let questionsArray = [];
+  let creditDeducted = false;
+  let deductedCredits = 0;
+
   try {
     let {
       role,
@@ -109,20 +123,19 @@ export const generateQuestion = async (req, res) => {
     };
 
     const selectedPlan = planConfig[interviewPlan] || planConfig.medium;
+    deductedCredits = selectedPlan.credits;
 
     if (!role || !experience || !mode) {
       return res.status(400).json({ success: false, message: "Role, Experience, and Mode are required." });
     }
 
-    const user = await User.findById(req.userId);
-    if (!user) {
-      return res.status(404).json({ success: false, message: "User not found." });
-    }
-
-    if (user.credits < selectedPlan.credits) {
+    // Pre-check credit sufficiency
+    const userPreCheck = await User.findById(req.userId).select("credits");
+    if (!userPreCheck || userPreCheck.credits < selectedPlan.credits) {
       return res.status(400).json({
         success: false,
         message: `Not enough credits. ${selectedPlan.credits} credits required.`,
+        creditsLeft: userPreCheck?.credits ?? 0,
       });
     }
 
@@ -177,11 +190,26 @@ Rules:
       return res.status(500).json({ success: false, message: "AI failed to generate valid questions." });
     }
 
-    user.credits -= selectedPlan.credits;
-    await user.save();
+    // Atomic credit check and deduction to eliminate double-spend race conditions
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: req.userId, credits: { $gte: selectedPlan.credits } },
+      { $inc: { credits: -selectedPlan.credits } },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      const user = await User.findById(req.userId).select("credits");
+      return res.status(400).json({
+        success: false,
+        message: `Not enough credits. ${selectedPlan.credits} credits required.`,
+        creditsLeft: user?.credits ?? 0,
+      });
+    }
+
+    creditDeducted = true;
 
     const interview = await Interview.create({
-      userId: user._id,
+      userId: updatedUser._id,
       role,
       experience,
       mode,
@@ -211,11 +239,23 @@ Rules:
 
     return res.json({
       interviewId: interview._id,
-      creditsLeft: user.credits,
-      userName: user.name,
+      creditsLeft: updatedUser.credits,
+      userName: updatedUser.name,
       questions: interview.questions,
     });
   } catch (error) {
+    // Compensating rollback: restore credits if deducted but interview creation failed
+    if (creditDeducted && deductedCredits > 0) {
+      try {
+        await User.findByIdAndUpdate(req.userId, {
+          $inc: { credits: deductedCredits },
+        });
+        console.log(`[Interview] Compensating refund of ${deductedCredits} credits executed for user ${req.userId}`);
+      } catch (refundErr) {
+        console.error("[Interview] Credit rollback failed:", refundErr.message);
+      }
+    }
+
     console.error("[Interview] generateQuestion error:", error.message);
     return res.status(500).json({
       success: false,
@@ -288,17 +328,19 @@ Return ONLY valid JSON:
     ];
 
     const aiResponse = await askAI(messages);
-    const cleanedAi = (aiResponse || "")
-      .replace(/^```(?:json)?\s*/im, "")
-      .replace(/\s*```$/im, "")
-      .trim();
-    const parsed = JSON.parse(cleanedAi);
+    const parsed = cleanAndParseJson(aiResponse, {
+      confidence: 7,
+      communication: 7,
+      correctness: 7,
+      finalScore: 7,
+      feedback: "Answer evaluated.",
+    });
 
     question.answer = answer;
-    question.confidence = parsed.confidence || 0;
-    question.communication = parsed.communication || 0;
-    question.correctness = parsed.correctness || 0;
-    question.score = parsed.finalScore || 0;
+    question.confidence = typeof parsed.confidence === "number" ? parsed.confidence : 7;
+    question.communication = typeof parsed.communication === "number" ? parsed.communication : 7;
+    question.correctness = typeof parsed.correctness === "number" ? parsed.correctness : 7;
+    question.score = typeof parsed.finalScore === "number" ? parsed.finalScore : 7;
     question.feedback = parsed.feedback || "Answer evaluated.";
 
     await interview.save();
@@ -447,3 +489,41 @@ export const deleteInterview = async (req, res) => {
     return res.status(500).json({ success: false, message: "Failed to delete interview." });
   }
 };
+
+export const getInterviewById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: "Invalid interview ID format." });
+    }
+
+    const interview = await Interview.findOne({
+      _id: id,
+      userId: req.userId,
+    });
+
+    if (!interview) {
+      return res.status(404).json({ success: false, message: "Interview not found." });
+    }
+
+    const user = await User.findById(req.userId).select("name credits");
+
+    return res.status(200).json({
+      interviewId: interview._id,
+      role: interview.role,
+      experience: interview.experience,
+      mode: interview.mode,
+      interviewPlan: interview.interviewPlan,
+      status: interview.status,
+      finalScore: interview.finalScore,
+      questions: interview.questions,
+      creditsLeft: user?.credits || 0,
+      userName: user?.name || "Candidate",
+    });
+  } catch (error) {
+    console.error("[Interview] getInterviewById error:", error.message);
+    return res.status(500).json({ success: false, message: "Failed to fetch interview." });
+  }
+};
+

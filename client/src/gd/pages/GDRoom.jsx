@@ -57,6 +57,7 @@ export default function GDRoom() {
     startListening,
     stopListening,
     resetTranscript,
+    isSupported: isSpeechSupported,
   } = useSpeechRecognition();
 
   const {
@@ -73,6 +74,7 @@ export default function GDRoom() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [candidateSpeakingSeconds, setCandidateSpeakingSeconds] = useState(0);
   const [interruptedPrevious, setInterruptedPrevious] = useState(false);
+  const [openingFailed, setOpeningFailed] = useState(false);
 
   // Refs for tracking and cleanup
   const spokenTurnsRef = useRef(new Set());
@@ -121,19 +123,27 @@ export default function GDRoom() {
   }, [startMedia, stopMedia, cancelSpeech, stopListening]);
 
   // 3. Auto-Trigger Opening Statement when room initializes with empty transcript
+  const triggerOpeningTurn = useCallback(() => {
+    setOpeningFailed(false);
+    initialOpeningRequestedRef.current = true;
+    requestAgentTurn().catch((err) => {
+      console.error("[GDRoom] Initial opening statement request failed:", err);
+      initialOpeningRequestedRef.current = false;
+      setOpeningFailed(true);
+    });
+  }, [requestAgentTurn]);
+
   useEffect(() => {
     if (
       session &&
       session.status === "in_progress" &&
       transcript.length === 0 &&
-      !initialOpeningRequestedRef.current
+      !initialOpeningRequestedRef.current &&
+      !openingFailed
     ) {
-      initialOpeningRequestedRef.current = true;
-      requestAgentTurn().catch((err) => {
-        console.error("[GDRoom] Initial opening statement request failed:", err);
-      });
+      triggerOpeningTurn();
     }
-  }, [session, transcript.length, requestAgentTurn]);
+  }, [session, transcript.length, triggerOpeningTurn, openingFailed]);
 
   // 4. TTS Enqueue for incoming AI turns
   useEffect(() => {
@@ -398,22 +408,33 @@ export default function GDRoom() {
         </div>
       </header>
 
-      {/* Global Error Banner */}
-      {error && (
-        <div className="mx-4 sm:mx-6 mt-3 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center justify-between">
+      {/* Speech API Unsupported Notice */}
+      {!isSpeechSupported && (
+        <div className="mx-4 sm:mx-6 mt-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+          <span>
+            Speech recognition is not supported in this browser. You can still participate in the discussion by typing in the argument input box below.
+          </span>
+        </div>
+      )}
+
+      {/* Opening Statement Recovery Banner */}
+      {openingFailed && transcript.length === 0 && (
+        <div className="mx-4 sm:mx-6 mt-3 p-3 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-200 text-xs flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-            <span>{error}</span>
+            <AlertCircle className="w-4 h-4 text-indigo-400 shrink-0" />
+            <span>The AI orchestrator experienced a temporary delay starting the discussion.</span>
           </div>
           <button
             type="button"
-            onClick={clearError}
-            className="text-xs underline hover:text-white"
+            onClick={triggerOpeningTurn}
+            className="px-3 py-1 bg-indigo-500/30 hover:bg-indigo-500/40 text-white rounded-lg font-semibold transition"
           >
-            Dismiss
+            Retry Opening Statement
           </button>
         </div>
       )}
+
 
       {/* ========================================================
           2. VIRTUAL TELEPRESENCE STAGE GRID (4 Participant Tiles)

@@ -1,5 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
+import mongoose from "mongoose";
 import connectDb from "./config/connectDb.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -13,6 +14,13 @@ import aptitudeRouter from "./Routes/aptitude.route.js";
 import historyRouter from "./Routes/history.route.js";
 import gdRouter from "./Routes/gd.route.js";
 import errorHandler from "./middlewares/errorHandler.js";
+import securityHeaders from "./middlewares/securityHeaders.js";
+import {
+  generalLimiter,
+  authLimiter,
+  paymentLimiter,
+  aiLimiter,
+} from "./middlewares/rateLimiter.js";
 
 dotenv.config();
 
@@ -46,16 +54,26 @@ const corsOptions = {
 };
 
 // CRITICAL: Apply CORS middleware globally BEFORE any routes
-// cors middleware automatically handles OPTIONS preflight requests
-// No need for explicit app.options() in Express 5
 app.use(cors(corsOptions));
+
+// Security headers (OWASP protection against MIME sniffing, clickjacking, etc.)
+app.use(securityHeaders);
+
+// Global rate limiting
+app.use(generalLimiter);
 
 app.use(express.json());
 app.use(cookieParser());
 
-// Health check endpoint (for monitoring)
+// Health check endpoint (verifies MongoDB database readiness)
 app.get("/health", (req, res) => {
-  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+  const isDbReady = mongoose.connection.readyState === 1;
+  const status = isDbReady ? 200 : 503;
+  res.status(status).json({
+    status: isDbReady ? "ok" : "degraded",
+    database: isDbReady ? "connected" : "disconnected",
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // Log environment
@@ -63,14 +81,14 @@ console.log("[SERVER] Allowed CORS Origins:", allowedOrigins);
 console.log("[SERVER] NODE_ENV:", process.env.NODE_ENV);
 console.log("[SERVER] CLIENT_URL from env:", process.env.CLIENT_URL);
 
-app.use("/api/auth", authRouter);
+app.use("/api/auth", authLimiter, authRouter);
 app.use("/api/user", userRouter);
-app.use("/api/interview", interviewRouter);
-app.use("/api/payment", paymentRouter);
+app.use("/api/interview", aiLimiter, interviewRouter);
+app.use("/api/payment", paymentLimiter, paymentRouter);
 app.use("/api/resume", resumeRouter);
 app.use("/api/aptitude", aptitudeRouter);
 app.use("/api/history", historyRouter);
-app.use("/api/gd", gdRouter);
+app.use("/api/gd", aiLimiter, gdRouter);
 
 app.use(errorHandler);
 

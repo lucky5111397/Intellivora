@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useReducer, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useReducer, useCallback, useMemo } from 'react';
 import {
   getAptitudeProgress,
   getAptitudeCategories,
@@ -363,20 +363,36 @@ export function AptitudeProvider({ children }) {
     fetchProgress();
   }, [fetchCategories, fetchProgress]);
 
-  const value = {
-    state,
-    dispatch,
-    startTest,
-    selectAnswer,
-    clearAnswer,
-    toggleReview,
-    submitTest,
-    fetchProgress,
-    fetchCategories,
-    fetchResult,
-    recoverActiveTest,
-    resetTest,
-  };
+  const value = useMemo(
+    () => ({
+      state,
+      dispatch,
+      startTest,
+      selectAnswer,
+      clearAnswer,
+      toggleReview,
+      submitTest,
+      fetchProgress,
+      fetchCategories,
+      fetchResult,
+      recoverActiveTest,
+      resetTest,
+    }),
+    [
+      state,
+      dispatch,
+      startTest,
+      selectAnswer,
+      clearAnswer,
+      toggleReview,
+      submitTest,
+      fetchProgress,
+      fetchCategories,
+      fetchResult,
+      recoverActiveTest,
+      resetTest,
+    ]
+  );
 
   return <AptitudeContext.Provider value={value}>{children}</AptitudeContext.Provider>;
 }

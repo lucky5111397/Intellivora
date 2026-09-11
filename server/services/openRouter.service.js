@@ -27,7 +27,7 @@ export const askAI = async (messages) => {
             Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
             "Content-Type": "application/json",
           },
-          timeout: 25000,
+          timeout: 12000,
         }
       );
 

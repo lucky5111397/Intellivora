@@ -232,6 +232,7 @@ export const getSession = async (req, res, next) => {
 export const getOverview = async (req, res, next) => {
   try {
     const sessions = await GDSession.find({ userId: req.userId })
+      .select("status evaluation.overallScore evaluation.breakdown topic category difficulty durationMinutes createdAt")
       .sort({ createdAt: -1 })
       .lean();
 
@@ -733,25 +734,27 @@ export const completeSession = async (req, res, next) => {
       });
     }
 
-    // Merge client-side final telemetry if provided
+    // Merge client-side final telemetry if provided with authoritative bounds
     if (req.body?.finalTelemetry && typeof req.body.finalTelemetry === "object") {
       const ft = req.body.finalTelemetry;
-      if (typeof ft.candidateSpeakingTimeSeconds === "number") {
-        session.telemetry.candidateSpeakingTimeSeconds = Math.max(
-          session.telemetry.candidateSpeakingTimeSeconds,
-          ft.candidateSpeakingTimeSeconds
+      const maxAllowedSeconds = (session.durationMinutes || 10) * 60 + 120; // duration limit + buffer
+
+      if (typeof ft.candidateSpeakingTimeSeconds === "number" && ft.candidateSpeakingTimeSeconds >= 0) {
+        session.telemetry.candidateSpeakingTimeSeconds = Math.min(
+          maxAllowedSeconds,
+          Math.max(session.telemetry.candidateSpeakingTimeSeconds, ft.candidateSpeakingTimeSeconds)
         );
       }
-      if (typeof ft.interruptionsCount === "number") {
-        session.telemetry.interruptionsCount = Math.max(
-          session.telemetry.interruptionsCount,
-          ft.interruptionsCount
+      if (typeof ft.interruptionsCount === "number" && ft.interruptionsCount >= 0) {
+        session.telemetry.interruptionsCount = Math.min(
+          50,
+          Math.max(session.telemetry.interruptionsCount, ft.interruptionsCount)
         );
       }
-      if (typeof ft.totalSessionDurationSeconds === "number") {
-        session.telemetry.totalSessionDurationSeconds = Math.max(
-          session.telemetry.totalSessionDurationSeconds,
-          ft.totalSessionDurationSeconds
+      if (typeof ft.totalSessionDurationSeconds === "number" && ft.totalSessionDurationSeconds >= 0) {
+        session.telemetry.totalSessionDurationSeconds = Math.min(
+          maxAllowedSeconds,
+          Math.max(session.telemetry.totalSessionDurationSeconds, ft.totalSessionDurationSeconds)
         );
       }
     }
@@ -828,29 +831,60 @@ export const abortSession = async (req, res, next) => {
       return res.status(200).json({
         success: true,
         status: "aborted",
-        refunded: session.refunded,
+        refunded: Boolean(session.refunded),
         message: "Session is already aborted.",
       });
     }
 
     // Automatic refund rule:
     // If candidate has 0 turns and session was not previously refunded
-    let refunded = false;
-    if (
+    const candidateTurns = session.telemetry?.candidateTurnCount ?? 0;
+    const shouldRefund =
       !session.refunded &&
       session.creditsDeducted > 0 &&
-      (session.telemetry.candidateTurnCount === 0 || !session.telemetry.candidateTurnCount)
-    ) {
-      await User.findByIdAndUpdate(session.userId, {
-        $inc: { credits: session.creditsDeducted },
-      });
-      session.refunded = true;
-      refunded = true;
-    }
+      candidateTurns === 0;
 
-    session.status = "aborted";
-    session.activeSpeakerId = null;
-    await session.save();
+    let refunded = false;
+
+    if (shouldRefund) {
+      // Atomic CAS to prevent concurrent double-refund races
+      const updated = await GDSession.findOneAndUpdate(
+        {
+          _id: id,
+          status: { $ne: "completed" },
+          refunded: { $ne: true },
+        },
+        {
+          $set: {
+            refunded: true,
+            status: "aborted",
+            activeSpeakerId: null,
+          },
+        },
+        { new: true }
+      );
+
+      if (updated) {
+        // Only the single atomic winner refunds the user
+        await User.findByIdAndUpdate(session.userId, {
+          $inc: { credits: session.creditsDeducted },
+        });
+        refunded = true;
+      } else {
+        const latest = await GDSession.findById(id);
+        refunded = Boolean(latest?.refunded);
+      }
+    } else {
+      await GDSession.findOneAndUpdate(
+        { _id: id, status: { $ne: "completed" } },
+        {
+          $set: {
+            status: "aborted",
+            activeSpeakerId: null,
+          },
+        }
+      );
+    }
 
     return res.status(200).json({
       success: true,

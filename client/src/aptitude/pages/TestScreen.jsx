@@ -21,6 +21,7 @@ export default function TestScreen() {
 
   const [timeLeft, setTimeLeft] = useState(state.timeLimit);
   const [showSubmit, setShowSubmit] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [visited, setVisited] = useState([0]);
   const [recovering, setRecovering] = useState(false);
@@ -44,17 +45,19 @@ export default function TestScreen() {
     return () => {
       active = false;
     };
-  }, []); // Run on mount only
+  }, [questions.length, recoverActiveTest, navigate]);
 
   // Submit test handler
   const handleSubmit = useCallback(async () => {
     if (state.isSubmitting) return;
+    setSubmitError(null);
     const res = await submitTest();
-    if (res.success && res.result?.attemptId) {
+    if (res?.success && res.result?.attemptId) {
       navigate(`/aptitude/result/${res.result.attemptId}`);
     } else {
-      // If error or already submitted
-      navigate('/aptitude');
+      const errMsg = res?.message || 'Submission failed. Please check your network and retry.';
+      setSubmitError(errMsg);
+      setShowSubmit(true);
     }
   }, [state.isSubmitting, submitTest, navigate]);
 
@@ -365,6 +368,12 @@ export default function TestScreen() {
               )}
             </p>
 
+            {submitError && (
+              <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs leading-relaxed font-medium">
+                {submitError}
+              </div>
+            )}
+
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => setShowSubmit(false)}
@@ -377,7 +386,7 @@ export default function TestScreen() {
                 onClick={handleSubmit}
                 className="flex-1 bg-apt-primary-ctr hover:bg-opacity-90 text-white py-2.5 rounded-xl font-bold text-sm shadow-lg disabled:opacity-50 cursor-pointer transition-all"
               >
-                {state.isSubmitting ? 'Evaluating...' : 'Confirm Submit'}
+                {state.isSubmitting ? 'Evaluating...' : submitError ? 'Retry Submit' : 'Confirm Submit'}
               </button>
             </div>
           </div>

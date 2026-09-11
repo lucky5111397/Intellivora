@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useReducer, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useReducer, useCallback, useMemo } from "react";
 import {
   getGDOverview,
   createGDSession,
@@ -288,20 +288,36 @@ export const GDProvider = ({ children }) => {
     }
   }, [state.sessionId, loadSession]);
 
-  const value = {
-    ...state,
-    fetchOverview,
-    initSession,
-    loadSession,
-    enterRoom,
-    sendCandidateSpeech,
-    requestAgentTurn,
-    finishSession,
-    abandonSession,
-    updateTelemetry,
-    clearError,
-    resetSession,
-  };
+  const value = useMemo(
+    () => ({
+      ...state,
+      fetchOverview,
+      initSession,
+      loadSession,
+      enterRoom,
+      sendCandidateSpeech,
+      requestAgentTurn,
+      finishSession,
+      abandonSession,
+      updateTelemetry,
+      clearError,
+      resetSession,
+    }),
+    [
+      state,
+      fetchOverview,
+      initSession,
+      loadSession,
+      enterRoom,
+      sendCandidateSpeech,
+      requestAgentTurn,
+      finishSession,
+      abandonSession,
+      updateTelemetry,
+      clearError,
+      resetSession,
+    ]
+  );
 
   return <GDContext.Provider value={value}>{children}</GDContext.Provider>;
 };
