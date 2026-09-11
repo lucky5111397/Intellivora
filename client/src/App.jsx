@@ -17,9 +17,9 @@ import TestSetup from "./aptitude/pages/TestSetup";
 import TestScreen from "./aptitude/pages/TestScreen";
 import AptitudeResult from "./aptitude/pages/AptitudeResult";
 import GD from "./pages/GD";
+import GDOverview from "./gd/pages/GDOverview";
+import GDSetup from "./gd/pages/GDSetup";
 import {
-  GDOverviewPlaceholder,
-  GDSetupPlaceholder,
   GDLobbyPlaceholder,
   GDRoomPlaceholder,
   GDAnalysisPlaceholder,
@@ -71,8 +71,8 @@ function App() {
         <Route path="result/:attemptId" element={<AptitudeResult />} />
       </Route>
       <Route path="/gd" element={<GD />}>
-        <Route index element={<GDOverviewPlaceholder />} />
-        <Route path="setup" element={<GDSetupPlaceholder />} />
+        <Route index element={<GDOverview />} />
+        <Route path="setup" element={<GDSetup />} />
         <Route path="lobby/:id" element={<GDLobbyPlaceholder />} />
         <Route path="room/:id" element={<GDRoomPlaceholder />} />
         <Route path="analysis/:id" element={<GDAnalysisPlaceholder />} />
