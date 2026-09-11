@@ -74,7 +74,6 @@ Intellivora is a full-stack MERN application engineered to simulate realistic re
   - ATS Resume Analysis: 200 credits
   - Group Discussion: 150 credits
 - **Payment Gateway**: Seamless Razorpay checkout with cryptographically verified HMAC signatures, replay protection, and idempotent fulfillment.
-- **Razorpay Webhook Support**: Server-side webhook endpoint for asynchronous payment verification.
 
 ---
 
@@ -94,9 +93,7 @@ flowchart TD
         API[API Router /api/*]
         AuthMW[isAuth Middleware - JWT]
         ErrMW[Global Error Handler]
-        RateLim[Rate Limiter]
-        SecHeaders[Security Headers]
-
+        
         subgraph Controllers
             AC[auth.controller]
             IC[interview.controller]
@@ -108,7 +105,6 @@ flowchart TD
         end
 
         subgraph Services
-            FBAuth[firebaseAuth.service]
             GDOpt[gdOrchestrator.service]
             GDEval[gdEvaluation.service]
             AptSvc[aptitude.service]
@@ -127,15 +123,12 @@ flowchart TD
 
     UI --> API
     AudioEngine --> UI
-    API --> RateLim
-    RateLim --> SecHeaders
-    SecHeaders --> AuthMW
+    API --> AuthMW
     AuthMW --> Controllers
     Controllers --> Services
     Controllers --> ErrMW
 
-    AC --> FBAuth
-    FBAuth --> Firebase
+    AC --> Firebase
     Controllers --> Mongo
     RC --> PDFSvc
     GDC --> GDOpt
@@ -163,13 +156,12 @@ flowchart TD
 - **Runtime**: Node.js (ES Modules)
 - **Framework**: Express 5
 - **Database**: MongoDB with Mongoose 9
-- **Authentication**: Server-side Firebase ID token verification, JWT (JSON Web Tokens) with HTTP-only cookies, server-side email allowlist enforcement
-- **Security**: Rate limiting (auth, payment, AI endpoints), security headers (HSTS, X-Content-Type-Options, X-Frame-Options), production error masking
+- **Authentication**: JWT (JSON Web Tokens) with HTTP-only cookies, Firebase Client Auth
 - **AI Integrations**:
   - `@google/genai` (Google Gemini 2.5 Flash Lite)
   - OpenRouter API (Llama 3.3, Gemma 3, Nemotron, GPT-OSS)
-- **File & PDF Processing**: Multer, PDF.js (`pdfjs-dist`), magic byte validation
-- **Payments**: Razorpay Node SDK, Node Crypto (HMAC SHA-256), webhook verification
+- **File & PDF Processing**: Multer, PDF.js (`pdfjs-dist`)
+- **Payments**: Razorpay Node SDK, Node Crypto (HMAC SHA-256)
 
 ---
 
@@ -200,11 +192,10 @@ Intellivora/
 ├── server/                     # Backend REST API Server
 │   ├── config/                 # Database connection and environment bootstrap
 │   ├── controllers/            # Request handlers (auth, interview, aptitude, gd, payment)
-│   ├── middlewares/            # JWT authorization, file upload, rate limiting, security headers, error handling
+│   ├── middlewares/            # JWT authorization, file upload, error handling
 │   ├── models/                 # Mongoose schemas (User, Interview, GDSession, Payment)
 │   ├── Routes/                 # Express route definitions
-│   ├── services/               # AI orchestration, evaluation, PDF extraction, Firebase auth, Razorpay
-│   ├── utils/                  # PDF validator, resilient JSON parser
+│   ├── services/               # AI orchestration, evaluation, PDF extraction, Razorpay
 │   ├── tests/                  # Backend unit and integration test suite
 │   ├── index.js                # Server entry point, middleware stack, route mounting
 │   ├── .env.example            # Server environment configuration template
@@ -268,6 +259,7 @@ The GD simulator follows a state-machine lifecycle enforced by `GDSession` model
    VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
    VITE_FIREBASE_APP_ID=1:1234567890:web:abcdef123456
    VITE_RAZORPAY_KEY_ID=rzp_test_your_key_id
+   VITE_ALLOWED_EMAILS=user@example.com,admin@example.com
    ```
 
 2. **Server Configuration**:
@@ -285,9 +277,6 @@ The GD simulator follows a state-machine lifecycle enforced by `GDSession` model
    GEMINI_API_KEY=AIzaSyYourGeminiApiKey
    RAZORPAY_KEY_ID=rzp_test_your_key_id
    RAZORPAY_KEY_SECRET=your_razorpay_key_secret
-   RAZORPAY_WEBHOOK_SECRET=your_razorpay_webhook_secret
-   FIREBASE_PROJECT_ID=your-project-id
-   SERVER_ALLOWED_EMAILS=user@example.com,admin@example.com
    ```
 
 ### Starting the Application
@@ -320,7 +309,7 @@ Intellivora uses native Node.js test runners (`node --test`) for fast, zero-depe
 
 | Target | Command | Description |
 | :--- | :--- | :--- |
-| **Server Tests** | `cd server && node --test tests/*.test.js` | Runs production hardening, GD API, model validation, and orchestrator test suites |
+| **Server Tests** | `cd server && node --test tests/*.test.js` | Runs GD API, model validation, and orchestrator test suites |
 | **Client Tests** | `cd client && node --test tests/*.test.js` | Runs GD foundation, lobby, room, setup, and history tests |
 | **Client Lint** | `cd client && npm run lint` | Runs `oxlint` static code analysis |
 | **Production Build** | `cd client && npm run build` | Compiles production assets via `vite build` |
@@ -332,14 +321,7 @@ Intellivora uses native Node.js test runners (`node --test`) for fast, zero-depe
 
 - **Zero Secrets Committed**: All private API keys, JWT secrets, and database credentials are strictly isolated in `.env` files ignored by git.
 - **Safe Example Templates**: Both `client/.env.example` and `server/.env.example` provide comprehensive placeholder keys without exposing production secrets.
-- **Server-Side Firebase Token Verification**: ID tokens are verified against Google's public certificates using RS256 signature validation.
-- **Email Allowlist Enforcement**: Server-side allowlist (`SERVER_ALLOWED_EMAILS`) restricts access to authorized users.
-- **Rate Limiting**: Auth, payment, and AI endpoints are protected with sliding-window in-memory rate limiters.
-- **Security Headers**: Responses include `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, and `Strict-Transport-Security`.
-- **Production Error Masking**: 500 error messages and stack traces are masked in production to prevent information leakage.
 - **Timing-Safe HMAC Verification**: Razorpay payment verification uses `crypto.timingSafeEqual` to prevent side-channel timing attacks.
-- **Razorpay Webhook Verification**: Webhook endpoint validates HMAC signatures before processing payment events.
-- **PDF Magic Byte Validation**: Uploaded files are verified against the `%PDF` magic byte signature before processing.
 - **Automatic Temp File Disposal**: Uploaded resumes are temporarily processed on disk and guaranteed to be deleted via `fs.promises.unlink` within `finally` blocks.
 - **Strict CORS Policy**: The server restricts allowed origins to explicit frontend URLs and rejects unauthorized cross-origin requests.
 
