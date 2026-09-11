@@ -19,9 +19,9 @@ import AptitudeResult from "./aptitude/pages/AptitudeResult";
 import GD from "./pages/GD";
 import GDOverview from "./gd/pages/GDOverview";
 import GDSetup from "./gd/pages/GDSetup";
+import GDLobby from "./gd/pages/GDLobby";
+import GDRoom from "./gd/pages/GDRoom";
 import {
-  GDLobbyPlaceholder,
-  GDRoomPlaceholder,
   GDAnalysisPlaceholder,
 } from "./gd/pages/PlaceholderScreens";
 import { auth } from "./utils/firebase";
@@ -73,8 +73,8 @@ function App() {
       <Route path="/gd" element={<GD />}>
         <Route index element={<GDOverview />} />
         <Route path="setup" element={<GDSetup />} />
-        <Route path="lobby/:id" element={<GDLobbyPlaceholder />} />
-        <Route path="room/:id" element={<GDRoomPlaceholder />} />
+        <Route path="lobby/:id" element={<GDLobby />} />
+        <Route path="room/:id" element={<GDRoom />} />
         <Route path="analysis/:id" element={<GDAnalysisPlaceholder />} />
       </Route>
       <Route path="/report/:id" element={<InterviewReport />} />

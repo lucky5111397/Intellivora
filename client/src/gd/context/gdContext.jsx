@@ -115,21 +115,29 @@ export const GDProvider = ({ children }) => {
   // -------------------------------------------------------------
   // Lobby Ready -> Enter Room (Screen 3: Lobby)
   // -------------------------------------------------------------
-  const enterRoom = useCallback(async (id) => {
-    dispatch({ type: "SET_LOADING", payload: true });
-    try {
-      const response = await setGDLobbyReady(id);
-      if (response.data?.success) {
-        dispatch({ type: "SET_STATUS", payload: "in_progress" });
+  const enterRoom = useCallback(
+    async (id) => {
+      const targetId = id || state.sessionId;
+      if (!targetId) throw new Error("No session ID provided to enter room.");
+
+      dispatch({ type: "SET_LOADING", payload: true });
+      try {
+        const response = await setGDLobbyReady(targetId);
+        if (response.data?.session) {
+          dispatch({ type: "SET_SESSION", payload: response.data.session });
+        } else if (response.data?.success) {
+          dispatch({ type: "SET_STATUS", payload: "in_progress" });
+        }
+        dispatch({ type: "SET_LOADING", payload: false });
+        return response.data;
+      } catch (err) {
+        const msg = extractErrorMessage(err);
+        dispatch({ type: "SET_ERROR", payload: msg });
+        throw err;
       }
-      dispatch({ type: "SET_LOADING", payload: false });
-      return response.data;
-    } catch (err) {
-      const msg = extractErrorMessage(err);
-      dispatch({ type: "SET_ERROR", payload: msg });
-      throw err;
-    }
-  }, []);
+    },
+    [state.sessionId]
+  );
 
   // -------------------------------------------------------------
   // Submit Candidate Speech (Screen 4: Room)
@@ -254,6 +262,10 @@ export const GDProvider = ({ children }) => {
     }
   }, [state.sessionId]);
 
+  const updateTelemetry = useCallback((telemetryUpdate) => {
+    dispatch({ type: "UPDATE_TELEMETRY", payload: telemetryUpdate });
+  }, []);
+
   const clearError = useCallback(() => {
     dispatch({ type: "CLEAR_ERROR" });
   }, []);
@@ -286,6 +298,7 @@ export const GDProvider = ({ children }) => {
     requestAgentTurn,
     finishSession,
     abandonSession,
+    updateTelemetry,
     clearError,
     resetSession,
   };
