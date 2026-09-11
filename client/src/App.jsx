@@ -16,6 +16,14 @@ import TopicSelection from "./aptitude/pages/TopicSelection";
 import TestSetup from "./aptitude/pages/TestSetup";
 import TestScreen from "./aptitude/pages/TestScreen";
 import AptitudeResult from "./aptitude/pages/AptitudeResult";
+import GD from "./pages/GD";
+import {
+  GDOverviewPlaceholder,
+  GDSetupPlaceholder,
+  GDLobbyPlaceholder,
+  GDRoomPlaceholder,
+  GDAnalysisPlaceholder,
+} from "./gd/pages/PlaceholderScreens";
 import { auth } from "./utils/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
@@ -61,6 +69,13 @@ function App() {
         <Route path="test" element={<TestScreen />} />
         <Route path="result" element={<AptitudeResult />} />
         <Route path="result/:attemptId" element={<AptitudeResult />} />
+      </Route>
+      <Route path="/gd" element={<GD />}>
+        <Route index element={<GDOverviewPlaceholder />} />
+        <Route path="setup" element={<GDSetupPlaceholder />} />
+        <Route path="lobby/:id" element={<GDLobbyPlaceholder />} />
+        <Route path="room/:id" element={<GDRoomPlaceholder />} />
+        <Route path="analysis/:id" element={<GDAnalysisPlaceholder />} />
       </Route>
       <Route path="/report/:id" element={<InterviewReport />} />
     </Routes>
