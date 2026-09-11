@@ -21,9 +21,7 @@ import GDOverview from "./gd/pages/GDOverview";
 import GDSetup from "./gd/pages/GDSetup";
 import GDLobby from "./gd/pages/GDLobby";
 import GDRoom from "./gd/pages/GDRoom";
-import {
-  GDAnalysisPlaceholder,
-} from "./gd/pages/PlaceholderScreens";
+import GDAnalysis from "./gd/pages/GDAnalysis";
 import { auth } from "./utils/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
@@ -75,7 +73,7 @@ function App() {
         <Route path="setup" element={<GDSetup />} />
         <Route path="lobby/:id" element={<GDLobby />} />
         <Route path="room/:id" element={<GDRoom />} />
-        <Route path="analysis/:id" element={<GDAnalysisPlaceholder />} />
+        <Route path="analysis/:id" element={<GDAnalysis />} />
       </Route>
       <Route path="/report/:id" element={<InterviewReport />} />
     </Routes>
