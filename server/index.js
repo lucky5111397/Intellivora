@@ -11,6 +11,7 @@ import paymentRouter from "./Routes/payment.route.js";
 import resumeRouter from "./Routes/resume.route.js";
 import aptitudeRouter from "./Routes/aptitude.route.js";
 import historyRouter from "./Routes/history.route.js";
+import gdRouter from "./Routes/gd.route.js";
 import errorHandler from "./middlewares/errorHandler.js";
 
 dotenv.config();
@@ -69,6 +70,7 @@ app.use("/api/payment", paymentRouter);
 app.use("/api/resume", resumeRouter);
 app.use("/api/aptitude", aptitudeRouter);
 app.use("/api/history", historyRouter);
+app.use("/api/gd", gdRouter);
 
 app.use(errorHandler);
 
