@@ -178,7 +178,7 @@ describe("GD Analysis and Unified History Integration (GD-07)", () => {
     };
 
     it("should map all valid critique types to user-friendly titles", () => {
-      for (const [key, label] of Object.entries(CRITIQUE_MAP)) {
+      for (const [, label] of Object.entries(CRITIQUE_MAP)) {
         assert.ok(typeof label === "string" && label.length > 0);
       }
     });
