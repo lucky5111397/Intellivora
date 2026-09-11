@@ -142,8 +142,6 @@ function Step1SetUp({ onStart }) {
       console.log("Questions:", result.data.questions);
       console.log("InterviewId:", result.data.interviewId);
 
-      console.log("onStart chalne wala hai");
-
       if (userData) {
         dispatch(
           setUserData({
@@ -156,7 +154,6 @@ function Step1SetUp({ onStart }) {
       setLoading(false);
       toast.success("Interview is ready!");
       onStart(result.data);
-      console.log("onStart ho gaya");
     } catch (error) {
       console.log("Status:", error.response?.status);
       console.log("Response:", error.response?.data);

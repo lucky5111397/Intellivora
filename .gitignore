@@ -29,11 +29,32 @@ logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Coverage and test artifacts
+coverage/
+*.lcov
+.nyc_output/
+
+# Cache and build tools
+.cache/
+.parcel-cache/
+.turbo/
+.eslintcache
 
 # System and Editor
 .DS_Store
 Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
 .vscode/
 .idea/
 *.local
+*.swp
+*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
 

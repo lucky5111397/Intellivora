@@ -345,7 +345,7 @@ export function AptitudeProvider({ children }) {
         localStorage.removeItem(STORAGE_ACTIVE_ID);
         return null;
       }
-    } catch (_err) {
+    } catch {
       localStorage.removeItem(STORAGE_ACTIVE_ID);
       return null;
     }

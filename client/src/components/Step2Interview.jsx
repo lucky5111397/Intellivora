@@ -119,10 +119,10 @@ function Step2Interview({ interviewData, onFinish }) {
         setIsUserTurn(false);
 
         if (videoRef.current) {
-          // Video ko thoda aage se start karo
+          // Advance video playback past initial freeze frame
           videoRef.current.currentTime = 1;
 
-          // Agar autoplay block ho jaye to error na aaye
+          // Gracefully handle browser autoplay policy restrictions
           videoRef.current.play().catch(() => { });
         }
       };
@@ -187,8 +187,7 @@ function Step2Interview({ interviewData, onFinish }) {
 
         await speakText(currentQuestion.question);
 
-        // startMic ki zarurat nahi hai.
-        // speakText ke onend me already hai.
+        // Note: Microphone activation is handled automatically on utterance completion via speakText.onend
       }
     };
 
@@ -233,7 +232,7 @@ function Step2Interview({ interviewData, onFinish }) {
     } else {
       setAnswer("");
     }
-  }, [currentIndex]);
+  }, [currentIndex, interviewId]);
 
   useEffect(() => {
     const SpeechRecognition =
@@ -380,7 +379,7 @@ function Step2Interview({ interviewData, onFinish }) {
 
     const nextIndex = currentIndex + 1;
 
-    // Question aur timer ko turant update karo
+    // Advance question index and reset countdown timer
     setCurrentIndex(nextIndex);
     setTimeLeft(questions[nextIndex]?.timeLimit || 60);
   };
@@ -453,14 +452,14 @@ function Step2Interview({ interviewData, onFinish }) {
   }, []);
 
   useEffect(() => {
-    // Current page ko history me dubara push karo
+    // Intercept browser back navigation by trapping history state
     window.history.pushState(null, "", window.location.href);
 
     const handleBackButton = () => {
-      // Dobara current page push karo
+      // Re-trap history entry to prevent premature navigation
       window.history.pushState(null, "", window.location.href);
 
-      // Popup open karo
+      // Display exit confirmation dialog
       setShowExitDialog(true);
     };
 
@@ -516,7 +515,7 @@ function Step2Interview({ interviewData, onFinish }) {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Agar user textarea me type kar raha hai to ignore karo
+      // Ignore shortcut while user is actively typing in form inputs
       if (
         e.target.tagName === "TEXTAREA" ||
         e.target.tagName === "INPUT"
