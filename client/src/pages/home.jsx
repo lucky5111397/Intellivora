@@ -8,7 +8,7 @@ import {
   BsBarChart,
 } from "react-icons/bs";
 import { HiSparkles } from "react-icons/hi";
-import { ArrowRight, FileText, Clock, Calculator } from "lucide-react";
+import { ArrowRight, FileText, Clock, Calculator, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Footer from "../components/Footer";
 
@@ -106,6 +106,16 @@ shadow-[0_0_40px_rgba(59,130,246,0.20)]
               >
                 <ArrowRight size={18} className="text-white transition-transform duration-300 group-hover:translate-x-1" />
                 Start AI Interview
+              </motion.button>
+              <motion.button
+                type="button"
+                onClick={() => navigate("/gd")}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
+                className="group inline-flex h-14 w-full max-w-[260px] items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-[#0D9488] via-[#14B8A6] to-[#06B6D4] px-6 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:scale-[1.03] hover:shadow-2xl hover:shadow-[0_20px_60px_rgba(20,184,166,0.25)] cursor-pointer"
+              >
+                <Users size={18} className="text-white transition-transform duration-300 group-hover:scale-110" />
+                AI Group Discussion
               </motion.button>
               <motion.button
                 onClick={() => navigate("/resume")}
