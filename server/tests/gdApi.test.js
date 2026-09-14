@@ -506,6 +506,11 @@ describe("GD Backend REST API (Issue #10 / GD-03)", () => {
       ];
 
       mock.method(GDSession, "find", () => ({
+        select: () => ({
+          sort: () => ({
+            lean: async () => mockSessions,
+          }),
+        }),
         sort: () => ({
           lean: async () => mockSessions,
         }),
@@ -528,6 +533,11 @@ describe("GD Backend REST API (Issue #10 / GD-03)", () => {
 
     it("should handle user with zero sessions gracefully", async () => {
       mock.method(GDSession, "find", () => ({
+        select: () => ({
+          sort: () => ({
+            lean: async () => [],
+          }),
+        }),
         sort: () => ({
           lean: async () => [],
         }),
@@ -917,6 +927,12 @@ describe("GD Backend REST API (Issue #10 / GD-03)", () => {
       };
 
       mock.method(GDSession, "findById", async () => session);
+      mock.method(GDSession, "findOneAndUpdate", async () => {
+        session.status = "aborted";
+        session.refunded = true;
+        saved = true;
+        return session;
+      });
 
       const { req, res } = createMockReqRes({
         userId: testUserId.toString(),
@@ -959,6 +975,11 @@ describe("GD Backend REST API (Issue #10 / GD-03)", () => {
       };
 
       mock.method(GDSession, "findById", async () => session);
+      mock.method(GDSession, "findOneAndUpdate", async () => {
+        session.status = "aborted";
+        saved = true;
+        return session;
+      });
 
       const { req, res } = createMockReqRes({
         userId: testUserId.toString(),

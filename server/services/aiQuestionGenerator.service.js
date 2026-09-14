@@ -1,83 +1,34 @@
-import axios from "axios";
-import { GoogleGenAI } from "@google/genai";
+import { generateStructured } from "./aiGateway.service.js";
 import AptitudeQuestion from "../models/aptitudeQuestion.model.js";
 import { findCategory, findTopic } from "../config/aptitudeSyllabus.js";
 
-const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini";
-
-// Default free models for Tier 2 fallback chain
-export const DEFAULT_FREE_MODELS = [
-  "nvidia/nemotron-3-8b-instruct:free",
-  "meta-llama/llama-3.2-3b-instruct:free",
-  "meta-llama/llama-3.1-8b-instruct:free",
-  "google/gemma-2-9b-it:free",
-  "mistralai/mistral-7b-instruct:free",
-  "qwen/qwen-2.5-7b-instruct:free",
-];
-
-// Configurable free models list (comma-separated env variable)
-export function getOpenRouterFreeModels() {
-  if (process.env.OPENROUTER_FREE_MODELS) {
-    const list = process.env.OPENROUTER_FREE_MODELS.split(",")
-      .map((m) => m.trim())
-      .filter(Boolean);
-    if (list.length > 0) return list;
-  }
-  return DEFAULT_FREE_MODELS;
-}
-
-const GEMINI_MODEL = process.env.GEMINI_APTITUDE_MODEL || "gemini-2.5-flash";
-const AI_TIMEOUT_MS = 25000;
-
-// In-flight concurrency deduplication map
 const inFlightGenerations = new Map();
 
-/**
- * Categorizes an error into standardized reliability taxonomy:
- * 'timeout' | 'rate_limit' | 'provider_error' | 'invalid_json' | 'schema_error' | 'unavailable_model'
- */
-export function categorizeError(err) {
-  if (!err) return "provider_error";
-  const msg = (err.message || "").toLowerCase();
-  const status = err.response?.status || err.status;
-
-  if (err.code === "ECONNABORTED" || err.name === "AbortError" || msg.includes("timeout") || msg.includes("timed out")) {
-    return "timeout";
-  }
-  if (status === 429 || msg.includes("rate limit") || msg.includes("quota")) {
-    return "rate_limit";
-  }
-  if (status === 404 || msg.includes("not found") || msg.includes("model unavailable") || msg.includes("deprecated")) {
-    return "unavailable_model";
-  }
-  if (err instanceof SyntaxError || msg.includes("unexpected token") || msg.includes("json")) {
-    return "invalid_json";
-  }
-  if (msg.includes("schema") || msg.includes("validation")) {
-    return "schema_error";
-  }
-  return "provider_error";
-}
+const isValidDifficulty = (difficulty) =>
+  ["easy", "medium", "hard"].includes(difficulty);
 
 function buildPrompt(categoryName, topicName, difficulty, count) {
-  return `You are a professional aptitude exam paper setter for competitive technical and corporate exams (like CAT, GATE, TCS NQT, Infosys, AMCAT, eLitmus).
+  return `You are a professional aptitude exam paper setter for competitive technical and corporate exams such as CAT, GATE, TCS NQT, Infosys, AMCAT, and eLitmus.
 
 Generate exactly ${count} multiple-choice questions for:
-- Domain/Category: "${categoryName}"
-- Topic: "${topicName}"
-- Difficulty Level: "${difficulty.toUpperCase()}" (strictly adhere to this difficulty)
+
+Domain/Category: "${categoryName}"
+Topic: "${topicName}"
+Difficulty Level: "${difficulty.toUpperCase()}"
 
 CRITICAL INSTRUCTIONS:
-1. Every question must have exactly 4 options labeled "A", "B", "C", and "D".
-2. Exactly one option must be strictly correct. Set "correctOptionKey" to "A", "B", "C", or "D".
-3. Provide a clear, comprehensive step-by-step "explanation" for why the correct option is right.
-4. For quantitative/reasoning questions, provide complete numerical and logical calculations in the explanation.
-5. All 4 options must be distinct and non-empty strings.
-6. The question text must be detailed, unambiguous, and self-contained.
-7. Ensure question originality; do not create trivial 1-line questions.
-8. Output ONLY valid JSON, absolutely no conversational text or preamble.
+1. Every question must have exactly 4 options labeled A, B, C, and D.
+2. Exactly one option must be strictly correct.
+3. Set "correctOptionKey" to "A", "B", "C", or "D".
+4. Provide a clear, comprehensive step-by-step explanation.
+5. For quantitative and reasoning questions, provide complete numerical and logical calculations.
+6. All 4 options must be distinct and non-empty strings.
+7. The question must be detailed, unambiguous, and self-contained.
+8. Questions must be original and non-trivial.
+9. Follow the requested difficulty level strictly.
+10. Output ONLY valid JSON. Do not include markdown, commentary, or a preamble.
 
-OUTPUT FORMAT (JSON ARRAY ONLY):
+OUTPUT FORMAT:
 [
   {
     "question": "Question statement here...",
@@ -89,162 +40,227 @@ OUTPUT FORMAT (JSON ARRAY ONLY):
     ],
     "correctOptionKey": "A",
     "explanation": "Detailed step-by-step reasoning...",
-    "difficulty": "${difficulty.toLowerCase()}"
+    "difficulty": "${difficulty}"
   }
 ]`;
 }
 
-/**
- * Validates a single question object against the strict aptitude schema.
- */
-export function isValidQuestion(q, expectedDifficulty) {
-  if (!q || typeof q !== "object") return false;
-  if (!q.question || typeof q.question !== "string" || q.question.trim().length < 10) return false;
-
-  if (!Array.isArray(q.options) || q.options.length !== 4) return false;
-
-  const validKeys = ["A", "B", "C", "D"];
-  const seenKeys = new Set();
-  for (const opt of q.options) {
-    if (!opt || typeof opt !== "object") return false;
-    const key = String(opt.key || "").trim().toUpperCase();
-    const text = String(opt.text || "").trim();
-    if (!validKeys.includes(key)) return false;
-    if (seenKeys.has(key)) return false;
-    seenKeys.add(key);
-    if (!text || text.length === 0) return false;
+export function isValidQuestion(question, expectedDifficulty) {
+  if (!question || typeof question !== "object") {
+    return false;
   }
 
-  const correctKey = String(q.correctOptionKey || "").trim().toUpperCase();
-  if (!validKeys.includes(correctKey)) return false;
+  if (
+    typeof question.question !== "string" ||
+    question.question.trim().length < 15
+  ) {
+    return false;
+  }
 
-  if (!q.explanation || typeof q.explanation !== "string" || q.explanation.trim().length < 5) return false;
+  if (!Array.isArray(question.options) || question.options.length !== 4) {
+    return false;
+  }
+
+  const validKeys = new Set(["A", "B", "C", "D"]);
+  const seenKeys = new Set();
+  const seenTexts = new Set();
+
+  for (const option of question.options) {
+    if (!option || typeof option !== "object") {
+      return false;
+    }
+
+    const key = String(option.key || "").trim().toUpperCase();
+    const text = String(option.text || "").trim();
+
+    if (!validKeys.has(key) || !text) {
+      return false;
+    }
+
+    if (seenKeys.has(key) || seenTexts.has(text.toLowerCase())) {
+      return false;
+    }
+
+    seenKeys.add(key);
+    seenTexts.add(text.toLowerCase());
+  }
+
+  if (seenKeys.size !== 4) {
+    return false;
+  }
+
+  const correctOptionKey = String(
+    question.correctOptionKey || ""
+  )
+    .trim()
+    .toUpperCase();
+
+  if (!validKeys.has(correctOptionKey)) {
+    return false;
+  }
+
+  if (
+    typeof question.explanation !== "string" ||
+    question.explanation.trim().length < 10
+  ) {
+    return false;
+  }
+
+  if (
+    typeof question.difficulty === "string" &&
+    expectedDifficulty &&
+    question.difficulty.trim().toLowerCase() !== expectedDifficulty
+  ) {
+    return false;
+  }
 
   return true;
 }
 
-/**
- * Strips markdown fences or text wrappers and parses JSON array.
- */
-export function extractJsonQuestions(rawText) {
-  if (!rawText || typeof rawText !== "string") return null;
-
-  let cleaned = rawText.trim();
-  if (cleaned.startsWith("```")) {
-    cleaned = cleaned.replace(/^```(?:json)?\s*/i, "");
-    cleaned = cleaned.replace(/\s*```$/i, "");
+export function extractJsonQuestions(rawContent) {
+  if (!rawContent || typeof rawContent !== "string") {
+    return null;
   }
+
+  const cleaned = rawContent
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
 
   try {
     const parsed = JSON.parse(cleaned);
-    if (Array.isArray(parsed)) return parsed;
-    if (parsed && Array.isArray(parsed.questions)) return parsed.questions;
+
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      Array.isArray(parsed.questions)
+    ) {
+      return parsed.questions;
+    }
+
     return null;
   } catch {
-    const match = cleaned.match(/\[\s*\{[\s\S]*\}\s*\]/);
-    if (match) {
-      try {
-        const parsed = JSON.parse(match[0]);
-        if (Array.isArray(parsed)) return parsed;
-      } catch {
-        return null;
-      }
+    const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
+
+    if (!arrayMatch) {
+      return null;
     }
+
+    try {
+      const parsed = JSON.parse(arrayMatch[0]);
+
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+
+      if (
+        parsed &&
+        typeof parsed === "object" &&
+        Array.isArray(parsed.questions)
+      ) {
+        return parsed.questions;
+      }
+    } catch {
+      return null;
+    }
+
     return null;
   }
 }
 
-/**
- * Provider 1: OpenRouter
- */
-async function callOpenRouter(prompt, model) {
-  if (!process.env.OPENROUTER_API_KEY) {
-    const err = new Error("OPENROUTER_API_KEY is not configured");
-    err.category = "provider_error";
-    throw err;
+function validateGeneratedQuestions(data, expectedDifficulty) {
+  const questions = Array.isArray(data)
+    ? data
+    : data?.questions;
+
+  if (!Array.isArray(questions) || questions.length === 0) {
+    throw new Error("AI did not return a valid array of questions.");
   }
 
-  try {
-    const response = await axios.post(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        model,
-        messages: [
-          {
-            role: "system",
-            content: "You are an expert aptitude test question generator. Output valid JSON arrays only.",
-          },
-          { role: "user", content: prompt },
-        ],
-        max_tokens: 3500,
-        temperature: 0.3,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        timeout: AI_TIMEOUT_MS,
-      }
-    );
+  const validQuestions = questions.filter((question) =>
+    isValidQuestion(question, expectedDifficulty)
+  );
 
-    const text = response.data?.choices?.[0]?.message?.content;
-    if (!text || !text.trim()) {
-      const err = new Error(`OpenRouter returned empty response for model ${model}`);
-      err.category = "provider_error";
-      throw err;
-    }
-    return text;
-  } catch (err) {
-    err.category = categorizeError(err);
-    throw err;
+  if (validQuestions.length === 0) {
+    throw new Error("AI returned no valid aptitude questions.");
   }
+
+  return validQuestions;
 }
 
-/**
- * Provider 2: Google Gemini
- */
-async function callGemini(prompt, model = GEMINI_MODEL) {
-  if (!process.env.GEMINI_API_KEY) {
-    const err = new Error("GEMINI_API_KEY is not configured");
-    err.category = "provider_error";
-    throw err;
-  }
+async function persistQuestions({
+  questions,
+  category,
+  topic,
+  difficulty,
+}) {
+  const existingQuestions = await AptitudeQuestion.find({
+    category,
+    topic,
+    active: true,
+  })
+    .select("question")
+    .lean();
 
-  try {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    const response = await ai.models.generateContent({
-      model,
-      contents: prompt,
-      config: {
-        temperature: 0.3,
-        responseMimeType: "application/json",
-      },
+  const existingSet = new Set(
+    existingQuestions.map((question) =>
+      question.question.trim().toLowerCase()
+    )
+  );
+
+  const validQuestions = [];
+
+  for (const item of questions) {
+    const normalizedText = item.question.trim().toLowerCase();
+
+    if (existingSet.has(normalizedText)) {
+      continue;
+    }
+
+    existingSet.add(normalizedText);
+
+    validQuestions.push({
+      category,
+      topic,
+      question: item.question.trim(),
+      options: item.options.map((option) => ({
+        key: String(option.key).trim().toUpperCase(),
+        text: String(option.text).trim(),
+      })),
+      correctOptionKey: String(item.correctOptionKey)
+        .trim()
+        .toUpperCase(),
+      explanation: String(item.explanation || "").trim(),
+      difficulty,
+      marks: 1,
+      negativeMarks: 0.25,
+      active: true,
+      tags: ["ai-generated"],
+      source: "ai",
+      estimatedTimeSeconds: 60,
     });
-
-    const text = response.text;
-    if (!text || !text.trim()) {
-      const err = new Error("Gemini returned empty response");
-      err.category = "provider_error";
-      throw err;
-    }
-    return text;
-  } catch (err) {
-    err.category = categorizeError(err);
-    throw err;
   }
+
+  if (validQuestions.length === 0) {
+    return [];
+  }
+
+  return AptitudeQuestion.insertMany(validQuestions, {
+    ordered: false,
+  });
 }
 
-/**
- * Main Question Generation with Multi-Provider Fallback Hierarchy:
- * 1. OpenRouter Primary
- * 2. OpenRouter Free Models list (sequential)
- * 3. Google Gemini
- * 4. Local DB Question Pool
- *
- * Includes in-flight request deduplication to prevent duplicate generation calls.
- */
-export async function generateAptitudeQuestions({ category, topic, difficulty = "medium", count = 5 }) {
+export async function generateAptitudeQuestions({
+  category,
+  topic,
+  difficulty = "medium",
+  count = 5,
+}) {
   const catObj = findCategory(category);
   const topicObj = findTopic(category, topic);
 
@@ -252,144 +268,106 @@ export async function generateAptitudeQuestions({ category, topic, difficulty = 
     throw new Error(`Invalid category "${category}" or topic "${topic}"`);
   }
 
-  const normalizedDifficulty = ["easy", "medium", "hard"].includes(difficulty.toLowerCase())
-    ? difficulty.toLowerCase()
+  const normalizedDifficulty = isValidDifficulty(
+    String(difficulty).toLowerCase()
+  )
+    ? String(difficulty).toLowerCase()
     : "medium";
 
-  // In-flight concurrency deduplication key
-  const requestKey = `${category}:${topic}:${normalizedDifficulty}`;
-  if (inFlightGenerations.has(requestKey)) {
-    console.log(`[AI Question Gen] Coalescing duplicate in-flight generation for ${requestKey}`);
-    return await inFlightGenerations.get(requestKey);
+  const normalizedCount = Math.max(
+    1,
+    Math.min(Number(count) || 5, 20)
+  );
+
+  const requestKey = `${category}:${topic}:${normalizedDifficulty}:${normalizedCount}`;
+
+  const existingGeneration = inFlightGenerations.get(requestKey);
+
+  if (existingGeneration) {
+    return existingGeneration;
   }
 
   const generationPromise = (async () => {
-    const prompt = buildPrompt(catObj.name, topicObj.name, normalizedDifficulty, count);
+    const prompt = buildPrompt(
+      catObj.name,
+      topicObj.name,
+      normalizedDifficulty,
+      normalizedCount
+    );
 
-    let rawContent = null;
-    let providerUsed = null;
-    const errorsLogged = [];
+    const errors = [];
 
-    // --- TIER 1: OpenRouter Primary ---
     try {
-      console.log(`[AI Question Gen] Tier 1: Trying Primary OpenRouter (${OPENROUTER_MODEL})...`);
-      rawContent = await callOpenRouter(prompt, OPENROUTER_MODEL);
-      const parsed = extractJsonQuestions(rawContent);
-      if (parsed && parsed.length > 0) {
-        providerUsed = `OpenRouter (${OPENROUTER_MODEL})`;
-      } else {
-        const err = new Error("Invalid JSON returned by primary OpenRouter model");
-        err.category = "invalid_json";
-        throw err;
-      }
-    } catch (err1) {
-      const cat = err1.category || categorizeError(err1);
-      errorsLogged.push({ provider: "OpenRouter Primary", model: OPENROUTER_MODEL, category: cat, message: err1.message });
-      console.warn(`[AI Question Gen] Tier 1 OpenRouter failed [${cat}]. Trying Tier 2 (Free Models)...`);
+      const generatedQuestions = await generateStructured({
+        task: "aptitude",
+        prompt,
+        temperature: 0.3,
+        schemaValidator: (data) =>
+          validateGeneratedQuestions(
+            data,
+            normalizedDifficulty
+          ),
+      });
 
-      // --- TIER 2: OpenRouter Free Models (Sequential Fallback) ---
-      const freeModels = getOpenRouterFreeModels();
-      for (const freeModel of freeModels) {
-        if (providerUsed) break;
-        try {
-          console.log(`[AI Question Gen] Tier 2: Trying OpenRouter Free Model (${freeModel})...`);
-          rawContent = await callOpenRouter(prompt, freeModel);
-          const parsed = extractJsonQuestions(rawContent);
-          if (parsed && parsed.length > 0) {
-            providerUsed = `OpenRouter Free (${freeModel})`;
-            break;
-          } else {
-            const err = new Error(`Invalid JSON returned by free model ${freeModel}`);
-            err.category = "invalid_json";
-            throw err;
-          }
-        } catch (freeErr) {
-          const cat = freeErr.category || categorizeError(freeErr);
-          errorsLogged.push({ provider: "OpenRouter Free", model: freeModel, category: cat, message: freeErr.message });
-          console.warn(`[AI Question Gen] Free model ${freeModel} failed [${cat}]. Continuing...`);
-        }
+      const parsedQuestions = extractJsonQuestions(
+        JSON.stringify(generatedQuestions)
+      );
+
+      const questions = parsedQuestions || generatedQuestions;
+
+      const validQuestions = validateGeneratedQuestions(
+        questions,
+        normalizedDifficulty
+      );
+
+      const savedQuestions = await persistQuestions({
+        questions: validQuestions,
+        category,
+        topic,
+        difficulty: normalizedDifficulty,
+      });
+
+      if (savedQuestions.length > 0) {
+        return {
+          success: true,
+          questions: savedQuestions,
+          providerUsed: "AI Gateway",
+          fallbackTier: "ai",
+        };
       }
 
-      // --- TIER 3: Google Gemini ---
-      if (!providerUsed) {
-        try {
-          console.log(`[AI Question Gen] Tier 3: Trying Google Gemini (${GEMINI_MODEL})...`);
-          rawContent = await callGemini(prompt, GEMINI_MODEL);
-          const parsed = extractJsonQuestions(rawContent);
-          if (parsed && parsed.length > 0) {
-            providerUsed = `Gemini (${GEMINI_MODEL})`;
-          } else {
-            const err = new Error("Invalid JSON returned by Gemini");
-            err.category = "invalid_json";
-            throw err;
-          }
-        } catch (geminiErr) {
-          const cat = geminiErr.category || categorizeError(geminiErr);
-          errorsLogged.push({ provider: "Gemini", model: GEMINI_MODEL, category: cat, message: geminiErr.message });
-          console.warn(`[AI Question Gen] Tier 3 Gemini failed [${cat}]. Falling back to Tier 4 (Local DB)...`);
-        }
-      }
+      return {
+        success: true,
+        questions: validQuestions,
+        providerUsed: "AI Gateway",
+        fallbackTier: "ai",
+      };
+    } catch (error) {
+      errors.push({
+        provider: "AI Gateway",
+        message: error.message,
+        category: error.category || "provider_error",
+      });
+
+      console.warn(
+        `[AI Question Gen] AI Gateway failed: ${error.message}. Falling back to database.`
+      );
     }
 
-    // Process parsed questions if an AI provider succeeded
-    if (providerUsed && rawContent) {
-      const candidateList = extractJsonQuestions(rawContent);
-      if (candidateList && candidateList.length > 0) {
-        const existingQuestions = await AptitudeQuestion.find({ category, topic, active: true }).select("question").lean();
-        const existingSet = new Set(existingQuestions.map((q) => q.question.trim().toLowerCase()));
+    const dbPool = await AptitudeQuestion.find({
+      category,
+      topic,
+      active: true,
+      difficulty: normalizedDifficulty,
+    }).lean();
 
-        const validQuestions = [];
-        for (const item of candidateList) {
-          if (!isValidQuestion(item, normalizedDifficulty)) continue;
-
-          const normalizedText = item.question.trim().toLowerCase();
-          if (existingSet.has(normalizedText)) {
-            continue;
-          }
-          existingSet.add(normalizedText);
-
-          validQuestions.push({
-            category,
-            topic,
-            question: item.question.trim(),
-            options: item.options.map((o) => ({
-              key: String(o.key).trim().toUpperCase(),
-              text: String(o.text).trim(),
-            })),
-            correctOptionKey: String(item.correctOptionKey).trim().toUpperCase(),
-            explanation: String(item.explanation || "").trim(),
-            difficulty: normalizedDifficulty,
-            marks: 1,
-            negativeMarks: 0.25,
-            active: true,
-            tags: ["ai-generated"],
-            source: "ai",
-            estimatedTimeSeconds: 60,
-          });
-        }
-
-        if (validQuestions.length > 0) {
-          try {
-            const saved = await AptitudeQuestion.insertMany(validQuestions, { ordered: false });
-            console.log(`[AI Question Gen] Saved ${saved.length} questions to DB via ${providerUsed}`);
-            return { success: true, questions: saved, providerUsed, fallbackTier: "ai" };
-          } catch (saveErr) {
-            console.error("[AI Question Gen] Error persisting questions:", saveErr.message);
-          }
-        }
-      }
-    }
-
-    // --- TIER 4: Local MongoDB Question Pool Fallback ---
-    console.log(`[AI Question Gen] Tier 4: Fetching fallback questions from local DB pool for ${category}/${topic}...`);
-    const dbPool = await AptitudeQuestion.find({ category, topic, active: true }).lean();
-    if (dbPool && dbPool.length > 0) {
+    if (dbPool.length > 0) {
       return {
         success: true,
         questions: dbPool,
         providerUsed: "Local Database Question Pool",
         fallbackTier: "database",
-        errors: errorsLogged,
+        errors,
       };
     }
 
@@ -397,8 +375,9 @@ export async function generateAptitudeQuestions({ category, topic, difficulty = 
       success: false,
       questions: [],
       providerUsed: null,
-      error: "All AI providers failed and no local questions exist for this topic.",
-      errors: errorsLogged,
+      error:
+        "AI generation failed and no local questions exist for this topic.",
+      errors,
     };
   })();
 

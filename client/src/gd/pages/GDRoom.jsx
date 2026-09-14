@@ -43,7 +43,6 @@ export default function GDRoom() {
     clearError,
   } = useGD();
 
-  // Audio Hook Abstractions
   const {
     enqueue,
     cancel: cancelSpeech,
@@ -66,7 +65,6 @@ export default function GDRoom() {
     audioLevel,
   } = useMediaStream();
 
-  // Local Component State
   const [inputPrompt, setInputPrompt] = useState("");
   const [isSubmittingTurn, setIsSubmittingTurn] = useState(false);
   const [showEndModal, setShowEndModal] = useState(false);
@@ -76,14 +74,12 @@ export default function GDRoom() {
   const [interruptedPrevious, setInterruptedPrevious] = useState(false);
   const [openingFailed, setOpeningFailed] = useState(false);
 
-  // Refs for tracking and cleanup
   const spokenTurnsRef = useRef(new Set());
   const transcriptEndRef = useRef(null);
   const timerIntervalRef = useRef(null);
   const initialOpeningRequestedRef = useRef(false);
   const speakingTimerRef = useRef(null);
 
-  // 1. Session Loading & State Synchronization
   useEffect(() => {
     if (!id) return;
 
@@ -104,7 +100,6 @@ export default function GDRoom() {
       .catch(() => {});
   }, [id, loadSession, enterRoom, navigate]);
 
-  // Guard against aborted session in active state
   useEffect(() => {
     if (session?.status === "aborted") {
       toast.info("This discussion session has been terminated.");
@@ -112,7 +107,6 @@ export default function GDRoom() {
     }
   }, [session?.status, navigate]);
 
-  // 2. Start microphone diagnostics stream on mount
   useEffect(() => {
     startMedia({ video: false, audio: true }).catch(() => {});
     return () => {
@@ -122,7 +116,14 @@ export default function GDRoom() {
     };
   }, [startMedia, stopMedia, cancelSpeech, stopListening]);
 
-  // 3. Auto-Trigger Opening Statement when room initializes with empty transcript
+  const primeAudioOnGesture = useCallback(() => {
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
+    }
+  }, []);
+
   const triggerOpeningTurn = useCallback(() => {
     setOpeningFailed(false);
     initialOpeningRequestedRef.current = true;
@@ -145,7 +146,6 @@ export default function GDRoom() {
     }
   }, [session, transcript.length, triggerOpeningTurn, openingFailed]);
 
-  // 4. TTS Enqueue for incoming AI turns
   useEffect(() => {
     if (transcript && transcript.length > 0) {
       transcript.forEach((turn, idx) => {
@@ -153,7 +153,6 @@ export default function GDRoom() {
         if (!spokenTurnsRef.current.has(turnKey)) {
           spokenTurnsRef.current.add(turnKey);
 
-          // Only enqueue AI/system turns (candidate spoke themselves)
           if (turn.speakerId !== "candidate" && turn.content) {
             enqueue({
               speakerId: turn.speakerId,
@@ -165,14 +164,12 @@ export default function GDRoom() {
     }
   }, [transcript, enqueue]);
 
-  // 5. Auto-scroll transcript on new turns
   useEffect(() => {
     if (transcriptEndRef.current) {
       transcriptEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [transcript]);
 
-  // 6. Live Timer & Candidate Speaking Tracking
   useEffect(() => {
     timerIntervalRef.current = setInterval(() => {
       setElapsedSeconds((prev) => prev + 1);
@@ -183,7 +180,6 @@ export default function GDRoom() {
     };
   }, []);
 
-  // Track candidate speaking seconds while mic is actively listening
   useEffect(() => {
     if (isListening) {
       speakingTimerRef.current = setInterval(() => {
@@ -198,14 +194,12 @@ export default function GDRoom() {
     };
   }, [isListening]);
 
-  // 7. Synchronize STT recognition transcript with input prompt
   useEffect(() => {
     if (sttTranscript) {
       setInputPrompt(sttTranscript);
     }
   }, [sttTranscript]);
 
-  // Calculation Helpers
   const totalDurationSeconds = (session?.durationMinutes || 10) * 60;
   const remainingSeconds = Math.max(0, totalDurationSeconds - elapsedSeconds);
   const formattedRemainingTime = `${Math.floor(remainingSeconds / 60)
@@ -218,7 +212,6 @@ export default function GDRoom() {
     transcript.filter((t) => t.speakerId === "candidate").length;
   const maxTurns = session?.maxTurns || 30;
 
-  // Floor share percentage
   const floorSharePercentage = useMemo(() => {
     if (elapsedSeconds <= 0) return 0;
     const share = Math.round((candidateSpeakingSeconds / elapsedSeconds) * 100);
@@ -244,19 +237,16 @@ export default function GDRoom() {
     }
   }, [candidateSpeakingSeconds, elapsedSeconds, candidateTurnsCount, finishSession, navigate, id]);
 
-  // 8. Auto-completion check when duration or limits are reached
   useEffect(() => {
     if (isDiscussionComplete && !isCompleting && session?.status !== "completed") {
       handleCompleteDiscussion();
     }
   }, [isDiscussionComplete, isCompleting, session?.status, handleCompleteDiscussion]);
 
-  // Handlers
   const handleToggleMic = () => {
     if (isListening) {
       stopListening();
     } else {
-      // If an AI agent was speaking, candidate speaking interrupts immediately
       if (isTTSPlaying) {
         cancelSpeech();
         setInterruptedPrevious(true);
@@ -279,7 +269,6 @@ export default function GDRoom() {
     setIsSubmittingTurn(true);
     clearError();
 
-    // If microphone was recording, stop it
     if (isListening) {
       stopListening();
     }
@@ -338,7 +327,6 @@ export default function GDRoom() {
     setInputPrompt((prev) => (prev ? `${prev} ${text}` : text));
   };
 
-  // Prevent room from being usable if session is aborted
   if (session?.status === "aborted") {
     return (
       <div className="min-h-screen bg-[#080b12] text-slate-100 flex flex-col items-center justify-center gap-4">
@@ -351,10 +339,10 @@ export default function GDRoom() {
   }
 
   return (
-    <div className="min-h-screen bg-[#080b12] text-slate-100 flex flex-col selection:bg-indigo-500/20 selection:text-indigo-300">
-      {/* ========================================================
-          1. TOP HUD BAR
-          ======================================================== */}
+    <div
+      onClickCapture={primeAudioOnGesture}
+      className="min-h-screen bg-[#080b12] text-slate-100 flex flex-col selection:bg-indigo-500/20 selection:text-indigo-300"
+    >
       <header className="sticky top-0 z-50 w-full bg-[#0d111a]/95 border-b border-white/[0.08] backdrop-blur-xl px-4 sm:px-6 py-2.5 flex flex-col md:flex-row items-center justify-between gap-3 shadow-md">
         {/* Left: Branding & Status */}
         <div className="flex items-center gap-3">
@@ -434,11 +422,6 @@ export default function GDRoom() {
           </button>
         </div>
       )}
-
-
-      {/* ========================================================
-          2. VIRTUAL TELEPRESENCE STAGE GRID (4 Participant Tiles)
-          ======================================================== */}
       <section className="w-full px-4 sm:px-6 pt-4 pb-2 bg-gradient-to-b from-[#0d111a] to-[#080b12]">
         <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Tile 1: Agent 1 · Analytical */}
@@ -699,10 +682,6 @@ export default function GDRoom() {
           </div>
         </div>
       </section>
-
-      {/* ========================================================
-          3. MAIN BODY: TIMELINE & TELEMETRY SIDEBAR
-          ======================================================== */}
       <section className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-4 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Deliberation Stream (Col 8) */}
         <div className="lg:col-span-8 flex flex-col gap-3">
@@ -719,12 +698,49 @@ export default function GDRoom() {
           {/* Transcript Feed */}
           <div className="flex flex-col gap-3 max-h-[460px] overflow-y-auto pr-1 scrollbar-thin">
             {transcript.length === 0 ? (
-              <div className="p-8 rounded-xl bg-[#0d111a]/80 border border-white/[0.06] text-center flex flex-col items-center justify-center gap-2">
-                <span className="w-5 h-5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
-                <p className="text-xs text-slate-400">
-                  Initializing discussion chamber. Central Orchestrator is framing the topic...
-                </p>
-              </div>
+              openingFailed || error ? (
+                <div className="p-6 sm:p-8 rounded-xl bg-[#161214] border border-rose-500/30 text-center flex flex-col items-center justify-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
+                    <AlertCircle className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-white">Opening Statement Delayed</h4>
+                    <p className="text-xs text-slate-400 max-w-md mt-1">
+                      {error || "The Central Orchestrator encountered an AI connectivity issue while framing the topic. Session state has been preserved."}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-center gap-2 mt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        clearError();
+                        triggerOpeningTurn();
+                      }}
+                      className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+                    >
+                      <Brain className="w-3.5 h-3.5" /> Retry Statement
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        clearError();
+                        const inputEl = document.querySelector('input[placeholder*="argument"], input[type="text"], textarea');
+                        if (inputEl) inputEl.focus();
+                      }}
+                      className="px-4 py-2 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] border border-white/10 text-slate-300 text-xs font-semibold transition cursor-pointer"
+                    >
+                      Take Floor First
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-8 rounded-xl bg-[#0d111a]/80 border border-white/[0.06] text-center flex flex-col items-center justify-center gap-2">
+                  <span className="w-5 h-5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                  <p className="text-xs text-slate-400">
+                    Initializing discussion chamber. Central Orchestrator is framing the topic...
+                  </p>
+                </div>
+              )
             ) : (
               transcript.map((turn, idx) => {
                 const isCandidate = turn.speakerId === "candidate";
@@ -890,10 +906,6 @@ export default function GDRoom() {
           </div>
         </aside>
       </section>
-
-      {/* ========================================================
-          4. FLOATING CONSOLE DOCK (Bottom Action Bar)
-          ======================================================== */}
       <section className="sticky bottom-0 z-40 w-full px-4 sm:px-6 pb-4 pt-1 bg-gradient-to-t from-[#080b12] via-[#080b12]/95 to-transparent backdrop-blur-md">
         <div className="max-w-7xl mx-auto bg-[#0d111a]/95 border border-white/[0.1] rounded-2xl p-3.5 shadow-2xl flex flex-col gap-2.5">
           {/* Top Row: Audio Status & Quick Evidence Chips */}
@@ -1013,10 +1025,6 @@ export default function GDRoom() {
           </form>
         </div>
       </section>
-
-      {/* ========================================================
-          5. END DISCUSSION CONFIRMATION MODAL
-          ======================================================== */}
       {showEndModal && (
         <div className="fixed inset-0 z-[99995] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
           <div className="bg-[#0e1424] border border-white/10 rounded-2xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-5 animate-in fade-in zoom-in-95 duration-150">
