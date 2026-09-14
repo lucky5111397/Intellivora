@@ -1,14 +1,14 @@
 import fs from "fs";
 import mongoose from "mongoose";
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
-import { askAI } from "../services/openRouter.service.js";
+import { generateText, generateStructured } from "../services/aiGateway.service.js";
 import Interview from "../models/interview.model.js";
 import User from "../models/user.model.js";
-import { cleanAndParseJson } from "../utils/jsonParser.js";
 import { hasPdfMagicBytes } from "../utils/pdfValidator.js";
 
 export const analyzeResume = async (req, res) => {
   const filepath = req.file?.path;
+
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -22,7 +22,8 @@ export const analyzeResume = async (req, res) => {
     if (!hasPdfMagicBytes(fileBuffer)) {
       return res.status(400).json({
         success: false,
-        message: "Invalid file content: File is not a valid PDF document (magic bytes signature mismatch).",
+        message:
+          "Invalid file content: File is not a valid PDF document (magic bytes signature mismatch).",
       });
     }
 
@@ -64,12 +65,28 @@ export const analyzeResume = async (req, res) => {
       },
     ];
 
-    const aiResponse = await askAI(messages);
-    const parsed = cleanAndParseJson(aiResponse, {
-      role: "Software Engineer",
-      experience: "Mid Level",
-      projects: [],
-      skills: [],
+    const parsed = await generateStructured({
+      task: "interview",
+      messages,
+      temperature: 0.2,
+      schemaValidator: (data) => {
+        if (!data || typeof data !== "object") {
+          throw new Error("Invalid resume analysis data");
+        }
+
+        return {
+          role:
+            typeof data.role === "string" && data.role.trim()
+              ? data.role.trim()
+              : "Software Engineer",
+          experience:
+            typeof data.experience === "string" && data.experience.trim()
+              ? data.experience.trim()
+              : "Mid Level",
+          projects: Array.isArray(data.projects) ? data.projects : [],
+          skills: Array.isArray(data.skills) ? data.skills : [],
+        };
+      },
     });
 
     return res.json({
@@ -81,6 +98,7 @@ export const analyzeResume = async (req, res) => {
     });
   } catch (error) {
     console.error("[Analyze Resume] Error:", error.message);
+
     return res.status(500).json({
       success: false,
       message: error.message || "Failed to analyze resume.",
@@ -90,7 +108,10 @@ export const analyzeResume = async (req, res) => {
       try {
         fs.unlinkSync(filepath);
       } catch (unlinkErr) {
-        console.warn("[Analyze Resume] File unlink warning:", unlinkErr.message);
+        console.warn(
+          "[Analyze Resume] File unlink warning:",
+          unlinkErr.message
+        );
       }
     }
   }
@@ -126,11 +147,14 @@ export const generateQuestion = async (req, res) => {
     deductedCredits = selectedPlan.credits;
 
     if (!role || !experience || !mode) {
-      return res.status(400).json({ success: false, message: "Role, Experience, and Mode are required." });
+      return res.status(400).json({
+        success: false,
+        message: "Role, Experience, and Mode are required.",
+      });
     }
 
-    // Pre-check credit sufficiency
     const userPreCheck = await User.findById(req.userId).select("credits");
+
     if (!userPreCheck || userPreCheck.credits < selectedPlan.credits) {
       return res.status(400).json({
         success: false,
@@ -139,8 +163,14 @@ export const generateQuestion = async (req, res) => {
       });
     }
 
-    const projectText = Array.isArray(projects) && projects.length ? projects.join(", ") : "None";
-    const skillsText = Array.isArray(skills) && skills.length ? skills.join(", ") : "None";
+    const projectText =
+      Array.isArray(projects) && projects.length
+        ? projects.join(", ")
+        : "None";
+
+    const skillsText =
+      Array.isArray(skills) && skills.length ? skills.join(", ") : "None";
+
     const safeResume = resumeText?.trim() || "None";
 
     const userPrompt = `
@@ -169,16 +199,24 @@ Rules:
       },
     ];
 
-    const aiResponse = await askAI(messages);
+    const aiResponse = await generateText({
+      task: "interview",
+      messages,
+      temperature: 0.7,
+    });
+
     if (!aiResponse || !aiResponse.trim()) {
-      return res.status(500).json({ success: false, message: "AI returned empty response." });
+      return res.status(500).json({
+        success: false,
+        message: "AI returned empty response.",
+      });
     }
 
     questionsArray = aiResponse
       .split("\n")
       .map((q) =>
         q
-          .replace(/^\d+[\).\-\s]*/, "")
+          .replace(/^\d+[).\-\s]*/, "")
           .replace(/^[*-]\s*/, "")
           .replace(/^"+|"+$/g, "")
           .trim()
@@ -187,18 +225,28 @@ Rules:
       .slice(0, selectedPlan.questions);
 
     if (questionsArray.length === 0) {
-      return res.status(500).json({ success: false, message: "AI failed to generate valid questions." });
+      return res.status(500).json({
+        success: false,
+        message: "AI failed to generate valid questions.",
+      });
     }
 
-    // Atomic credit check and deduction to eliminate double-spend race conditions
     const updatedUser = await User.findOneAndUpdate(
-      { _id: req.userId, credits: { $gte: selectedPlan.credits } },
-      { $inc: { credits: -selectedPlan.credits } },
-      { new: true }
+      {
+        _id: req.userId,
+        credits: { $gte: selectedPlan.credits },
+      },
+      {
+        $inc: { credits: -selectedPlan.credits },
+      },
+      {
+        new: true,
+      }
     );
 
     if (!updatedUser) {
       const user = await User.findById(req.userId).select("credits");
+
       return res.status(400).json({
         success: false,
         message: `Not enough credits. ${selectedPlan.credits} credits required.`,
@@ -244,19 +292,25 @@ Rules:
       questions: interview.questions,
     });
   } catch (error) {
-    // Compensating rollback: restore credits if deducted but interview creation failed
     if (creditDeducted && deductedCredits > 0) {
       try {
         await User.findByIdAndUpdate(req.userId, {
           $inc: { credits: deductedCredits },
         });
-        console.log(`[Interview] Compensating refund of ${deductedCredits} credits executed for user ${req.userId}`);
+
+        console.log(
+          `[Interview] Compensating refund of ${deductedCredits} credits executed for user ${req.userId}`
+        );
       } catch (refundErr) {
-        console.error("[Interview] Credit rollback failed:", refundErr.message);
+        console.error(
+          "[Interview] Credit rollback failed:",
+          refundErr.message
+        );
       }
     }
 
     console.error("[Interview] generateQuestion error:", error.message);
+
     return res.status(500).json({
       success: false,
       message: error.message || "Failed to generate interview questions.",
@@ -269,7 +323,10 @@ export const submitAnswer = async (req, res) => {
     const { interviewId, questionIndex, answer, timeTaken } = req.body;
 
     if (!mongoose.isValidObjectId(interviewId)) {
-      return res.status(400).json({ success: false, message: "Invalid interview ID." });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid interview ID.",
+      });
     }
 
     const interview = await Interview.findOne({
@@ -278,11 +335,21 @@ export const submitAnswer = async (req, res) => {
     });
 
     if (!interview) {
-      return res.status(404).json({ success: false, message: "Interview not found." });
+      return res.status(404).json({
+        success: false,
+        message: "Interview not found.",
+      });
     }
 
-    if (!Number.isInteger(questionIndex) || questionIndex < 0 || questionIndex >= interview.questions.length) {
-      return res.status(400).json({ success: false, message: "Invalid question index." });
+    if (
+      !Number.isInteger(questionIndex) ||
+      questionIndex < 0 ||
+      questionIndex >= interview.questions.length
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid question index.",
+      });
     }
 
     const question = interview.questions[questionIndex];
@@ -293,7 +360,10 @@ export const submitAnswer = async (req, res) => {
       question.answer = "";
 
       await interview.save();
-      return res.json({ feedback: question.feedback });
+
+      return res.json({
+        feedback: question.feedback,
+      });
     }
 
     if (timeTaken > question.timeLimit) {
@@ -302,7 +372,10 @@ export const submitAnswer = async (req, res) => {
       question.answer = answer;
 
       await interview.save();
-      return res.json({ feedback: question.feedback });
+
+      return res.json({
+        feedback: question.feedback,
+      });
     }
 
     const messages = [
@@ -327,27 +400,42 @@ Return ONLY valid JSON:
       },
     ];
 
-    const aiResponse = await askAI(messages);
-    const parsed = cleanAndParseJson(aiResponse, {
-      confidence: 7,
-      communication: 7,
-      correctness: 7,
-      finalScore: 7,
-      feedback: "Answer evaluated.",
+    const parsed = await generateStructured({
+      task: "interview",
+      messages,
+      temperature: 0.3,
+      schemaValidator: (data) => {
+        if (!data || typeof data !== "object") {
+          throw new Error("Invalid evaluation data");
+        }
+
+        return data;
+      },
     });
 
     question.answer = answer;
-    question.confidence = typeof parsed.confidence === "number" ? parsed.confidence : 7;
-    question.communication = typeof parsed.communication === "number" ? parsed.communication : 7;
-    question.correctness = typeof parsed.correctness === "number" ? parsed.correctness : 7;
-    question.score = typeof parsed.finalScore === "number" ? parsed.finalScore : 7;
-    question.feedback = parsed.feedback || "Answer evaluated.";
+    question.confidence =
+      typeof parsed?.confidence === "number" ? parsed.confidence : 7;
+    question.communication =
+      typeof parsed?.communication === "number" ? parsed.communication : 7;
+    question.correctness =
+      typeof parsed?.correctness === "number" ? parsed.correctness : 7;
+    question.score =
+      typeof parsed?.finalScore === "number" ? parsed.finalScore : 7;
+    question.feedback = parsed?.feedback || "Answer evaluated.";
 
     await interview.save();
-    return res.status(200).json({ feedback: question.feedback });
+
+    return res.status(200).json({
+      feedback: question.feedback,
+    });
   } catch (error) {
     console.error("[Interview] submitAnswer error:", error.message);
-    return res.status(500).json({ success: false, message: "Failed to submit answer." });
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to submit answer.",
+    });
   }
 };
 
@@ -356,7 +444,10 @@ export const finishInterview = async (req, res) => {
     const { interviewId } = req.body;
 
     if (!mongoose.isValidObjectId(interviewId)) {
-      return res.status(400).json({ success: false, message: "Invalid interview ID." });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid interview ID.",
+      });
     }
 
     const interview = await Interview.findOne({
@@ -365,7 +456,10 @@ export const finishInterview = async (req, res) => {
     });
 
     if (!interview) {
-      return res.status(404).json({ success: false, message: "Interview not found." });
+      return res.status(404).json({
+        success: false,
+        message: "Interview not found.",
+      });
     }
 
     const totalQuestions = interview.questions.length;
@@ -381,13 +475,25 @@ export const finishInterview = async (req, res) => {
       totalCorrectness += q.correctness || 0;
     });
 
-    const finalScore = totalQuestions ? totalScore / totalQuestions : 0;
-    const avgConfidence = totalQuestions ? totalConfidence / totalQuestions : 0;
-    const avgCommunication = totalQuestions ? totalCommunication / totalQuestions : 0;
-    const avgCorrectness = totalQuestions ? totalCorrectness / totalQuestions : 0;
+    const finalScore = totalQuestions
+      ? totalScore / totalQuestions
+      : 0;
+
+    const avgConfidence = totalQuestions
+      ? totalConfidence / totalQuestions
+      : 0;
+
+    const avgCommunication = totalQuestions
+      ? totalCommunication / totalQuestions
+      : 0;
+
+    const avgCorrectness = totalQuestions
+      ? totalCorrectness / totalQuestions
+      : 0;
 
     interview.finalScore = finalScore;
     interview.status = "Completed";
+
     await interview.save();
 
     return res.status(200).json({
@@ -406,27 +512,40 @@ export const finishInterview = async (req, res) => {
     });
   } catch (error) {
     console.error("[Interview] finishInterview error:", error.message);
-    return res.status(500).json({ success: false, message: "Failed to finish interview." });
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to finish interview.",
+    });
   }
 };
 
 export const getMyInterviews = async (req, res) => {
   try {
-    const interviews = await Interview.find({ userId: req.userId })
+    const interviews = await Interview.find({
+      userId: req.userId,
+    })
       .sort({ createdAt: -1 })
       .select("role experience mode finalScore status createdAt");
 
     return res.status(200).json(interviews);
   } catch (error) {
     console.error("[Interview] getMyInterviews error:", error.message);
-    return res.status(500).json({ success: false, message: "Failed to fetch interviews." });
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch interviews.",
+    });
   }
 };
 
 export const getInterviewReport = async (req, res) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) {
-      return res.status(404).json({ success: false, message: "Interview not found." });
+      return res.status(404).json({
+        success: false,
+        message: "Interview not found.",
+      });
     }
 
     const interview = await Interview.findOne({
@@ -435,7 +554,10 @@ export const getInterviewReport = async (req, res) => {
     });
 
     if (!interview) {
-      return res.status(404).json({ success: false, message: "Interview not found." });
+      return res.status(404).json({
+        success: false,
+        message: "Interview not found.",
+      });
     }
 
     const totalQuestions = interview.questions.length;
@@ -449,9 +571,17 @@ export const getInterviewReport = async (req, res) => {
       totalCorrectness += q.correctness || 0;
     });
 
-    const avgConfidence = totalQuestions ? totalConfidence / totalQuestions : 0;
-    const avgCommunication = totalQuestions ? totalCommunication / totalQuestions : 0;
-    const avgCorrectness = totalQuestions ? totalCorrectness / totalQuestions : 0;
+    const avgConfidence = totalQuestions
+      ? totalConfidence / totalQuestions
+      : 0;
+
+    const avgCommunication = totalQuestions
+      ? totalCommunication / totalQuestions
+      : 0;
+
+    const avgCorrectness = totalQuestions
+      ? totalCorrectness / totalQuestions
+      : 0;
 
     return res.json({
       finalScore: interview.finalScore,
@@ -462,7 +592,11 @@ export const getInterviewReport = async (req, res) => {
     });
   } catch (error) {
     console.error("[Interview] getInterviewReport error:", error.message);
-    return res.status(500).json({ success: false, message: "Failed to fetch interview report." });
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch interview report.",
+    });
   }
 };
 
@@ -471,7 +605,10 @@ export const deleteInterview = async (req, res) => {
     const { id } = req.params;
 
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(404).json({ success: false, message: "Interview not found." });
+      return res.status(404).json({
+        success: false,
+        message: "Interview not found.",
+      });
     }
 
     const interview = await Interview.findOneAndDelete({
@@ -480,13 +617,23 @@ export const deleteInterview = async (req, res) => {
     });
 
     if (!interview) {
-      return res.status(404).json({ success: false, message: "Interview not found." });
+      return res.status(404).json({
+        success: false,
+        message: "Interview not found.",
+      });
     }
 
-    return res.status(200).json({ success: true, message: "Interview deleted successfully." });
+    return res.status(200).json({
+      success: true,
+      message: "Interview deleted successfully.",
+    });
   } catch (error) {
     console.error("[Interview] deleteInterview error:", error.message);
-    return res.status(500).json({ success: false, message: "Failed to delete interview." });
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete interview.",
+    });
   }
 };
 
@@ -495,7 +642,10 @@ export const getInterviewById = async (req, res) => {
     const { id } = req.params;
 
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({ success: false, message: "Invalid interview ID format." });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid interview ID format.",
+      });
     }
 
     const interview = await Interview.findOne({
@@ -504,7 +654,10 @@ export const getInterviewById = async (req, res) => {
     });
 
     if (!interview) {
-      return res.status(404).json({ success: false, message: "Interview not found." });
+      return res.status(404).json({
+        success: false,
+        message: "Interview not found.",
+      });
     }
 
     const user = await User.findById(req.userId).select("name credits");
@@ -523,7 +676,10 @@ export const getInterviewById = async (req, res) => {
     });
   } catch (error) {
     console.error("[Interview] getInterviewById error:", error.message);
-    return res.status(500).json({ success: false, message: "Failed to fetch interview." });
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch interview.",
+    });
   }
 };
-

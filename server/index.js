@@ -93,7 +93,7 @@ app.use("/api/gd", aiLimiter, gdRouter);
 app.use(errorHandler);
 
 // Process safety traps to log unhandled errors safely without crashing unexpectedly
-process.on("unhandledRejection", (reason, promise) => {
+process.on("unhandledRejection", (reason) => {
   console.error("[Process Safety] Unhandled Rejection:", reason?.message || reason);
 });
 

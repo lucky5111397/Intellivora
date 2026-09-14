@@ -257,9 +257,8 @@ The GD simulator follows a state-machine lifecycle enforced by `GDSession` model
    VITE_FIREBASE_PROJECT_ID=your-project-id
    VITE_FIREBASE_STORAGE_BUCKET=your-app.firebasestorage.app
    VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-   VITE_FIREBASE_APP_ID=1:1234567890:web:abcdef123456
+   VITE_FIREBASE_APP_ID=your_firebase_app_id
    VITE_RAZORPAY_KEY_ID=rzp_test_your_key_id
-   VITE_ALLOWED_EMAILS=user@example.com,admin@example.com
    ```
 
 2. **Server Configuration**:
@@ -271,10 +270,10 @@ The GD simulator follows a state-machine lifecycle enforced by `GDSession` model
    PORT=8000
    NODE_ENV=development
    CLIENT_URL=http://localhost:5173
-   MONGODB_URL=mongodb+srv://<username>:<password>@cluster.mongodb.net/intellivora?retryWrites=true&w=majority
+   MONGODB_URL=your_mongodb_connection_string
    JWT_SECRET=your_jwt_secret_key_minimum_32_characters
-   OPENROUTER_API_KEY=sk-or-v1-your-openrouter-api-key
-   GEMINI_API_KEY=AIzaSyYourGeminiApiKey
+   OPENROUTER_API_KEY=your-openrouter-api-key
+   GEMINI_API_KEY=Your-Gemini-Api-Key
    RAZORPAY_KEY_ID=rzp_test_your_key_id
    RAZORPAY_KEY_SECRET=your_razorpay_key_secret
    ```

@@ -12,13 +12,11 @@ import {
   isDiscussionComplete,
   generateOpeningTurn,
   generateAgentTurn,
-  defaultAICaller,
 } from "../services/gdOrchestrator.service.js";
 import {
   clampScore,
   extractJsonFromResponse,
   validateAndNormalizeEvaluation,
-  buildEvaluationPrompt,
   evaluateGDSession,
 } from "../services/gdEvaluation.service.js";
 
@@ -139,16 +137,16 @@ describe("GD Orchestrator & Evaluation Services (GD-02)", () => {
   // -------------------------------------------------------------
   describe("Completion Boundary Checking", () => {
     it("should return true when transcript length reaches or exceeds maxTurns", () => {
-      assert.equal(isDiscussionComplete({ transcript: new Array(30), maxTurns: 30 }), true);
-      assert.equal(isDiscussionComplete({ transcript: new Array(32), maxTurns: 30 }), true);
-      assert.equal(isDiscussionComplete({ transcript: new Array(15), maxTurns: 30 }), false);
+      assert.equal(isDiscussionComplete({ transcript: Array.from({ length: 30 }), maxTurns: 30 }), true);
+      assert.equal(isDiscussionComplete({ transcript: Array.from({ length: 32 }), maxTurns: 30 }), true);
+      assert.equal(isDiscussionComplete({ transcript: Array.from({ length: 15 }), maxTurns: 30 }), false);
     });
 
     it("should return true when elapsed time reaches or exceeds duration limit", () => {
       // 10 minutes = 600 seconds
       assert.equal(
         isDiscussionComplete({
-          transcript: new Array(10),
+          transcript: Array.from({ length: 10 }),
           maxTurns: 30,
           durationMinutes: 10,
           elapsedTimeSeconds: 600,
@@ -157,7 +155,7 @@ describe("GD Orchestrator & Evaluation Services (GD-02)", () => {
       );
       assert.equal(
         isDiscussionComplete({
-          transcript: new Array(10),
+          transcript: Array.from({ length: 10 }),
           maxTurns: 30,
           durationMinutes: 10,
           elapsedTimeSeconds: 590,
@@ -236,7 +234,7 @@ describe("GD Orchestrator & Evaluation Services (GD-02)", () => {
     it("should estimate spoken duration proportionally to word count with a minimum of 3s", () => {
       assert.equal(estimateSpokenDurationSeconds("Short"), 3);
       // 25 words / 2.5 = 10s
-      const twentyFiveWords = new Array(25).fill("word").join(" ");
+      const twentyFiveWords = Array.from({ length: 25 }).fill("word").join(" ");
       assert.equal(estimateSpokenDurationSeconds(twentyFiveWords), 10);
     });
   });

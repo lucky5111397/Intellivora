@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import AptitudeAttempt from "../models/aptitudeAttempt.model.js";
-import { aptitudeCategories, findCategory } from "../config/aptitudeSyllabus.js";
+import { findCategory } from "../config/aptitudeSyllabus.js";
 import {
   ensureSeedQuestions,
   listCategories,

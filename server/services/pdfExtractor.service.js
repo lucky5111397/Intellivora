@@ -37,7 +37,7 @@ export const extractTextFromPdf = async (uploadId) => {
     let fileBuffer;
     try {
       fileBuffer = await fs.promises.readFile(filePath);
-    } catch (fsError) {
+    } catch {
       const error = new Error("Unable to read the uploaded PDF file.");
       error.status = 500;
       throw error;
@@ -53,7 +53,7 @@ export const extractTextFromPdf = async (uploadId) => {
     try {
       const uint8Array = new Uint8Array(fileBuffer);
       pdf = await pdfjsLib.getDocument({ data: uint8Array }).promise;
-    } catch (pdfError) {
+    } catch {
       const error = new Error("PDF text extraction failed. The file may be corrupted or not a valid PDF.");
       error.status = 400;
       throw error;
@@ -67,7 +67,7 @@ export const extractTextFromPdf = async (uploadId) => {
         const pageText = content.items.map((item) => item.str).join(" ");
         extractedText += `${pageText} `;
       }
-    } catch (pageError) {
+    } catch {
       const error = new Error("Failed to extract text from the PDF pages.");
       error.status = 500;
       throw error;
