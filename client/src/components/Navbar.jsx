@@ -1,15 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { motion } from "motion/react";
-import { FaCoins } from "react-icons/fa";
-import { HiOutlineLogout } from "react-icons/hi";
-import { FaUserAstronaut } from "react-icons/fa";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { ServerUrl } from "../App";
 import { setUserData } from "../redux/userSlice";
 import logoDark from "../assets/logo-dark.png";
 import { toast } from "sonner";
+import {
+    Coins,
+    LogOut,
+    User,
+    Menu,
+    X,
+    Clock,
+    Sparkles,
+    ArrowRight,
+} from "lucide-react";
+
 function Navbar() {
     const { userData } = useSelector((state) => state.user);
     const navigate = useNavigate();
@@ -18,6 +25,27 @@ function Navbar() {
 
     const [showCreditPopup, setShowCreditPopup] = useState(false);
     const [showUserPopup, setShowUserPopup] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+    // Close popups on escape key
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === "Escape") {
+                setShowCreditPopup(false);
+                setShowUserPopup(false);
+                setMobileMenuOpen(false);
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, []);
+
+    // Close mobile menu on route change
+    useEffect(() => {
+        setMobileMenuOpen(false);
+        setShowCreditPopup(false);
+        setShowUserPopup(false);
+    }, [location.pathname]);
 
     const handleLogout = async () => {
         try {
@@ -28,20 +56,49 @@ function Navbar() {
             dispatch(setUserData(null));
             setShowCreditPopup(false);
             setShowUserPopup(false);
+            setMobileMenuOpen(false);
 
             toast.success("Logged out successfully");
-
             navigate("/");
         } catch (error) {
-            console.log(error);
             console.error("Logout error:", error?.message || error);
-
             toast.error("Failed to logout. Please try again.");
         }
     };
 
+    const handleSectionOrRoute = (target) => {
+        if (target.startsWith("#")) {
+            if (location.pathname === "/") {
+                const element = document.querySelector(target);
+                if (element) {
+                    element.scrollIntoView({ behavior: "smooth" });
+                }
+            } else {
+                navigate("/" + target);
+            }
+        } else {
+            const protectedRoutes = ["/interview", "/aptitude", "/resume", "/gd", "/history"];
+            if (!userData && protectedRoutes.some((route) => target === route || target.startsWith(route + "/"))) {
+                navigate("/auth", { state: { from: { pathname: target } } });
+            } else {
+                navigate(target);
+            }
+        }
+        setMobileMenuOpen(false);
+    };
+
+    const navItems = [
+        { name: "Features", path: "#modules", isHash: true },
+        { name: "How It Works", path: "#how-it-works", isHash: true },
+        { name: "Mock Interview", path: "/interview" },
+        { name: "Aptitude Tests", path: "/aptitude" },
+        { name: "Resume ATS", path: "/resume" },
+        { name: "Group Discussion", path: "/gd" },
+        { name: "Pricing & Credits", path: "/pricing" },
+    ];
+
     return (
-        <div className="sticky top-0 z-50 flex justify-center px-4 pt-4 backdrop-blur-xl">
+        <header className="sticky top-0 z-50 w-full bg-[#05070a]/90 backdrop-blur-xl border-b border-[#151d25] transition-colors">
             {/* Backdrop dismissal for popups */}
             {(showCreditPopup || showUserPopup) && (
                 <div
@@ -50,54 +107,49 @@ function Navbar() {
                         setShowCreditPopup(false);
                         setShowUserPopup(false);
                     }}
+                    aria-hidden="true"
                 />
             )}
 
-            <motion.div
-                initial={{ opacity: 0, y: -40 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className="relative w-full max-w-7xl
-glass
-px-6
-py-3
-flex
-items-center
-justify-between">
-                {/* Logo */}
+            <div className="h-16 w-full max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-4">
+                {/* Brand Logo */}
                 <div
-                    onClick={() => navigate("/")}
-                    className="flex items-center gap-3 cursor-pointer"
+                    onClick={() => handleSectionOrRoute("/")}
+                    className="flex items-center gap-2.5 cursor-pointer select-none group"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => e.key === "Enter" && handleSectionOrRoute("/")}
+                    aria-label="Intellivora Home"
                 >
                     <img
                         src={logoDark}
-                        alt="Intellivora"
-                        className="h-10 w-10 object-contain"
+                        alt="INTELLIVORA Logo"
+                        className="h-8 w-8 object-contain transition-transform duration-200 group-hover:scale-105"
                     />
-
-                    <h1 className="hidden md:block text-lg font-bold tracking-wide text-white">
-                        Intellivora
-                    </h1>
+                    <span className="font-semibold text-base sm:text-lg tracking-tight text-[#f1f5f9] font-['Geist',sans-serif]">
+                        INTELLIVORA
+                    </span>
                 </div>
 
                 {/* Desktop Navigation Links */}
-                <nav className="hidden lg:flex items-center gap-1 bg-white/5 border border-white/10 rounded-2xl px-2 py-1">
-                    {[
-                        { name: "Aptitude", path: "/aptitude" },
-                        { name: "Interview", path: "/interview" },
-                        { name: "ATS Resume", path: "/resume" },
-                        { name: "Pricing", path: "/pricing" },
-                        { name: "History", path: "/history" },
-                    ].map((item) => {
-                        const isActive = location.pathname === item.path || (item.path !== "/" && location.pathname.startsWith(item.path + "/"));
+                <nav
+                    className="hidden xl:flex items-center gap-1 bg-[#0a0f14]/80 border border-[#202a34] rounded-lg p-1"
+                    aria-label="Main navigation"
+                >
+                    {navItems.map((item) => {
+                        const isActive =
+                            !item.isHash &&
+                            (location.pathname === item.path ||
+                                (item.path !== "/" && location.pathname.startsWith(item.path + "/")));
+
                         return (
                             <button
-                                key={item.path}
-                                onClick={() => navigate(item.path)}
-                                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                                key={item.name}
+                                onClick={() => handleSectionOrRoute(item.path)}
+                                className={`px-3 py-1.5 rounded text-xs font-medium transition-all duration-150 cursor-pointer ${
                                     isActive
-                                        ? "bg-gradient-to-r from-blue-600 to-violet-600 text-white shadow-sm"
-                                        : "text-slate-300 hover:text-white hover:bg-white/5"
+                                        ? "bg-[#17212b] text-[#f1f5f9] border border-[#2a3540] shadow-sm"
+                                        : "text-[#a7b0ba] hover:text-[#f1f5f9] hover:bg-[#111923]"
                                 }`}
                             >
                                 {item.name}
@@ -106,218 +158,221 @@ justify-between">
                     })}
                 </nav>
 
-                {/* Right Side */}
-                <div className="flex items-center gap-4">
-
-
-                    {/* Credit Button */}
-                    <div className="relative">
-                        <button
-                            onClick={() => {
-                                if (!userData) {
-                                    navigate("/auth");
-                                    return;
-                                }
-                                setShowCreditPopup(!showCreditPopup);
-                                setShowUserPopup(false);
-                            }}
-                            className="
-flex
-items-center
-gap-2
-px-5
-py-2.5
-rounded-2xl
-bg-white/5
-border
-border-yellow-400/20
-text-white
-backdrop-blur-xl
-hover:bg-white/10
-hover:border-yellow-400/40
-hover:-translate-y-0.5
-transition-all
-duration-300
-"
-                        >
-                            <FaCoins size={18} className="text-yellow-400" />
-
-                            <span className="font-semibold text-white">
-                                {userData?.credits || 0}
-                            </span>
-
-                            <span className="hidden md:inline text-sm text-slate-400">
-                                Credits
-                            </span>
-                        </button>
-
-                        {showCreditPopup && (
-                            <div
-                                className="
-absolute
-top-16
-right-0
-w-64
-glass
-p-5
-z-[99999]
-"             >
-                                <div className="mb-4">
-                                    <p className="text-white font-semibold">
-                                        {userData?.credits || 0} Credits Remaining
-                                    </p>
-
-                                    <p className="text-sm text-slate-400 mt-1">
-                                        Buy more credits to continue practicing AI interviews.
-                                    </p>
-                                </div>
-
+                {/* Right Side Actions */}
+                <div className="flex items-center gap-2 sm:gap-3">
+                    {/* If Authenticated: Show Credits & Profile Avatar */}
+                    {userData ? (
+                        <>
+                            {/* Credit Button & Popup */}
+                            <div className="relative">
                                 <button
-                                    onClick={() => navigate("/pricing")}
-                                    className="
-w-full
-rounded-xl
-bg-gradient-to-r
-from-indigo-600
-to-violet-600
-py-3
-text-sm
-font-semibold
-text-white
-hover:scale-[1.02]
-transition-all
-duration-300
-"
+                                    onClick={() => {
+                                        setShowCreditPopup(!showCreditPopup);
+                                        setShowUserPopup(false);
+                                    }}
+                                    className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg bg-[#0b1b33] border border-[#2563eb]/40 text-[#adc6ff] hover:border-[#2563eb] hover:bg-[#0b1b33]/80 transition-all text-xs font-semibold cursor-pointer"
+                                    aria-expanded={showCreditPopup}
+                                    aria-label="View user credits"
                                 >
-                                    Buy more credits
+                                    <Coins size={14} className="text-[#3b82f6]" />
+                                    <span className="font-semibold text-[#f1f5f9] font-mono">
+                                        {userData?.credits ?? 0}
+                                    </span>
+                                    <span className="hidden sm:inline text-[#a7b0ba]">Credits</span>
                                 </button>
+
+                                {showCreditPopup && (
+                                    <div className="absolute top-12 right-0 w-72 rounded-xl bg-[#17212b] border border-[#2a3540] shadow-2xl p-4 z-[99999] animate-in fade-in zoom-in-95 duration-150">
+                                        <div className="pb-3 border-b border-[#202a34] mb-3">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-xs font-medium uppercase tracking-wider text-[#a7b0ba]">
+                                                    Credit Balance
+                                                </span>
+                                                <span className="font-mono text-sm font-bold text-[#3b82f6]">
+                                                    {userData?.credits ?? 0}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-[#a7b0ba] mt-1.5 leading-relaxed">
+                                                Credits unlock realistic voice interviews, proctored tests, and ATS deep scans.
+                                            </p>
+                                        </div>
+
+                                        <button
+                                            onClick={() => {
+                                                setShowCreditPopup(false);
+                                                navigate("/pricing");
+                                            }}
+                                            className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#2563eb] hover:bg-[#1d4ed8] py-2 text-xs font-semibold text-[#f1f5f9] transition-all cursor-pointer shadow-sm"
+                                        >
+                                            <span>Buy More Credits</span>
+                                            <ArrowRight size={14} />
+                                        </button>
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    </div>
 
-                    {/* User Button */}
-                    <div className="relative">
-                        <button
-                            onClick={() => {
-                                if (!userData) {
-                                    navigate("/auth");
-                                    return;
-                                }
-                                setShowUserPopup(!showUserPopup);
-                                setShowCreditPopup(false);
-                            }}
-                            className="
-w-11
-h-11
-rounded-full
-border
-border-white/15
-shadow-lg
-shadow-[0_8px_25px_rgba(124,58,237,0.45)]
-bg-gradient-to-br
-from-blue-600
-to-violet-600
-text-white
-flex
-items-center
-justify-center
-text-lg
-font-bold
-tracking-wide
-shadow-lg
-transition-all
-duration-300
-hover:scale-105
-hover:shadow-[0_10px_35px_rgba(124,58,237,0.65)]
-after:absolute
-after:inset-0
-after:rounded-full
-after:ring-2
-after:ring-violet-400/20
-"      >
-                            {userData?.name
-                                ? userData.name.slice(0, 1).toUpperCase()
-                                : <FaUserAstronaut size={16} />}
-                        </button>
-
-                        {showUserPopup && (
-                            <div
-                                className="
-absolute
-top-16
-right-0
-w-64
-rounded-2xl
-border
-border-white/10
-shadow-2xl
-glass
-p-4
-z-[99999]
-"
-                            >
-                                <div className="pb-3 border-b border-white/10 mb-3">
-                                    <p className="text-white font-semibold text-base">
-                                        {userData?.name}
-                                    </p>
-
-                                    <p className="text-xs text-slate-400 mt-1">
-                                        {userData?.credits || 0} Credits Available
-                                    </p>
-                                </div>
-
+                            {/* User Profile Avatar & Popup */}
+                            <div className="relative">
                                 <button
-                                    onClick={() => navigate("/history")}
-                                    className="
-w-full
-text-left
-text-sm
-py-2.5
-px-3
-rounded-xl
-text-slate-300
-hover:bg-white/5
-hover:text-blue-400
-transition-all
-duration-300
-"
+                                    onClick={() => {
+                                        setShowUserPopup(!showUserPopup);
+                                        setShowCreditPopup(false);
+                                    }}
+                                    className="w-8 h-8 rounded-full bg-[#2563eb] text-white flex items-center justify-center text-xs font-bold border border-[#3b82f6]/50 hover:ring-2 hover:ring-[#3b82f6]/40 transition-all cursor-pointer"
+                                    aria-expanded={showUserPopup}
+                                    aria-label="User menu"
                                 >
-                                    Interview History
-                                    Activity History
+                                    {userData?.name ? (
+                                        userData.name.slice(0, 1).toUpperCase()
+                                    ) : (
+                                        <User size={15} />
+                                    )}
                                 </button>
 
+                                {showUserPopup && (
+                                    <div className="absolute top-12 right-0 w-64 rounded-xl bg-[#17212b] border border-[#2a3540] shadow-2xl p-3.5 z-[99999] animate-in fade-in zoom-in-95 duration-150">
+                                        <div className="pb-3 border-b border-[#202a34] mb-2 px-1">
+                                            <p className="text-sm font-semibold text-[#f1f5f9] truncate">
+                                                {userData?.name || "User"}
+                                            </p>
+                                            <p className="text-xs text-[#a7b0ba] mt-0.5 truncate">
+                                                {userData?.email || `${userData?.credits ?? 0} Credits Available`}
+                                            </p>
+                                        </div>
+
+                                        <div className="space-y-1">
+                                            <button
+                                                onClick={() => {
+                                                    setShowUserPopup(false);
+                                                    navigate("/history");
+                                                }}
+                                                className="w-full flex items-center gap-2.5 text-left text-xs font-medium py-2 px-2.5 rounded-lg text-[#a7b0ba] hover:text-[#f1f5f9] hover:bg-[#111923] transition-colors cursor-pointer"
+                                            >
+                                                <Clock size={15} className="text-[#3b82f6]" />
+                                                <span>Activity History</span>
+                                            </button>
+
+                                            <button
+                                                onClick={handleLogout}
+                                                className="w-full flex items-center gap-2.5 text-left text-xs font-medium py-2 px-2.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors cursor-pointer"
+                                            >
+                                                <LogOut size={15} />
+                                                <span>Logout</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    ) : (
+                        /* If Unauthenticated: Show Sign In and Start Practicing */
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => navigate("/auth")}
+                                className="hidden sm:inline-flex px-3 py-1.5 text-xs font-medium text-[#a7b0ba] hover:text-[#f1f5f9] hover:bg-[#111923] rounded-lg transition-colors cursor-pointer"
+                            >
+                                Sign In
+                            </button>
+                            <button
+                                onClick={() => navigate("/auth", { state: { from: { pathname: "/interview" } } })}
+                                className="inline-flex items-center justify-center gap-1.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-[#f1f5f9] text-xs font-semibold px-3.5 py-1.5 rounded-lg transition-all shadow-sm cursor-pointer"
+                            >
+                                <Sparkles size={13} />
+                                <span>Start Practicing</span>
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Mobile Menu Toggle Button */}
+                    <button
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        className="xl:hidden p-2 rounded-lg bg-[#0a0f14] border border-[#202a34] text-[#a7b0ba] hover:text-[#f1f5f9] hover:bg-[#111923] transition-colors cursor-pointer"
+                        aria-label="Toggle mobile menu"
+                        aria-expanded={mobileMenuOpen}
+                    >
+                        {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+                    </button>
+                </div>
+            </div>
+
+            {/* Responsive Mobile / Tablet Drawer */}
+            {mobileMenuOpen && (
+                <div className="xl:hidden bg-[#0a0f14] border-b border-[#202a34] px-4 pt-3 pb-5 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                    <nav className="flex flex-col space-y-1" aria-label="Mobile navigation">
+                        {navItems.map((item) => {
+                            const isActive =
+                                !item.isHash &&
+                                (location.pathname === item.path ||
+                                    (item.path !== "/" && location.pathname.startsWith(item.path + "/")));
+
+                            return (
+                                <button
+                                    key={item.name}
+                                    onClick={() => handleSectionOrRoute(item.path)}
+                                    className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                                        isActive
+                                            ? "bg-[#17212b] text-[#f1f5f9] border border-[#2a3540]"
+                                            : "text-[#a7b0ba] hover:text-[#f1f5f9] hover:bg-[#111923]"
+                                    }`}
+                                >
+                                    {item.name}
+                                </button>
+                            );
+                        })}
+                    </nav>
+
+                    {/* Mobile User Controls */}
+                    <div className="pt-3 border-t border-[#151d25] flex flex-col gap-2">
+                        {userData ? (
+                            <>
+                                <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-[#111923] text-xs">
+                                    <span className="text-[#a7b0ba]">Logged in as <strong className="text-[#f1f5f9]">{userData?.name}</strong></span>
+                                    <span className="font-mono text-[#3b82f6] font-semibold">{userData?.credits ?? 0} Credits</span>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        navigate("/history");
+                                        setMobileMenuOpen(false);
+                                    }}
+                                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-[#a7b0ba] hover:text-[#f1f5f9] hover:bg-[#111923]"
+                                >
+                                    <Clock size={14} className="text-[#3b82f6]" />
+                                    <span>Activity History</span>
+                                </button>
                                 <button
                                     onClick={handleLogout}
-                                    className="
-w-full
-mt-2
-text-left
-text-sm
-py-2.5
-px-3
-rounded-xl
-flex
-items-center
-gap-2
-text-red-400
-hover:bg-red-500/10
-hover:text-red-300
-transition-all
-duration-300
-"
+                                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-red-400 hover:bg-red-500/10"
                                 >
-                                    <HiOutlineLogout size={16} />
-                                    Logout
+                                    <LogOut size={14} />
+                                    <span>Logout</span>
+                                </button>
+                            </>
+                        ) : (
+                            <div className="grid grid-cols-2 gap-2 pt-1">
+                                <button
+                                    onClick={() => {
+                                        navigate("/auth");
+                                        setMobileMenuOpen(false);
+                                    }}
+                                    className="w-full py-2 text-center rounded-lg bg-[#17212b] text-xs font-medium text-[#f1f5f9] hover:bg-[#1b2631]"
+                                >
+                                    Sign In
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        navigate("/auth", { state: { from: { pathname: "/interview" } } });
+                                        setMobileMenuOpen(false);
+                                    }}
+                                    className="w-full py-2 text-center rounded-lg bg-[#2563eb] text-xs font-semibold text-[#f1f5f9] hover:bg-[#1d4ed8]"
+                                >
+                                    Start Practicing
                                 </button>
                             </div>
                         )}
                     </div>
-
                 </div>
-            </motion.div>
-
-
-        </div >
+            )}
+        </header>
     );
 }
 

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import femaleVideo from "../assets/videos/female-ai.mp4";
 import Timer from "./Timer";
 import { motion } from "motion/react";
 import { FaMicrophone, FaMicrophoneSlash } from "react-icons/fa";
@@ -350,17 +351,12 @@ function Step2Interview({ interviewData, onFinish }) {
             currentQuestion.timeLimit - timeLeft,
         }, { withCredentials: true }
       );
-      setFeedback(result.data.feedback)
-      speakText(result.data.feedback)
-      setIsSubmitting(false)
       setFeedback(result.data.feedback);
       speakText(result.data.feedback);
       setIsSubmitting(false);
     } catch (error) {
-      console.log(error)
-      setIsSubmitting(false)
-
       console.error("Submit answer error:", error?.message || error);
+      toast.error("Failed to submit answer. Please try again.");
       setIsSubmitting(false);
     }
   };

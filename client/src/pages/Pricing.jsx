@@ -1,65 +1,35 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { FaArrowLeft, FaCheckCircle } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "motion/react";
 import { ServerUrl } from "../App";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setUserData } from "../redux/userSlice";
 import { toast } from "sonner";
-
+import { PRICING_PLANS } from "../config/pricingPlans";
 
 function Pricing() {
     const navigate = useNavigate();
+    const location = useLocation();
+    const { userData } = useSelector((state) => state.user);
     const [selectedPlan, setSelectedPlan] = useState("free");
     const [loadingPlan, setLoadingPlan] = useState(null);
-    const dispatch = useDispatch()
+    const dispatch = useDispatch();
 
-    const plans = [
-        {
-            id: "free",
-            name: "Free",
-            price: "₹0",
-            credits: 100,
-            description: "Perfect for beginners starting interview preparation.",
-            features: [
-                "100 AI Interview Credits",
-                "Basic Performance Report",
-                "Voice Interview Access",
-                "Limited History Tracking",
-            ],
-            default: true,
-        },
-        {
-            id: "basic",
-            name: "Starter Pack",
-            price: "₹199",
-            credits: 500,
-            description: "Ideal for regular interview practice and skill improvement.",
-            features: [
-                "500 AI Interview Credits",
-                "Detailed AI Feedback",
-                "Performance Analytics",
-                "Unlimited Interview History",
-            ],
-        },
-        {
-            id: "pro",
-            name: "Pro Pack",
-            price: "₹499",
-            credits: 1500,
-            description: "Best value for serious job preparation.",
-            features: [
-                "1500 AI Interview Credits",
-                "Advanced AI Feedback",
-                "Skill Trend Analysis",
-                "Priority AI Processing",
-            ],
-            badge: "Best Value",
-        },
-    ];
+    const plans = PRICING_PLANS;
 
     const handlePayment = async (plan) => {
+        if (!userData) {
+            navigate("/auth", { state: { from: location } });
+            return;
+        }
+
+        if (plan.id === "free") {
+            toast.info("100 introductory credits are automatically credited upon account registration.");
+            return;
+        }
+
         try {
             setLoadingPlan(plan.id);
 
@@ -80,8 +50,6 @@ function Pricing() {
                 { withCredentials: true }
             );
 
-            console.log(result.data);
-
             const options = {
                 key: import.meta.env.VITE_RAZORPAY_KEY_ID,
                 amount: result.data.amount,
@@ -92,8 +60,6 @@ function Pricing() {
 
                 handler: async function (response) {
                     try {
-                        console.log(response);
-
                         const verifypay = await axios.post(
                             ServerUrl + "/api/payment/verify",
                             {
@@ -109,7 +75,6 @@ function Pricing() {
                         toast.success("Payment successful! Credits added.");
                         navigate("/");
                     } catch (error) {
-                        console.log(error);
                         console.error("Payment verification failed:", error?.message || error);
                         toast.error("Payment verification failed!");
                     }

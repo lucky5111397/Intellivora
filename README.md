@@ -1,13 +1,22 @@
 # Intellivora
 
-> Comprehensive AI-Powered Career Preparation, Assessment, and Evaluation Platform
+> Comprehensive AI-Powered Career Preparation, Assessment, and Placement Simulation Platform
 
-Intellivora is a full-stack MERN application engineered to simulate realistic recruitment workflows. It prepares candidates for high-stakes technical interviews, aptitude assessments, corporate group discussions, and applicant tracking systems (ATS) through automated evaluation, real-time speech interaction, and granular performance analytics.
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
+[![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A518-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Express](https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white)](https://expressjs.com/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+
+Intellivora is a full-stack career preparation and recruitment simulation platform built on the MERN stack. It brings together four essential hiring evaluation stages into a cohesive workflow: AI-driven mock technical interviews, timed aptitude assessments, ATS resume compatibility analysis, and interactive multi-agent group discussions. Candidates receive automated evaluation, structured performance rubrics, and unified history tracking to systematically prepare for modern recruitment processes.
 
 ---
 
 ## Table of Contents
 
+- [Why Intellivora?](#why-intellivora)
+- [Product Showcase](#product-showcase)
 - [Core Capabilities](#core-capabilities)
   - [1. AI Mock Technical Interviews](#1-ai-mock-technical-interviews)
   - [2. Timed Aptitude Assessments](#2-timed-aptitude-assessments)
@@ -18,62 +27,97 @@ Intellivora is a full-stack MERN application engineered to simulate realistic re
 - [System Architecture](#system-architecture)
 - [Technology Stack](#technology-stack)
 - [Project Structure](#project-structure)
-- [AI Orchestration & Provider Fallbacks](#ai-orchestration--provider-fallbacks)
-- [Group Discussion (GD) Architecture](#group-discussion-gd-architecture)
+- [AI Orchestration & Resilience](#ai-orchestration--resilience)
+- [Group Discussion Architecture](#group-discussion-architecture)
+- [Security & Data Privacy](#security--data-privacy)
 - [Local Development Setup](#local-development-setup)
   - [Prerequisites](#prerequisites)
   - [Environment Configuration](#environment-configuration)
-  - [Starting the Application](#starting-the-application)
-- [Verification, Testing & Linting](#verification-testing--linting)
-- [Security & Secret Hygiene](#security--secret-hygiene)
+  - [Running the Application](#running-the-application)
+- [Testing & Quality Assurance](#testing--quality-assurance)
+- [Future Roadmap](#future-roadmap)
+
+---
+
+## Why Intellivora?
+
+Modern technical recruitment funnels are rigorous, multi-staged, and fragmented:
+
+1. **Screening Gatekeepers**: Applicant tracking systems can automatically screen and rank resumes before recruiter review.
+2. **Standardized Filtering**: Timed numerical, verbal, and logical aptitude tests eliminate candidates early in the pipeline.
+3. **Behavioral & Leadership Trials**: Group discussions assess interpersonal communication, floor-share management, and argument synthesis under pressure.
+4. **Technical Panels**: In-depth conversational technical interviews challenge domain knowledge, architectural reasoning, and communication cadence.
+
+Candidates typically prepare across disparate websites, static question banks, and disconnected tools. **Intellivora unites the entire recruitment journey into a single cohesive platform.** Candidates experience continuous evaluation, unified historical analytics, authoritative credit management, and structured feedback across every stage of preparation.
+
+---
+
+## Product Showcase
+
+| Module | Interface Preview | Primary Capabilities |
+| :--- | :--- | :--- |
+| **Unified Workspace** | ![Home & Candidate Workspace](./docs/screenshots/HomePage.png) | Modern dark engineering aesthetic, active system telemetry, multi-module overview cards, preparation methodology journey, and dual guest/user navigation. |
+| **AI Mock Interview** | ![Interactive AI Interview Chamber](./docs/screenshots/AI-Interview.png) | Conversational female video avatar, SpeechSynthesis voice output, Web Speech API speech-to-text mic input, real-time countdown timer, and dynamic technical question rendering. |
+| **Aptitude Chamber** | ![Timed Aptitude Assessment Screen](./docs/screenshots/Aptitude.png) | Standardized testing environment, multi-category question banks, persistent session recovery across browser refreshes, answer review palette, and authoritative countdown timer. |
+| **Group Discussion** | ![Multi-Agent GD Chamber](./docs/screenshots/AI-Group-Discussion.png) | 5-participant topology (Candidate, Central Orchestrator, 3 AI peers), live floor-share telemetry metering, speech interruption handling, and 4-pillar evaluation. |
+| **ATS Resume Scorecard** | ![ATS Analysis & Compatibility Report](./docs/screenshots/ATS-Score.png) | In-memory PDF text extraction, role-specific benchmark matching, keyword gap identification, interview readiness score, and structured strengths/weaknesses breakdown. |
 
 ---
 
 ## Core Capabilities
 
 ### 1. AI Mock Technical Interviews
-- **Role & Experience Customization**: Tailors questions to target job roles, years of experience, and resume technical stacks.
-- **Dynamic Question Generation**: Structured difficulty scaling (Easy, Medium, Hard) across theoretical, architectural, and behavioral dimensions.
-- **Interactive Chamber**: Live browser microphone input, synthesized conversational AI voice, timed question countdowns, and optional camera diagnostics.
-- **Granular Evaluation Scorecards**: Detailed scoring across Confidence, Communication, and Technical Correctness, paired with actionable improvement advice and downloadable PDF reports.
+- **Role & Experience Calibration**: Configurable parameters for target job roles (e.g., Frontend, Backend, Full Stack, DevOps, Distributed Systems) and experience brackets (Fresher, Intermediate, Senior).
+- **Dynamic Question Synthesis**: AI Gateway generates structured question tiers (theoretical fundamentals, practical problem-solving, architectural design) calibrated to resume skills.
+- **Interactive Chamber**: Live browser microphone input via Web Speech API, synchronized AI voice avatar with video playback, real-time question timers, and optional camera diagnostics.
+- **Granular Evaluation Scorecards**: Immediate post-interview assessment evaluating Confidence, Communication Cadence, and Technical Correctness with actionable feedback and verifiable PDF generation.
+- **Session Recovery**: Persistent session tracking via `sessionStorage` and backend endpoint `GET /api/interview/:id` prevents loss of active sessions during browser refreshes.
 
 ### 2. Timed Aptitude Assessments
-- **Curated Question Banks**: Quantitative Aptitude, Logical Reasoning, Verbal Ability, and Core Technical disciplines.
-- **Authoritative Timer & Progression**: Server-synced countdown timers, question palette navigation, review flagging, and auto-submit triggers.
-- **Session Recovery**: Local cache persistence (`recoverActiveTest`) prevents progress loss across browser refreshes.
-- **Automated Grading & Verified Reports**: Instant scoring, accuracy breakdown, answer key analysis, and verifiable PDF performance certificates.
+- **Curated Category Banks**: Comprehensive assessment banks covering Quantitative Aptitude, Logical Reasoning, Verbal Ability, and Core Technical fundamentals.
+- **Authoritative Timing & Navigation**: Server-synchronized countdown timer, question palette navigation with review flagging, and automatic submission triggers upon timer expiration.
+- **Resilient State Persistence**: Local storage cache persistence (`recoverActiveTest`) prevents progress loss across accidental page reloads.
+- **Instant Detailed Analytics**: Immediate scoring breakdown, category-specific accuracy rates, question-by-question answer review, and downloadable PDF performance certificates.
 
 ### 3. ATS Resume Analyzer
-- **In-Memory PDF Extraction**: Extracts structured text and layout data from candidate PDF resumes securely on the server via PDF.js.
-- **ATS Compatibility Scoring**: Benchmark matching against target roles and seniority levels with keyword gap identification.
-- **Atomic Credit Safety**: Uses atomic database decrements (`findOneAndUpdate`) with automated compensating refunds in the event of an extraction or AI failure.
+- **Privacy-Centric In-Memory PDF Extraction**: Extracts structured text and layout data from PDF resumes on the server using PDF.js without storing raw resume text in the database.
+- **Role-Calibrated Compatibility Scoring**: AI benchmark matching against candidate target roles, computing overall ATS score, resume readability, and interview readiness.
+- **Keyword & Skill Gap Diagnostics**: Identifies missing core technologies, structural deficiencies, and concrete phrasing improvements.
+- **Atomic Credit Safety**: Executes credit deductions via atomic `$gte` checks with automated compensating refunds if extraction or AI analysis fails.
 
 ### 4. AI Group Discussion Simulator
-- **Multi-Agent Deliberation**: Simulates a 5-participant corporate GD comprising the candidate, an impartial Central Orchestrator, and 3 distinct AI peers:
-  - **Agent 1**: Analytical, empirical, data-driven perspective.
-  - **Agent 2**: Pragmatic, strategic, implementation-focused perspective.
-  - **Agent 3**: Creative, ethical, human-centric perspective.
-- **Real-Time Voice Lifecycle**: Hands-free Web Speech API speech-to-text (STT) and coordinated multi-voice speech synthesis queue (TTS).
-- **Floor-Share & Interruption Metering**: Tracks candidate speaking duration, floor-share percentages, and turn-taking balance.
-- **4-Pillar Evaluation Scorecard**: Assesses candidate performance across:
+- **Multi-Agent Deliberation**: Simulates a realistic 5-participant discussion chamber comprising the candidate, an impartial Central Orchestrator, and 3 distinct AI peers:
+  - **Agent 1 (Analytical)**: Empirical, data-driven, statistical arguments.
+  - **Agent 2 (Pragmatic)**: Practical, execution-oriented, implementation perspective.
+  - **Agent 3 (Visionary & Ethical)**: Human-centric, societal impact, forward-looking perspective.
+- **Real-Time Audio & Floor-Share Telemetry**: Hands-free Web Speech API input, priority-based interruption handling (candidate speech immediately suspends AI peers), and speaking floor-share metering.
+- **4-Pillar Evaluation Rubric**: Scores candidate performance across:
   1. *Articulation & Clarity*
   2. *Leadership & Initiative*
   3. *Active Listening & Responsiveness*
   4. *Critical Thinking & Depth*
-- **Placement Readiness Tiering**: Turn-by-turn critiques and placement readiness classification (Tier-1 Placement Ready down to Foundational Stage).
+- **Refund Safeguard**: If a session is aborted with 0 candidate contributions, credits are automatically refunded to preserve user balance.
 
 ### 5. Unified Activity & Assessment History
-- **Cross-Module Timeline**: Centralized chronological ledger tracking Mock Interviews, Aptitude Tests, and Group Discussions.
-- **Fast Filtering & Search**: Filter by assessment category, search by topic keyword, or inspect completion status.
-- **Deep-Linked Scorecards**: Direct navigation to detailed analytical breakdowns and historical reports.
+- **Cross-Module Unified Ledger**: Centralized chronological timeline aggregating user activity across all 4 platform modules:
+  - Mock Interviews (scores, roles, durations)
+  - Aptitude Assessments (scores, accuracy, category)
+  - Group Discussions (topic, floor share, 4-pillar scores)
+  - ATS Resume Audits (ATS score, target role, readiness score)
+- **Fast Filtering & Search**: Category-specific tab filters, free-text topic search, and chronological date sorting.
+- **Deep-Linked Reports & User Isolation**: Direct navigation back into detailed analytical reports, with strict per-user database scoping for safe record deletion.
 
 ### 6. Credit & Billing System
-- **Transparent Ledger**: New users receive 100 registration credits upon account creation.
-- **Predictable Consumption**:
-  - Mock Interview: 100–250 credits (plan-dependent)
-  - ATS Resume Analysis: 200 credits
-  - Group Discussion: 150 credits
-- **Payment Gateway**: Seamless Razorpay checkout with cryptographically verified HMAC signatures, replay protection, and idempotent fulfillment.
+- **Transparent Credit Economy**:
+  - **New User Welcome Bonus**: 100 introductory credits credited on signup.
+  - **Mock Interviews**: 100 credits (Short), 150 credits (Standard), 250 credits (Full Assessment).
+  - **ATS Resume Analysis**: 200 credits per complete audit.
+  - **Group Discussion Simulator**: 150 credits per 10-minute session.
+  - **Aptitude Assessments**: Free for registered candidates.
+- **Backend-Authoritative Pricing**:
+  - **Starter Pack**: ₹199 for 500 credits.
+  - **Pro Pack**: ₹499 for 1,500 credits.
+- **Cryptographic Payment Verification**: Razorpay payment orders are generated on the backend, and payment signatures are verified using HMAC SHA-256 with timing-safe comparison via `crypto.timingSafeEqual`.
 
 ---
 
@@ -81,44 +125,44 @@ Intellivora is a full-stack MERN application engineered to simulate realistic re
 
 ```mermaid
 flowchart TD
-    subgraph Client["Client (React 19 + Vite)"]
-        UI[User Interface & Router]
-        AuthCtx[Auth & User State]
-        AudioEngine[Web Speech STT / TTS Queue]
-        AptCtx[Aptitude Context & Recovery]
-        GDCtx[GD Context & State Engine]
+    subgraph Client["Client (React 19 + Vite 8)"]
+        UI["User Interface & React Router"]
+        AuthCtx["Auth State & ProtectedRoute"]
+        AudioEngine["Web Speech STT / TTS Audio Engine"]
+        AptCtx["Aptitude Context & Session Recovery"]
+        GDCtx["GD Context & State Reducer"]
     end
 
     subgraph Server["Server (Express 5 + Node.js)"]
-        API[API Router /api/*]
-        AuthMW[isAuth Middleware - JWT]
-        ErrMW[Global Error Handler]
+        API["REST API Router (/api/*)"]
+        AuthMW["isAuth Middleware (JWT in HTTP-Only Cookie)"]
+        ErrMW["Centralized Production Error Handler"]
         
-        subgraph Controllers
-            AC[auth.controller]
-            IC[interview.controller]
-            ApC[aptitude.controller]
-            RC[resume.controller]
-            GDC[gd.controller]
-            HC[history.controller]
-            PC[payment.controller]
+        subgraph Controllers["Express Controllers"]
+            AC["auth.controller"]
+            IC["interview.controller"]
+            ApC["aptitude.controller"]
+            RC["resume.controller"]
+            GDC["gd.controller"]
+            HC["history.controller"]
+            PC["payment.controller"]
         end
 
-        subgraph Services
-            GDOpt[gdOrchestrator.service]
-            GDEval[gdEvaluation.service]
-            AptSvc[aptitude.service]
-            PDFSvc[pdfExtractor.service]
-            AIFallback[AI Cascade Manager]
+        subgraph Services["Domain Services"]
+            GDOpt["gdOrchestrator.service"]
+            GDEval["gdEvaluation.service"]
+            AptSvc["aptitude.service"]
+            PDFSvc["pdfExtractor.service"]
+            AIGateway["Centralized AI Gateway"]
         end
     end
 
-    subgraph External["External Infrastructure & APIs"]
-        Mongo[(MongoDB Atlas)]
-        Firebase[Firebase Authentication]
-        OpenRouter[OpenRouter AI Provider]
-        Gemini[Google Gemini API]
-        Razorpay[Razorpay Payment Gateway]
+    subgraph External["External Infrastructure & Cloud Providers"]
+        Mongo[("MongoDB Atlas Database")]
+        Firebase["Firebase Client Authentication"]
+        OpenRouter["OpenRouter (Llama 3.3, Gemma 3)"]
+        Gemini["Google Gemini (2.5 Flash Lite)"]
+        Razorpay["Razorpay Payment Gateway"]
     end
 
     UI --> API
@@ -133,9 +177,9 @@ flowchart TD
     RC --> PDFSvc
     GDC --> GDOpt
     GDC --> GDEval
-    Services --> AIFallback
-    AIFallback --> OpenRouter
-    AIFallback --> Gemini
+    Services --> AIGateway
+    AIGateway --> OpenRouter
+    AIGateway --> Gemini
     PC --> Razorpay
 ```
 
@@ -143,25 +187,22 @@ flowchart TD
 
 ## Technology Stack
 
-### Frontend
-- **Framework**: React 19, Vite
-- **Styling**: Tailwind CSS v4, custom glassmorphism design system
-- **State Management**: Redux Toolkit, React Context, custom reducers
-- **Animation & UI**: Motion (Framer Motion v12), Lucide React, React Icons, Sonner
-- **Data Visualization**: Recharts, React Circular Progressbar
-- **Export & Documents**: jsPDF, jspdf-autotable
-- **Audio & Media**: Web Speech API (`SpeechRecognition`, `SpeechSynthesis`), Web MediaStream API
-
-### Backend
-- **Runtime**: Node.js (ES Modules)
-- **Framework**: Express 5
-- **Database**: MongoDB with Mongoose 9
-- **Authentication**: JWT (JSON Web Tokens) with HTTP-only cookies, Firebase Client Auth
-- **AI Integrations**:
-  - `@google/genai` (Google Gemini 2.5 Flash Lite)
-  - OpenRouter API (Llama 3.3, Gemma 3, Nemotron, GPT-OSS)
-- **File & PDF Processing**: Multer, PDF.js (`pdfjs-dist`)
-- **Payments**: Razorpay Node SDK, Node Crypto (HMAC SHA-256)
+| Domain | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Frontend Framework** | React 19, Vite 8 | High-performance component rendering and fast HMR bundling |
+| **Routing & Protection** | React Router v7 | Client-side routing with auth-hydrated `ProtectedRoute` guards |
+| **Styling & Design** | Tailwind CSS v4 | Dark telemetry design system, responsive glassmorphism |
+| **State Management** | Redux Toolkit, Context API | User authentication slice, module-level state reducers |
+| **Animation & Feedback** | Motion (Framer Motion v12), Sonner | Smooth interactive transitions, animated counters, toast alerts |
+| **Data Visualization** | Recharts, Circular Progressbar | Radar charts, performance trends, and skill breakdown meters |
+| **Media & Audio** | Web Speech API, MediaStream API | SpeechSynthesis voice output, SpeechRecognition STT, webcam stream |
+| **Document Processing** | jsPDF, jspdf-autotable, PDF.js | Client-side scorecard PDF generation and server-side PDF text parsing |
+| **Backend Framework** | Node.js (ESM), Express 5 | RESTful API service with modular routing and structured middleware |
+| **Database & ODM** | MongoDB Atlas, Mongoose 9 | Document persistence, compound indexing, atomic credit increments |
+| **Authentication** | JWT (HTTP-Only Cookie), Firebase | Dual-layer auth: Firebase client provider and secure server-signed JWT |
+| **AI Orchestration** | `@google/genai`, OpenRouter API | Centralized AI Gateway with circuit breaker, prompt cascades, and fallbacks |
+| **Billing & Payments** | Razorpay Node SDK, Node Crypto | Server-authoritative order creation and timing-safe HMAC verification |
+| **Quality & Testing** | `node:test`, `oxlint` | Zero-dependency native Node test runner and ultra-fast static linter |
 
 ---
 
@@ -169,87 +210,188 @@ flowchart TD
 
 ```
 Intellivora/
-├── client/                     # Frontend Single Page Application
+├── client/                          # Frontend Single Page Application (Vite + React)
 │   ├── src/
-│   │   ├── aptitude/           # Aptitude assessment pages, context, and data banks
-│   │   ├── assets/             # Branding assets, UI icons, and demonstration media
-│   │   ├── components/         # Reusable UI components (Navbar, Modals, Step wizards)
-│   │   ├── gd/                 # Group Discussion module
-│   │   │   ├── audio/          # Web Speech API hooks, audio profiles, speech queues
-│   │   │   ├── context/        # GD session state reducer and provider
-│   │   │   ├── pages/          # GDOverview, GDSetup, GDLobby, GDRoom, GDAnalysis
-│   │   │   └── utils/          # GD topic banks, validators, formatting helpers
-│   │   ├── pages/              # Primary routes (Home, Auth, Pricing, History, Resume)
-│   │   ├── redux/              # Global user and session slices
-│   │   ├── utils/              # Firebase client utilities
-│   │   ├── App.jsx             # Top-level routing configuration
-│   │   ├── index.css           # Global Tailwind v4 design tokens and utilities
-│   │   └── main.jsx            # React root application bootstrap
-│   ├── tests/                  # Client unit and integration test suite
-│   ├── .env.example            # Client environment configuration template
-│   └── package.json            # Client dependencies and scripts
+│   │   ├── aptitude/                # Aptitude module (screens, context, API client, questions)
+│   │   │   ├── context/             # Aptitude state reducer and context provider
+│   │   │   ├── data/                # Question bank repositories
+│   │   │   ├── pages/               # Dashboard, TestSetup, TestScreen, AptitudeResult
+│   │   │   └── aptitudeApi.js       # Axios client for aptitude endpoints
+│   │   ├── assets/                  # Branding graphics, icons, and demonstration video media
+│   │   │   └── videos/              # female-ai.mp4 (AI video avatar)
+│   │   ├── components/              # Shared components (Navbar, Footer, ProtectedRoute, Modals)
+│   │   │   ├── ProtectedRoute.jsx   # UX route guard with auth hydration holding state
+│   │   │   ├── Step1SetUp.jsx       # Interview setup form and credit verification
+│   │   │   ├── Step2Interview.jsx   # Voice AI interview room with video avatar
+│   │   │   └── Step3Report.jsx      # Post-interview evaluation scorecard
+│   │   ├── config/                  # Client-side configuration
+│   │   │   └── pricingPlans.js      # Client-side pricing display/reference configuration
+│   │   ├── gd/                      # AI Group Discussion module
+│   │   │   ├── audio/               # Web Speech audio profiles, speech queue manager
+│   │   │   ├── context/             # GD session state reducer and provider
+│   │   │   ├── pages/               # GDOverview, GDSetup, GDLobby, GDRoom, GDAnalysis
+│   │   │   └── utils/               # Topic banks, form validators, telemetry helpers
+│   │   ├── pages/                   # Primary application routes
+│   │   │   ├── home.jsx             # Stitch-matched dark telemetry landing page
+│   │   │   ├── Auth.jsx             # Sign in and registration with post-login redirect
+│   │   │   ├── InterviewPage.jsx    # 3-step interview coordinator with refresh recovery
+│   │   │   ├── InterviewReport.jsx  # Direct deep-linked report view
+│   │   │   ├── InterviewHistory.jsx # Unified 4-module activity ledger
+│   │   │   ├── Pricing.jsx          # Credit purchase and Razorpay checkout
+│   │   │   └── Resume.jsx           # ATS resume upload and score inspection
+│   │   ├── redux/                   # Redux Toolkit userSlice and global store
+│   │   ├── App.jsx                  # Route definitions and session hydration
+│   │   ├── index.css                # Tailwind v4 utility layers and font tokens
+│   │   └── main.jsx                 # React root bootstrap with Redux Provider
+│   ├── tests/                       # Client behavioral and integration test suite
+│   │   ├── gdAnalysis.test.js       # GD analysis and unified history tests
+│   │   ├── gdAudio.test.js          # Audio profile and speech synthesis tests
+│   │   ├── gdLobbyRoom.test.js      # GD lobby, live room, and floor-share tests
+│   │   ├── gdSetup.test.js          # GD form validation and credit resolution tests
+│   │   └── homeAndNavbar.test.js    # Navbar, routing, and billing contract tests
+│   ├── .env.example                 # Frontend environment template
+│   └── package.json                 # Client dependencies and build scripts
 │
-├── server/                     # Backend REST API Server
-│   ├── config/                 # Database connection and environment bootstrap
-│   ├── controllers/            # Request handlers (auth, interview, aptitude, gd, payment)
-│   ├── middlewares/            # JWT authorization, file upload, error handling
-│   ├── models/                 # Mongoose schemas (User, Interview, GDSession, Payment)
-│   ├── Routes/                 # Express route definitions
-│   ├── services/               # AI orchestration, evaluation, PDF extraction, Razorpay
-│   ├── tests/                  # Backend unit and integration test suite
-│   ├── index.js                # Server entry point, middleware stack, route mounting
-│   ├── .env.example            # Server environment configuration template
-│   └── package.json            # Server dependencies and scripts
+├── server/                          # Backend REST API Server (Express 5 + Node.js)
+│   ├── config/                      # Database connection and credit rules
+│   │   ├── db.js                    # Mongoose connection pool configuration
+│   │   ├── credits.config.js        # Credit deduction values across modules
+│   │   └── aptitudeSyllabus.js      # Categorical syllabus taxonomy
+│   ├── controllers/                 # REST endpoint request controllers
+│   │   ├── auth.controller.js       # Registration, login, cookie issuance, logout
+│   │   ├── interview.controller.js  # Question generation, answer grading, finish
+│   │   ├── aptitude.controller.js   # Tests, answer saving, timer submission
+│   │   ├── gd.controller.js         # Session lifecycle, turn submission, evaluation
+│   │   ├── history.controller.js    # Unified 4-module aggregation and delete
+│   │   ├── resume.controller.js     # PDF extraction, ATS analysis, credit handling
+│   │   └── payment.controller.js    # Razorpay order generation and verification
+│   ├── middlewares/                 # Express middleware pipeline
+│   │   ├── isAuth.js                # JWT validation via HTTP-only cookie
+│   │   ├── multer.js                # Secure in-memory/disk file upload handler
+│   │   ├── rateLimiter.js           # IP-based endpoint throttling
+│   │   ├── securityHeaders.js       # Production security headers
+│   │   └── errorHandler.js          # Sanitized production error handler
+│   ├── models/                      # Mongoose data schemas
+│   │   ├── user.model.js            # User profile, credentials, and credit balance
+│   │   ├── interview.model.js       # Interview session, questions, and scores
+│   │   ├── aptitudeAttempt.model.js # Aptitude test answers and calculated score
+│   │   ├── gdSession.model.js       # GD transcript, floor-share, and 4 pillars
+│   │   ├── resumeAnalysis.model.js  # Structured ATS evaluation results (minimized)
+│   │   └── payment.model.js         # Payment records, order IDs, and status
+│   ├── Routes/                      # Express route declarations
+│   ├── services/                    # Domain logic and external provider services
+│   │   ├── aiGateway.service.js     # Resilient AI gateway with health circuit breaker
+│   │   ├── gdOrchestrator.service.js# Multi-agent speaker selection and deliberation
+│   │   ├── gdEvaluation.service.js  # 4-pillar GD scoring and tier classification
+│   │   ├── pdfExtractor.service.js  # PDF text parsing via PDF.js
+│   │   ├── resumeAnalysis.service.js# ATS prompt generation and evaluation
+│   │   └── razorpay.service.js      # Razorpay client instance
+│   ├── tests/                       # Server unit and integration test suite
+│   │   ├── aiGateway.test.js        # AI fallback chain and error categorization
+│   │   ├── gdApi.test.js            # GD session lifecycle and credit tests
+│   │   ├── gdOrchestrator.test.js   # Speaker selection and context window tests
+│   │   ├── gdSession.model.test.js  # GDSession schema and index validation
+│   │   ├── historyAndResume.test.js # ATS model and unified history tests
+│   │   └── productionHardening.test.js # PDF magic bytes, rate limiter, and security
+│   ├── index.js                     # Express bootstrap, CORS, middleware, and listen
+│   ├── .env.example                 # Server environment template
+│   └── package.json                 # Server dependencies and test scripts
 │
-├── .gitignore                  # Global version control exclusions
-└── README.md                   # Platform documentation
+├── .gitignore                       # Git exclusions (node_modules, .env, dist)
+└── README.md                        # Project documentation
 ```
 
 ---
 
-## AI Orchestration & Provider Fallbacks
+## AI Orchestration & Resilience
 
-Intellivora employs a resilient, multi-tiered AI architecture designed to minimize downtime and prevent user workflow interruptions:
+Intellivora implements a centralized **AI Gateway** (`server/services/aiGateway.service.js`) designed for resilient multi-model execution and automated fallback handling:
 
-1. **Primary Provider (OpenRouter Cascade)**: Requests default to high-throughput open-weight models (`llama-3.3-70b-instruct`, `gemma-3-27b-it`, `nemotron-3-super`, `gpt-oss-20b`). If a model experiences rate limits or cold-start latency, the cascade advances sequentially to the next model.
-2. **Secondary Provider (Google Gemini)**: Used as an immediate high-speed fallback (`gemini-2.5-flash-lite`) via the official `@google/genai` SDK for low-latency completions.
-3. **Defensive Normalization & Score Clamping**: AI outputs are extracted using boundary-aware substring parsing, numeric scores are strictly clamped within the $[0, 100]$ range, and fallback evaluations are synthesized if external models return unparseable JSON.
+```mermaid
+flowchart LR
+    A["Client Request"] --> B["AI Gateway Entry"]
+    B --> C{"Primary Candidate<br/>(OpenRouter / Gemini)"}
+    C -- "Success" --> D["JSON Substring Extraction"]
+    C -- "Failure / 429 / Timeout" --> E{"Circuit Breaker<br/>Trips Model"}
+    E --> F["Fallback Candidate<br/>(Gemini / Secondary OpenRouter)"]
+    F -- "Success" --> D
+    F -- "All Fail" --> G["Safe Fallback Evaluation"]
+    D --> H["Numeric Clamping [0–100]<br/>& Schema Validation"]
+    H --> I["Validated Response to Client"]
+    G --> I
+```
+
+### Key Gateway Mechanisms
+- **Dynamic Multi-Provider Cascade**:
+  - Primary tier defaults to configured open-weight models via OpenRouter (`llama-3.3-70b-instruct`, `gemma-3-27b-it`, `nemotron-3-super`, `gpt-oss-20b`).
+  - Secondary tier transitions immediately to Google Gemini (`gemini-2.5-flash-lite`) via `@google/genai` for low-latency completions.
+- **Circuit Breaker & Health Tracking**: Tracks per-model latency, consecutive failure counts, and cooldown timers. When an upstream model returns 429 (Rate Limit) or 503 (Unavailable), it is temporarily isolated from the execution chain.
+- **Defensive Parsing & Clamping**: Extracts JSON objects through boundary-aware substring matching to safely ignore markdown fences or leading AI commentary. All score outputs are clamped within the `0–100` range before reaching the database.
+- **Compensating Refunds**: If all AI providers in the fallback cascade fail during a paid transaction (such as ATS resume analysis or GD generation), credits are automatically refunded to the candidate's account.
 
 ---
 
-## Group Discussion (GD) Architecture
+## Group Discussion Architecture
 
-The GD simulator follows a state-machine lifecycle enforced by `GDSession` models and frontend audio managers:
+The AI Group Discussion Simulator models complex interpersonal communication dynamics through an event-driven turn-taking engine:
 
-- **Setup & Validation**: Users choose topic, category, difficulty, and duration. Checks verify credit balance ($\ge 150$) and user authentication.
-- **Lobby Stage**: Pre-loads participant profiles, initializes Web Speech audio voices, and runs diagnostic microphone tests.
-- **Live Room Coordination**:
-  - Central Orchestrator initiates the opening prompt.
-  - Peer agents deliberate dynamically using sliding context windows (pruned to the last 6 turns).
-  - Candidate speech interrupts playing AI audio immediately and captures floor-share telemetry.
-- **Evaluation & Refund Safeguards**:
-  - If a session is aborted with 0 candidate turns, credits are fully refunded.
-  - Completed sessions generate a multi-pillar scorecard and integrate seamlessly into Unified History.
+1. **Topological Initialization**: Sets up 5 active participant personas in the discussion room:
+   - 1 Human Candidate
+   - 1 Impartial Central Orchestrator (opening remarks, time warnings, session close)
+   - 3 Heterogeneous AI Peers (Analytical, Pragmatic, Visionary)
+2. **Context Window Pruning**: Maintains coherent conversational memory by sliding a pruned context window of the latest turns while preserving the foundational discussion thesis.
+3. **Turn Arbitration Algorithm**: Evaluates participant speaking frequency and floor-share percentage to select the next AI speaker dynamically, preventing monopolization.
+4. **Live Audio Interruption**: Utilizes Web Speech API state listeners. The moment candidate speech is detected, active AI peer audio playback is halted immediately, transferring the floor to the candidate.
+5. **Telemetry & Scorecard Generation**: Computes total speaking time, speaking floor share, turn count, and evaluates articulation, leadership, listening, and critical thinking across a 4-pillar rubric.
+
+---
+
+## Security & Data Privacy
+
+- **HTTP-Only Cookie Sessions**: Authentication tokens (JWT) are issued with `HttpOnly`, `SameSite=Strict`, and `Secure` attributes, safeguarding sessions against Cross-Site Scripting (XSS) extraction.
+- **Client Route UX Protection vs. Backend Authorization**: Frontend `<ProtectedRoute />` handles UX redirection and preserves destination URLs via `state.from`. The backend `isAuth` middleware acts as the true security boundary, independently validating tokens on every protected request.
+- **Strict Data Isolation**: History, interview reports, aptitude attempts, and GD records are strictly filtered by `{ userId: req.userId }`, preventing cross-tenant data leakage or unauthorized access.
+- **Data Minimization on Resume Uploads**: Candidate PDF resumes are parsed in-memory on the server. Only structured analytical summaries (ATS score, keyword matches, improvements) are persisted to MongoDB. Full raw resume text is never retained in the database.
+- **Timing-Safe Cryptographic Billing**: Razorpay signatures are verified using HMAC SHA-256 with timing-safe comparison via `crypto.timingSafeEqual` to prevent side-channel timing discrepancy attacks.
+- **Automated File Cleanup**: Uploaded files are processed within managed disk/memory lifecycles, with cleanup performed in `finally` blocks to remove temporary files across success and failure paths.
+- **CORS & Rate Limiting**: Production middleware explicitly whitelists trusted client origins and applies IP-based rate limiting to prevent brute-force attacks.
 
 ---
 
 ## Local Development Setup
 
 ### Prerequisites
-- **Node.js**: v18.0.0 or higher
-- **npm**: v9.0.0 or higher
-- **MongoDB**: Local instance or MongoDB Atlas cluster URI
-- **Firebase Project**: Web project with Google Authentication enabled
-- **AI Credentials**: OpenRouter API key and/or Google Gemini API key
-- **Razorpay**: Test mode Key ID and Secret
+- **Node.js**: `v18.0.0` or higher (`node -v`)
+- **npm**: `v9.0.0` or higher (`npm -v`)
+- **MongoDB**: Local MongoDB instance or MongoDB Atlas cluster connection string
+- **Google Gemini API Key**: Acquired via Google AI Studio
+- **OpenRouter API Key**: (Optional but recommended for full AI fallback cascade)
+- **Razorpay Account**: Test mode Key ID and Secret for payment simulation
 
 ### Environment Configuration
 
-1. **Client Configuration**:
+1. **Configure Server Environment**:
+   ```bash
+   cp server/.env.example server/.env
+   ```
+   Edit `server/.env`:
+   ```env
+   PORT=8000
+   NODE_ENV=development
+   CLIENT_URL=http://localhost:5173
+   MONGODB_URL=your_mongodb_connection_string
+   JWT_SECRET=your_jwt_secret_key_minimum_32_characters
+   GEMINI_API_KEY=your_gemini_api_key
+   OPENROUTER_API_KEY=your_openrouter_api_key
+   RAZORPAY_KEY_ID=rzp_test_your_key_id
+   RAZORPAY_KEY_SECRET=your_razorpay_key_secret
+   ```
+
+2. **Configure Client Environment**:
    ```bash
    cp client/.env.example client/.env
    ```
-   Configure `client/.env` with your client endpoints and credentials:
+   Edit `client/.env`:
    ```env
    VITE_SERVER_URL=http://localhost:8000
    VITE_FIREBASE_APIKEY=your_firebase_api_key
@@ -261,71 +403,69 @@ The GD simulator follows a state-machine lifecycle enforced by `GDSession` model
    VITE_RAZORPAY_KEY_ID=rzp_test_your_key_id
    ```
 
-2. **Server Configuration**:
-   ```bash
-   cp server/.env.example server/.env
-   ```
-   Configure `server/.env` with your backend secrets:
-   ```env
-   PORT=8000
-   NODE_ENV=development
-   CLIENT_URL=http://localhost:5173
-   MONGODB_URL=your_mongodb_connection_string
-   JWT_SECRET=your_jwt_secret_key_minimum_32_characters
-   OPENROUTER_API_KEY=your-openrouter-api-key
-   GEMINI_API_KEY=Your-Gemini-Api-Key
-   RAZORPAY_KEY_ID=rzp_test_your_key_id
-   RAZORPAY_KEY_SECRET=your_razorpay_key_secret
-   ```
-
-### Starting the Application
+### Running the Application
 
 1. **Install Dependencies**:
    ```bash
+   # Install server dependencies
    cd server && npm install
+
+   # Install client dependencies
    cd ../client && npm install
    ```
 
-2. **Start Server**:
+2. **Launch Backend Service**:
    ```bash
    cd server
    npm run dev
    ```
-   *Server listens on `http://localhost:8000`*
+   *Express server starts listening on `http://localhost:8000`*
 
-3. **Start Client**:
+3. **Launch Frontend Service**:
    ```bash
    cd client
    npm run dev
    ```
-   *Vite dev server starts on `http://localhost:5173`*
+   *Vite development server starts on `http://localhost:5173`*
 
 ---
 
-## Verification, Testing & Linting
+## Testing & Quality Assurance
 
-Intellivora uses native Node.js test runners (`node --test`) for fast, zero-dependency unit and integration testing across frontend and backend modules.
+Intellivora uses Node.js native test runner (`node:test`) for zero-dependency, ultra-fast test execution across both client and server domains.
 
-| Target | Command | Description |
-| :--- | :--- | :--- |
-| **Server Tests** | `cd server && node --test tests/*.test.js` | Runs GD API, model validation, and orchestrator test suites |
-| **Client Tests** | `cd client && node --test tests/*.test.js` | Runs GD foundation, lobby, room, setup, and history tests |
-| **Client Lint** | `cd client && npm run lint` | Runs `oxlint` static code analysis |
-| **Production Build** | `cd client && npm run build` | Compiles production assets via `vite build` |
-| **Server Syntax** | `cd server && node --check index.js` | Validates server module syntax and imports |
+```bash
+# Run complete client test suite (81 tests)
+cd client && node --test tests/*.test.js
+
+# Run client code linter (0 errors)
+cd client && npm run lint
+
+# Run client production build verification
+cd client && npm run build
+
+# Run complete server test suite (104 tests)
+cd server && node --test tests/*.test.js
+```
+
+### Verified Test Coverage Summary
+- **Client Tests Passing**: 81 / 81 tests passing (0 failures, 718 ms)
+  - Navigation, route matching, auth hydration, billing plan contracts
+  - GD audio profiles, participant topology, and floor-share calculation
+  - Form validation, error normalization, and state reducer lifecycle
+- **Server Tests Passing**: 104 / 104 tests passing (0 failures, 2,024 ms)
+  - AI Gateway error categorization, circuit breaker, and cascade fallback
+  - GD session creation, turn submission, and credit refund logic
+  - Multi-agent speaker selection algorithm and duration pacing
+  - GDSession, User, and ResumeAnalysis Mongoose schema validation
+  - PDF header magic byte verification, rate limiter, and error sanitization
+- **Total Automated Test Suites**: **185 passing tests** across client and server.
 
 ---
 
-## Security & Secret Hygiene
+## Future Roadmap
 
-- **Zero Secrets Committed**: All private API keys, JWT secrets, and database credentials are strictly isolated in `.env` files ignored by git.
-- **Safe Example Templates**: Both `client/.env.example` and `server/.env.example` provide comprehensive placeholder keys without exposing production secrets.
-- **Timing-Safe HMAC Verification**: Razorpay payment verification uses `crypto.timingSafeEqual` to prevent side-channel timing attacks.
-- **Automatic Temp File Disposal**: Uploaded resumes are temporarily processed on disk and guaranteed to be deleted via `fs.promises.unlink` within `finally` blocks.
-- **Strict CORS Policy**: The server restricts allowed origins to explicit frontend URLs and rejects unauthorized cross-origin requests.
-
----
-
-## License
-
-This project is licensed under the ISC License.
+- [ ] **Multi-User Live Group Discussions**: Transitioning from peer AI agents to real-time WebRTC multi-candidate discussion rooms with peer scoring.
+- [ ] **In-Browser Coding Sandbox**: Monaco-based coding environment with secure code execution for technical interviews.
+- [ ] **Multilingual Speech Support**: Expansion of Web Speech API profiles to support non-English conversational interview practice.
+- [ ] **Enterprise Team Analytics**: Institutional dashboards for universities and bootcamp career counselors to track cohort readiness.

@@ -39,6 +39,28 @@
 
     --font-family-jakarta: 'Plus Jakarta Sans', sans-serif;
     --font-family-jetbrains: 'JetBrains Mono', monospace;
+    --font-family-geist: 'Geist', sans-serif;
+
+    /* Intellivora Obsidian Slate tokens */
+    --color-obsidian-canvas: #05070a;
+    --color-obsidian-primary: #0a0f14;
+    --color-obsidian-secondary: #0f1720;
+    --color-obsidian-card: #111923;
+    --color-obsidian-elevated: #17212b;
+    --color-obsidian-hover: #1b2631;
+    --color-obsidian-border-subtle: #151d25;
+    --color-obsidian-border-default: #202a34;
+    --color-obsidian-border-strong: #2a3540;
+    --color-obsidian-text-primary: #f1f5f9;
+    --color-obsidian-text-secondary: #a7b0ba;
+    --color-obsidian-text-muted: #69737d;
+    --color-obsidian-brand: #2563eb;
+    --color-obsidian-brand-hover: #1d4ed8;
+    --color-obsidian-brand-subtle: #0b1b33;
+    --color-obsidian-accent-blue: #3b82f6;
+    --color-obsidian-success: #22c55e;
+    --color-obsidian-warning: #eab308;
+    --color-obsidian-error: #ef4444;
 }
 
 :root {
@@ -125,4 +147,18 @@ body {
     box-shadow:
         0 0 20px rgba(59, 130, 246, 0.35),
         0 0 60px rgba(59, 130, 246, 0.15);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
 }

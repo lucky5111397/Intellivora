@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import Interview from "../models/interview.model.js";
 import AptitudeAttempt from "../models/aptitudeAttempt.model.js";
 import GDSession from "../models/gdSession.model.js";
+import ResumeAnalysis from "../models/resumeAnalysis.model.js";
 import { findCategory, findTopic } from "../config/aptitudeSyllabus.js";
 import { updateProgress } from "../services/aptitude.service.js";
 
@@ -9,7 +10,7 @@ export const getUnifiedHistory = async (req, res) => {
   try {
     const userId = req.userId;
 
-    const [interviews, aptitudeAttempts, gdSessions] = await Promise.all([
+    const [interviews, aptitudeAttempts, gdSessions, resumeAnalyses] = await Promise.all([
       Interview.find({ userId })
         .select("_id role experience mode finalScore status createdAt")
         .sort({ createdAt: -1 })
@@ -20,6 +21,10 @@ export const getUnifiedHistory = async (req, res) => {
         .lean(),
       GDSession.find({ userId, status: "completed" })
         .select("_id topic category difficulty durationMinutes evaluation.overallScore status createdAt")
+        .sort({ createdAt: -1 })
+        .lean(),
+      ResumeAnalysis.find({ userId })
+        .select("_id targetRole experienceLevel resumeScore atsScore interviewReadinessScore createdAt")
         .sort({ createdAt: -1 })
         .lean(),
     ]);
@@ -85,9 +90,32 @@ export const getUnifiedHistory = async (req, res) => {
       route: `/gd/analysis/${item._id}`,
     }));
 
-    const combined = [...normalizedInterviews, ...normalizedAptitude, ...normalizedGD].sort(
-      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-    );
+    const normalizedResumes = (resumeAnalyses || []).map((item) => ({
+      id: item._id,
+      _id: item._id,
+      type: "resume",
+      module: "resume",
+      title: item.targetRole ? `${item.targetRole} ATS Analysis` : "ATS Resume Analysis",
+      subtitle: `${item.experienceLevel || "Target Role"} • ATS Score ${item.atsScore ?? 0}%`.trim(),
+      role: item.targetRole,
+      targetRole: item.targetRole,
+      experienceLevel: item.experienceLevel,
+      score: item.atsScore ?? item.resumeScore ?? 0,
+      finalScore: item.atsScore ?? item.resumeScore ?? 0,
+      resumeScore: item.resumeScore ?? 0,
+      atsScore: item.atsScore ?? 0,
+      interviewReadinessScore: item.interviewReadinessScore ?? 0,
+      status: "completed",
+      createdAt: item.createdAt,
+      route: "/resume",
+    }));
+
+    const combined = [
+      ...normalizedInterviews,
+      ...normalizedAptitude,
+      ...normalizedGD,
+      ...normalizedResumes,
+    ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     return res.json(combined);
   } catch (error) {
@@ -118,6 +146,10 @@ export const deleteHistoryItem = async (req, res) => {
       const deleted = await GDSession.findOneAndDelete({ _id: id, userId });
       if (!deleted) return res.status(404).json({ message: "Group discussion session not found" });
       return res.json({ message: "Group discussion deleted successfully" });
+    } else if (type === "resume" || type === "ats") {
+      const deleted = await ResumeAnalysis.findOneAndDelete({ _id: id, userId });
+      if (!deleted) return res.status(404).json({ message: "Resume analysis record not found" });
+      return res.json({ message: "Resume analysis deleted successfully" });
     } else {
       return res.status(400).json({ message: "Invalid history item type" });
     }

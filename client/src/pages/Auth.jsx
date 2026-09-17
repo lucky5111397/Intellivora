@@ -12,7 +12,7 @@ import { auth, provider } from "../utils/firebase";
 import { ServerUrl } from "../App";
 import axios from "axios";
 import { useDispatch } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { setUserData } from "../redux/userSlice";
 import BrandLogo from "../components/auth/BrandLogo";
 import GlassCard from "../components/auth/GlassCard";
@@ -36,6 +36,17 @@ function Auth({ isModel = false }) {
   const [mobile, setMobile] = useState("");
   const dispatch = useDispatch()
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const redirectDestination = (() => {
+    const from = location.state?.from;
+    if (!from) return "/";
+    if (typeof from === "string") return from;
+    if (from.pathname) {
+      return `${from.pathname}${from.search || ""}${from.hash || ""}`;
+    }
+    return "/";
+  })();
 
   // Handle Google authentication
   const handleGoogleAuth = async () => {
@@ -58,7 +69,7 @@ function Auth({ isModel = false }) {
 
       dispatch(setUserData(result.data));
       toast.success("Login Successful");
-      navigate("/");
+      navigate(redirectDestination, { replace: true });
     } catch (error) {
       console.error("Google authentication error:", error?.message || error);
       dispatch(setUserData(null));
@@ -111,7 +122,6 @@ function Auth({ isModel = false }) {
 
       setAuthMode("verify");
     } catch (error) {
-      console.log(error);
       console.error("Failed to send OTP:", error?.message || error);
       toast.error("Failed to send OTP");
     }
@@ -143,7 +153,7 @@ function Auth({ isModel = false }) {
 
       dispatch(setUserData(result.data));
       toast.success("Login Successful");
-      navigate("/");
+      navigate(redirectDestination, { replace: true });
     } catch (error) {
       console.error("Phone verification error:", error?.message || error);
       if (error.response?.status === 403) {
