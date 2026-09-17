@@ -2,6 +2,7 @@ import React, { useEffect, Suspense, lazy } from "react";
 import { Route, Routes } from "react-router-dom";
 import Home from "./pages/home";
 import Auth from "./pages/Auth";
+import ProtectedRoute from "./components/ProtectedRoute";
 import axios from "axios";
 import { useDispatch } from "react-redux";
 import { setUserData } from "./redux/userSlice";
@@ -38,52 +39,65 @@ function App() {
   const dispatch = useDispatch();
 
   useEffect(() => {
+    let isMounted = true;
     const getUser = async () => {
       try {
         const result = await axios.get(
           ServerUrl + "/api/user/current-user",
           { withCredentials: true }
         );
-        dispatch(setUserData(result.data));
-      } catch (error) {
-        if ([400, 401, 403].includes(error.response?.status)) {
+        if (isMounted) {
+          dispatch(setUserData(result.data));
+        }
+      } catch {
+        if (isMounted) {
           dispatch(setUserData(null));
         }
       }
     };
 
+    getUser();
+
     const unsubscribe = onAuthStateChanged(auth, () => {
       getUser();
     });
 
-    return () => unsubscribe();
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, [dispatch]);
 
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/auth" element={<Auth />} />
-        <Route path="/interview" element={<InterviewPage />} />
-        <Route path="/history" element={<InterviewHistory />} />
         <Route path="/pricing" element={<Pricing />} />
-        <Route path="/resume" element={<Resume />} />
-        <Route path="/aptitude" element={<Aptitude />}>
-          <Route index element={<AptitudeDashboard />} />
-          <Route path="topics" element={<TopicSelection />} />
-          <Route path="setup" element={<TestSetup />} />
-          <Route path="test" element={<TestScreen />} />
-          <Route path="result" element={<AptitudeResult />} />
-          <Route path="result/:attemptId" element={<AptitudeResult />} />
+
+        {/* Protected Account-Dependent Service Routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/interview" element={<InterviewPage />} />
+          <Route path="/history" element={<InterviewHistory />} />
+          <Route path="/resume" element={<Resume />} />
+          <Route path="/aptitude" element={<Aptitude />}>
+            <Route index element={<AptitudeDashboard />} />
+            <Route path="topics" element={<TopicSelection />} />
+            <Route path="setup" element={<TestSetup />} />
+            <Route path="test" element={<TestScreen />} />
+            <Route path="result" element={<AptitudeResult />} />
+            <Route path="result/:attemptId" element={<AptitudeResult />} />
+          </Route>
+          <Route path="/gd" element={<GD />}>
+            <Route index element={<GDOverview />} />
+            <Route path="setup" element={<GDSetup />} />
+            <Route path="lobby/:id" element={<GDLobby />} />
+            <Route path="room/:id" element={<GDRoom />} />
+            <Route path="analysis/:id" element={<GDAnalysis />} />
+          </Route>
+          <Route path="/report/:id" element={<InterviewReport />} />
         </Route>
-        <Route path="/gd" element={<GD />}>
-          <Route index element={<GDOverview />} />
-          <Route path="setup" element={<GDSetup />} />
-          <Route path="lobby/:id" element={<GDLobby />} />
-          <Route path="room/:id" element={<GDRoom />} />
-          <Route path="analysis/:id" element={<GDAnalysis />} />
-        </Route>
-        <Route path="/report/:id" element={<InterviewReport />} />
       </Routes>
     </Suspense>
   );

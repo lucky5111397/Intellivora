@@ -74,6 +74,11 @@ function InterviewHistory() {
                     `${ServerUrl}/api/history/gd/${selectedItem.id}`,
                     { withCredentials: true }
                 );
+            } else if (selectedItem.type === "resume" || selectedItem.type === "ats") {
+                await axios.delete(
+                    `${ServerUrl}/api/history/resume/${selectedItem.id}`,
+                    { withCredentials: true }
+                );
             } else {
                 // Try unified history delete or fallback to delete-interview
                 try {
@@ -259,6 +264,12 @@ function InterviewHistory() {
                             >
                                 Try Group Discussion
                             </button>
+                            <button
+                                onClick={() => navigate("/resume")}
+                                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 font-semibold text-sm hover:scale-105 transition cursor-pointer"
+                            >
+                                Analyze Resume
+                            </button>
                         </div>
                     </div>
                 ) : filteredItems.length === 0 ? (
@@ -271,7 +282,16 @@ function InterviewHistory() {
                         {filteredItems.map((item, index) => {
                             const isAptitude = item.type === "aptitude";
                             const isGD = item.type === "gd";
-                            const targetRoute = item.route || (isGD ? `/gd/analysis/${item._id || item.id}` : isAptitude ? `/aptitude/result/${item._id || item.id}` : `/report/${item._id || item.id}`);
+                            const isResume = item.type === "resume" || item.type === "ats";
+                            const targetRoute = item.route || (
+                                isGD
+                                    ? `/gd/analysis/${item._id || item.id}`
+                                    : isAptitude
+                                    ? `/aptitude/result/${item._id || item.id}`
+                                    : isResume
+                                    ? `/resume`
+                                    : `/report/${item._id || item.id}`
+                            );
                             const itemId = item._id || item.id;
 
                             return (
@@ -288,9 +308,11 @@ function InterviewHistory() {
                                                         ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
                                                         : isAptitude
                                                         ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
+                                                        : isResume
+                                                        ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
                                                         : "bg-blue-500/20 text-blue-300 border border-blue-500/30"
                                                 }`}>
-                                                    {isGD ? "Group Discussion" : isAptitude ? "Aptitude Assessment" : "Mock Interview"}
+                                                    {isGD ? "Group Discussion" : isAptitude ? "Aptitude Assessment" : isResume ? "ATS Resume Audit" : "Mock Interview"}
                                                 </span>
                                             </div>
 
@@ -329,6 +351,22 @@ function InterviewHistory() {
                                                             </span>
                                                         )}
                                                     </>
+                                                ) : isResume ? (
+                                                    <>
+                                                        <span className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1 text-xs font-medium text-cyan-300">
+                                                            {item.role || item.subtitle || "Target Role"}
+                                                        </span>
+                                                        {item.experience && (
+                                                            <span className="rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300">
+                                                                {item.experience}
+                                                            </span>
+                                                        )}
+                                                        {item.readinessScore !== undefined && (
+                                                            <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
+                                                                Readiness: {item.readinessScore}%
+                                                            </span>
+                                                        )}
+                                                    </>
                                                 ) : (
                                                     <>
                                                         {item.experience && (
@@ -360,6 +398,8 @@ function InterviewHistory() {
                                                             ? `${item.finalScore ?? item.score ?? 0}/100`
                                                             : isAptitude
                                                             ? `${item.score}/${item.totalMarks || 10}`
+                                                            : isResume
+                                                            ? `${item.atsScore ?? item.score ?? 0}/100`
                                                             : `${item.finalScore || 0}/10`
                                                         }
                                                     </p>
@@ -375,6 +415,8 @@ function InterviewHistory() {
                                                                     ? `${Math.min(100, Math.max(0, item.finalScore ?? item.score ?? 0))}%`
                                                                     : isAptitude
                                                                     ? `${item.totalMarks ? Math.min(100, Math.max(0, (item.score / item.totalMarks) * 100)) : 0}%`
+                                                                    : isResume
+                                                                    ? `${Math.min(100, Math.max(0, item.atsScore ?? item.score ?? 0))}%`
                                                                     : `${(item.finalScore || 0) * 10}%`,
                                                             }}
                                                         />
@@ -412,7 +454,7 @@ function InterviewHistory() {
                                                 <button
                                                     className="rounded-xl bg-gradient-to-r from-blue-600 via-violet-600 to-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_0_20px_rgba(59,130,246,.25)] transition-all duration-300 group-hover:scale-105 cursor-pointer"
                                                 >
-                                                    {isGD ? "View Analysis →" : isAptitude ? "View Result →" : "View Report →"}
+                                                    {isGD ? "View Analysis →" : isAptitude ? "View Result →" : isResume ? "View Resume Audit →" : "View Report →"}
                                                 </button>
 
                                             </div>
@@ -433,7 +475,15 @@ function InterviewHistory() {
                             </h2>
 
                             <p className="text-sm text-gray-300 leading-relaxed">
-                                This action cannot be undone. Are you sure you want to permanently delete this {selectedItem?.type === 'aptitude' ? 'aptitude assessment attempt' : 'interview session'}?
+                                This action cannot be undone. Are you sure you want to permanently delete this {
+                                    selectedItem?.type === 'aptitude'
+                                        ? 'aptitude assessment attempt'
+                                        : (selectedItem?.type === 'resume' || selectedItem?.type === 'ats')
+                                        ? 'resume audit record'
+                                        : selectedItem?.type === 'gd'
+                                        ? 'group discussion session'
+                                        : 'interview session'
+                                }?
                             </p>
 
                             <div className="flex justify-end gap-3 pt-2">

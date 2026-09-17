@@ -2,6 +2,7 @@ import { createUploadResponse } from "../services/resume.service.js";
 import { extractTextFromPdf } from "../services/pdfExtractor.service.js";
 import { analyzeResumeText } from "../services/resumeAnalysis.service.js";
 import User from "../models/user.model.js";
+import ResumeAnalysis from "../models/resumeAnalysis.model.js";
 
 const ATS_CREDIT_COST = 200;
 
@@ -84,9 +85,24 @@ export const analyzeResume = async (req, res, next) => {
     try {
       const analysis = await analyzeResumeText({ extractedText, targetRole, experienceLevel });
 
+      const savedRecord = await ResumeAnalysis.create({
+        userId,
+        targetRole,
+        experienceLevel,
+        resumeScore: analysis.resumeScore,
+        atsScore: analysis.atsScore,
+        interviewReadinessScore: analysis.interviewReadinessScore,
+        strengths: analysis.strengths || [],
+        weaknesses: analysis.weaknesses || [],
+        missingSkills: analysis.missingSkills || [],
+        improvementSuggestions: analysis.improvementSuggestions || [],
+        creditsUsed: ATS_CREDIT_COST,
+      });
+
       return res.status(200).json({
         success: true,
         credits: chargedUser.credits,
+        analysisId: savedRecord._id,
         ...analysis,
       });
     } catch (analysisError) {
