@@ -115,7 +115,7 @@ export async function updateProgress(userId) {
 }
 
 export async function createAttempt(userId, config) {
-  const { category, topic, difficulty = "medium", questionCount = 5, timeLimitSeconds = 600 } = config;
+  const { category, topic, difficulty = "medium", questionCount = 5, timeLimitSeconds = 600, targetCompany } = config;
   const catObj = findCategory(category);
   const topicObj = findTopic(category, topic);
 
@@ -129,31 +129,34 @@ export async function createAttempt(userId, config) {
   const diffFilter = isAdaptive ? {} : { difficulty: difficultyName(difficulty) };
 
   // 1. Query existing active questions from MongoDB
-  let pool = await AptitudeQuestion.find({ category, topic, ...diffFilter, active: true }).lean();
+  let pool = await AptitudeQuestion.find({ category: catObj.id, topic: topicObj.id, ...diffFilter, active: true }).lean();
 
   // 2. If insufficient, try to generate missing questions via AI
   if (pool.length < questionCount) {
     const missingCount = questionCount - pool.length;
-    console.log(`[Attempt API] Requested ${questionCount} questions for ${category}/${topic}, but only ${pool.length} exist in DB. Generating ${missingCount} via AI...`);
+    console.log(`[Attempt API] Requested ${questionCount} questions for ${catObj.id}/${topicObj.id}, but only ${pool.length} exist in DB. Generating ${missingCount} via AI...`);
     try {
       await generateAptitudeQuestions({
-        category,
-        topic,
+        category: catObj.id,
+        topic: topicObj.id,
         difficulty: isAdaptive ? "medium" : difficultyName(difficulty),
         count: missingCount,
       });
       // Re-fetch pool after AI generation
-      pool = await AptitudeQuestion.find({ category, topic, ...diffFilter, active: true }).lean();
+      pool = await AptitudeQuestion.find({ category: catObj.id, topic: topicObj.id, ...diffFilter, active: true }).lean();
     } catch (aiErr) {
-      console.warn(`[Attempt API] AI generation failed or partial: ${aiErr.message}`);
+      const safeErrMsg = String(aiErr.message || "").replace(/[\r\n]/g, "");
+      console.warn(`[Attempt API] AI generation failed or partial: ${safeErrMsg}`);
     }
   }
 
   // 3. If pool is still insufficient, return clear 422 error
   // 3. If pool is still insufficient and a specific difficulty was requested, fallback to topic pool
   if (pool.length < questionCount && !isAdaptive) {
-    console.log(`[Attempt API] Difficulty filter '${difficulty}' had only ${pool.length} questions. Falling back to all difficulties for topic '${topic}'...`);
-    pool = await AptitudeQuestion.find({ category, topic, active: true }).lean();
+    const safeDiff = String(difficulty || "").replace(/[\r\n]/g, "");
+    const safeTop = String(topic || "").replace(/[\r\n]/g, "");
+    console.log(`[Attempt API] Difficulty filter '${safeDiff}' had only ${pool.length} questions. Falling back to all difficulties for topic '${safeTop}'...`);
+    pool = await AptitudeQuestion.find({ category: catObj.id, topic: topicObj.id, active: true }).lean();
   }
 
   // If pool is still insufficient, return clear 422 error
@@ -172,6 +175,7 @@ export async function createAttempt(userId, config) {
     category,
     topic,
     difficulty: isAdaptive ? "adaptive" : difficultyName(difficulty),
+    targetCompany: targetCompany?.trim() || null,
     questionCount,
     timeLimitSeconds,
     startedAt: new Date(),
@@ -197,6 +201,7 @@ export const publicAttempt = (attempt) => ({
   category: attempt.category,
   topic: attempt.topic,
   difficulty: attempt.difficulty,
+  targetCompany: attempt.targetCompany || null,
   questionCount: attempt.questionCount,
   timeLimitSeconds: attempt.timeLimitSeconds,
   startedAt: attempt.startedAt,
@@ -232,6 +237,7 @@ export function resultPayload(attempt) {
     category: attempt.category,
     topic: attempt.topic,
     difficulty: attempt.difficulty,
+    targetCompany: attempt.targetCompany || null,
     score: attempt.score,
     totalMarks: attempt.totalMarks,
     accuracy: attempt.accuracy,

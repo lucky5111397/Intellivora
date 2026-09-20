@@ -15,8 +15,7 @@ const storage = multer.diskStorage({
     const uploadId = crypto.randomUUID();
     file.uploadId = uploadId;
     const timestamp = Date.now();
-    const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "-");
-    cb(null, `${uploadId}-${timestamp}-${safeName}`);
+    cb(null, `${uploadId}-${timestamp}.pdf`);
   },
 });
 
@@ -36,10 +35,17 @@ export const verifyPdfMagicBytes = async (req, res, next) => {
   if (!req.file?.path) {
     return next();
   }
-  const isValid = await validatePdfFile(req.file.path);
+  const resolvedPath = path.resolve(req.file.path);
+  if (!resolvedPath.startsWith(uploadBasePath)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid file path.",
+    });
+  }
+  const isValid = await validatePdfFile(resolvedPath);
   if (!isValid) {
     try {
-      await fs.promises.unlink(req.file.path);
+      await fs.promises.unlink(resolvedPath);
     } catch (err) {
       console.warn("[uploadResume] Could not unlink invalid file:", err.message);
     }

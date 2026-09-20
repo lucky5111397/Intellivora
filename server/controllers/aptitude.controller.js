@@ -11,8 +11,21 @@ import {
   resultPayload,
 } from "../services/aptitude.service.js";
 
+/**
+ * Aptitude Assessment Controller
+ * Manages syllabus taxonomy, topic-level progress tracking, test attempt execution,
+ * real-time answer persistence, and automated result calculation.
+ */
+
 const validOption = (value) => ["A", "B", "C", "D"].includes(value);
 
+/**
+ * Retrieves all syllabus categories with topic counts and candidate progress metrics.
+ * GET /api/aptitude/categories
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
 export const getCategories = async (req, res) => {
   try {
     await ensureSeedQuestions();
@@ -45,12 +58,12 @@ export const getProgressData = async (req, res) => {
 
 export const startAttempt = async (req, res) => {
   try {
-    const { category, topic, difficulty, questionCount, timeLimitSeconds } = req.body;
+    const { category, topic, difficulty, questionCount, timeLimitSeconds, targetCompany } = req.body;
     if (!category || !topic || !difficulty || !Number.isInteger(questionCount) || questionCount < 1 || !Number.isInteger(timeLimitSeconds) || timeLimitSeconds < 0) {
       return res.status(400).json({ message: "category, topic, difficulty, questionCount and timeLimitSeconds are required" });
     }
     await ensureSeedQuestions();
-    const attempt = await createAttempt(req.userId, { category, topic, difficulty, questionCount, timeLimitSeconds });
+    const attempt = await createAttempt(req.userId, { category, topic, difficulty, questionCount, timeLimitSeconds, targetCompany });
     return res.status(201).json(publicAttempt(attempt));
   } catch (error) {
     return res.status(error.status || 500).json({ message: error.message });
@@ -126,8 +139,14 @@ export const submitAttempt = async (req, res) => {
 export const getAttempts = async (req, res) => {
   try {
     const filter = { userId: req.userId };
-    if (req.query.status) filter.status = req.query.status;
-    const attempts = await AptitudeAttempt.find(filter).sort({ createdAt: -1 }).select("category topic difficulty score totalMarks correctCount incorrectCount skippedCount accuracy timeTakenSeconds startedAt submittedAt status createdAt");
+    if (typeof req.query.status === "string" && req.query.status.trim()) {
+      const allowed = ["in_progress", "completed", "expired"];
+      const trimmed = req.query.status.trim();
+      if (allowed.includes(trimmed)) {
+        filter.status = trimmed;
+      }
+    }
+    const attempts = await AptitudeAttempt.find(filter).sort({ createdAt: -1 }).select("category topic difficulty targetCompany score totalMarks correctCount incorrectCount skippedCount accuracy timeTakenSeconds startedAt submittedAt status createdAt");
     return res.json(attempts);
   } catch (error) {
     return res.status(500).json({ message: error.message });

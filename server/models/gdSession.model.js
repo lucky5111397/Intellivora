@@ -1,5 +1,10 @@
 import mongoose from "mongoose";
 
+/**
+ * Group Discussion (GD) Multi-Agent Simulation Model
+ * Persists turn transcripts, peer agent profiles, runtime floor telemetry,
+ * and comprehensive AI evaluation across Articulation, Leadership, Active Listening, and Critical Thinking.
+ */
 const turnSchema = new mongoose.Schema(
   {
     turnNumber: {

@@ -1,4 +1,5 @@
 import fs from "fs";
+import path from "path";
 
 export const PDF_MAGIC_BYTES = Buffer.from([0x25, 0x50, 0x44, 0x46]); // "%PDF"
 
@@ -19,15 +20,21 @@ export function hasPdfMagicBytes(buffer) {
  * Reads the first 4 bytes of a file on disk and verifies the PDF magic bytes signature.
  */
 export async function validatePdfFile(filePath) {
+  if (!filePath || typeof filePath !== "string") return false;
+  const resolvedPath = path.resolve(filePath);
+  const uploadBasePath = path.resolve("uploads", "resumes");
+  if (!resolvedPath.startsWith(uploadBasePath)) return false;
+
   let handle;
   try {
-    handle = await fs.promises.open(filePath, "r");
+    handle = await fs.promises.open(resolvedPath, "r");
     const buffer = Buffer.alloc(4);
     const { bytesRead } = await handle.read(buffer, 0, 4, 0);
     if (bytesRead < 4) return false;
     return hasPdfMagicBytes(buffer);
   } catch (err) {
-    console.warn(`[PDF Validator] Could not read file header for ${filePath}:`, err.message);
+    const safePath = filePath.replace(/[\r\n]/g, "");
+    console.warn("[PDF Validator] Could not read file header for", safePath, err.message);
     return false;
   } finally {
     if (handle) {

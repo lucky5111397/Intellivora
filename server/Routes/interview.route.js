@@ -11,7 +11,10 @@ import {
   deleteInterview,
   getInterviewById,
 } from "../controllers/interview.controller.js";
+import { aiLimiter } from "../middlewares/rateLimiter.js";
+
 const interviewRouter = express.Router();
+interviewRouter.use(aiLimiter);
 
 interviewRouter.post(
   "/resume",

@@ -2,25 +2,6 @@ import genToken from "./token.js";
 import User from "../models/user.model.js";
 import { verifyFirebaseIdToken } from "../services/firebaseAuth.service.js";
 
-/**
- * Checks whether an email address is allowed by the server-side allowlist.
- * If SERVER_ALLOWED_EMAILS (or ALLOWED_EMAILS) is empty or unset, all authenticated emails are permitted.
- */
-export const isEmailAllowed = (email) => {
-  if (!email) return false;
-  const rawAllowlist = process.env.SERVER_ALLOWED_EMAILS || process.env.ALLOWED_EMAILS || "";
-  const allowed = rawAllowlist
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-
-  if (allowed.length === 0) {
-    return true; // No restriction configured
-  }
-
-  return allowed.includes(email.trim().toLowerCase());
-};
-
 export const googleAuth = async (req, res) => {
   try {
     const { idToken, name, email } = req.body;
@@ -43,26 +24,33 @@ export const googleAuth = async (req, res) => {
       });
     }
 
-    if (!verifiedEmail) {
+    if (!verifiedEmail || typeof verifiedEmail !== "string" || !verifiedEmail.trim()) {
       return res.status(400).json({ success: false, message: "Email is required." });
     }
 
-    // Server-side email allowlist check
-    if (!isEmailAllowed(verifiedEmail)) {
-      return res.status(403).json({
-        success: false,
-        message: "Access Denied. You are not authorized to use this application.",
-      });
-    }
+    const safeEmail = String(verifiedEmail).trim().toLowerCase();
 
-    let user = await User.findOne({ email: verifiedEmail });
+    let user = await User.findOne({ email: safeEmail });
 
     if (!user) {
       user = await User.create({
-        name: verifiedName || "User",
-        email: verifiedEmail,
+        name: typeof verifiedName === "string" && verifiedName.trim() ? verifiedName.trim() : "User",
+        email: safeEmail,
         credits: 100,
       });
+    } else {
+      if (user.isBanned) {
+        return res.status(403).json({
+          success: false,
+          message: "Your account has been suspended. Please contact support.",
+        });
+      }
+      if (user.isActive === false) {
+        return res.status(403).json({
+          success: false,
+          message: "Your account is deactivated. Please contact support.",
+        });
+      }
     }
 
     const token = genToken(user._id);
@@ -114,27 +102,35 @@ export const phoneAuth = async (req, res) => {
       });
     }
 
-    if (!verifiedPhone) {
+    if (!verifiedPhone || typeof verifiedPhone !== "string" || !verifiedPhone.trim()) {
       return res.status(400).json({ success: false, message: "Phone number is required." });
     }
 
-    // If an email is associated, verify allowlist as well
-    if (verifiedEmail && !isEmailAllowed(verifiedEmail)) {
-      return res.status(403).json({
-        success: false,
-        message: "Access Denied. You are not authorized to use this application.",
-      });
-    }
+    const safePhone = String(verifiedPhone).trim();
+    const safeEmail = typeof verifiedEmail === "string" && verifiedEmail.trim() ? String(verifiedEmail).trim().toLowerCase() : `${safePhone}@phone.local`;
 
-    let user = await User.findOne({ phone: verifiedPhone });
+    let user = await User.findOne({ phone: safePhone });
 
     if (!user) {
       user = await User.create({
-        name: verifiedName || "User",
-        email: verifiedEmail || `${verifiedPhone}@phone.local`,
-        phone: verifiedPhone,
+        name: typeof verifiedName === "string" && verifiedName.trim() ? verifiedName.trim() : "User",
+        email: safeEmail,
+        phone: safePhone,
         credits: 100,
       });
+    } else {
+      if (user.isBanned) {
+        return res.status(403).json({
+          success: false,
+          message: "Your account has been suspended. Please contact support.",
+        });
+      }
+      if (user.isActive === false) {
+        return res.status(403).json({
+          success: false,
+          message: "Your account is deactivated. Please contact support.",
+        });
+      }
     }
 
     const token = genToken(user._id);

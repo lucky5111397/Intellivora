@@ -1,5 +1,11 @@
 /**
- * Security headers middleware enforcing OWASP best practices.
+ * HTTP Security Headers Middleware
+ * Configures protective HTTP response headers according to OWASP guidelines to mitigate
+ * clickjacking, MIME sniffing, protocol downgrading, and sensitive information leakage.
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ * @param {import("express").NextFunction} next
  */
 export function securityHeaders(req, res, next) {
   // Prevent MIME type sniffing

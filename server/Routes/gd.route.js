@@ -9,9 +9,11 @@ import {
   completeSession,
   abortSession,
 } from "../controllers/gd.controller.js";
+import { aiLimiter } from "../middlewares/rateLimiter.js";
 
 const gdRouter = express.Router();
 
+gdRouter.use(aiLimiter);
 // Enforce authentication across all Group Discussion endpoints
 gdRouter.use(isAuth);
 

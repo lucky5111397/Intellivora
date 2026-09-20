@@ -12,6 +12,12 @@ import {
 } from "../services/gdOrchestrator.service.js";
 import { evaluateGDSession } from "../services/gdEvaluation.service.js";
 
+/**
+ * Group Discussion (GD) Controller
+ * Orchestrates multi-agent AI group discussions with state machine progression:
+ * setup -> lobby -> in_progress -> completed (or aborted with refund protection).
+ */
+
 // Allow AI caller injection for deterministic testing
 let currentAICaller = defaultAICaller;
 
@@ -37,6 +43,10 @@ const VALID_DIFFICULTIES = ["entry", "mid", "executive"];
  * Initializes a new GD session and atomically deducts credits.
  * Safe against concurrent duplicate submissions via idempotencyKey.
  * POST /api/gd/session/create
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ * @param {import("express").NextFunction} next
  */
 export const createSession = async (req, res, next) => {
   try {
@@ -48,8 +58,6 @@ export const createSession = async (req, res, next) => {
       durationMinutes = 10,
       maxTurns = 30,
     } = req.body;
-
-    // 1. Validation
     if (!idempotencyKey || typeof idempotencyKey !== "string" || !idempotencyKey.trim()) {
       return res.status(400).json({
         success: false,
@@ -100,7 +108,7 @@ export const createSession = async (req, res, next) => {
 
     const cleanKey = idempotencyKey.trim();
 
-    // 2. Pre-check for existing idempotent session
+    // Return existing session if matching idempotency key was already created
     const existingSession = await GDSession.findOne({
       userId: req.userId,
       idempotencyKey: cleanKey,
@@ -117,7 +125,7 @@ export const createSession = async (req, res, next) => {
       });
     }
 
-    // 3. Atomically check and deduct user credits
+    // Atomically check and deduct user credits to prevent concurrent overdrafts
     const updatedUser = await User.findOneAndUpdate(
       { _id: req.userId, credits: { $gte: GD_CREDIT_COST } },
       { $inc: { credits: -GD_CREDIT_COST } },
@@ -133,7 +141,6 @@ export const createSession = async (req, res, next) => {
       });
     }
 
-    // 4. Create the GDSession document
     try {
       const session = await GDSession.create({
         userId: req.userId,
@@ -414,9 +421,7 @@ export const submitTurn = async (req, res, next) => {
       });
     }
 
-    // -------------------------------------------------------------
-    // Branch 1: Candidate Speech
-    // -------------------------------------------------------------
+    // Handle candidate speech turn: analyze candidate input and synthesize peer reaction
     if (turnType === "candidate_speech") {
       if (!content || typeof content !== "string" || !content.trim()) {
         return res.status(400).json({
@@ -566,9 +571,7 @@ export const submitTurn = async (req, res, next) => {
       }
     }
 
-    // -------------------------------------------------------------
-    // Branch 2: Agent Prompt (Initial Opening Turn or Listening Turn)
-    // -------------------------------------------------------------
+    // Handle AI agent turn: synthesize opening statement or select next peer speaker
     if (
       isDiscussionComplete({
         transcript: session.transcript,

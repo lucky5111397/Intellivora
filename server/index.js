@@ -13,14 +13,11 @@ import resumeRouter from "./Routes/resume.route.js";
 import aptitudeRouter from "./Routes/aptitude.route.js";
 import historyRouter from "./Routes/history.route.js";
 import gdRouter from "./Routes/gd.route.js";
+import adminRouter from "./Routes/admin.route.js";
+import newsletterRouter from "./Routes/newsletter.route.js";
 import errorHandler from "./middlewares/errorHandler.js";
 import securityHeaders from "./middlewares/securityHeaders.js";
-import {
-  generalLimiter,
-  authLimiter,
-  paymentLimiter,
-  aiLimiter,
-} from "./middlewares/rateLimiter.js";
+import { generalLimiter } from "./middlewares/rateLimiter.js";
 
 dotenv.config();
 
@@ -29,7 +26,6 @@ const app = express();
 // Build allowed origins for CORS
 const allowedOrigins = [
   "http://localhost:5173",
-  "http://localhost:5174",
 ];
 
 // Add production frontend URL if configured (trim whitespace)
@@ -81,14 +77,16 @@ console.log("[SERVER] Allowed CORS Origins:", allowedOrigins);
 console.log("[SERVER] NODE_ENV:", process.env.NODE_ENV);
 console.log("[SERVER] CLIENT_URL from env:", process.env.CLIENT_URL);
 
-app.use("/api/auth", authLimiter, authRouter);
+app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
-app.use("/api/interview", aiLimiter, interviewRouter);
-app.use("/api/payment", paymentLimiter, paymentRouter);
+app.use("/api/interview", interviewRouter);
+app.use("/api/payment", paymentRouter);
 app.use("/api/resume", resumeRouter);
 app.use("/api/aptitude", aptitudeRouter);
 app.use("/api/history", historyRouter);
-app.use("/api/gd", aiLimiter, gdRouter);
+app.use("/api/gd", gdRouter);
+app.use("/api/admin", adminRouter);
+app.use("/api/newsletter", newsletterRouter);
 
 app.use(errorHandler);
 
