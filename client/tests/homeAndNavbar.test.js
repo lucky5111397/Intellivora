@@ -4,6 +4,7 @@ import {
   PRICING_PLANS,
   SERVICE_CREDIT_COSTS,
   NEW_USER_CREDITS,
+  getPlanDisplayName,
 } from "../src/config/pricingPlans.js";
 
 describe("Navbar & Navigation Behavioral Verification", () => {
@@ -71,6 +72,41 @@ describe("Navbar & Navigation Behavioral Verification", () => {
         type: "navigate",
         target: "/pricing",
       });
+    });
+
+    it("should verify all 5 Use Cases links are defined with correct paths and metadata", () => {
+      const useCaseItems = [
+        { name: "Software Engineers", path: "/use-cases/software-engineers" },
+        { name: "Data Analysts", path: "/use-cases/data-analysts" },
+        { name: "Product & Business", path: "/use-cases/product-business" },
+        { name: "Campus Placements", path: "/use-cases/campus-placements" },
+        { name: "Consultants", path: "/use-cases/consultants" },
+      ];
+
+      assert.equal(useCaseItems.length, 5);
+      assert.ok(useCaseItems.every((item) => item.path.startsWith("/use-cases/")));
+      assert.deepEqual(
+        useCaseItems.map((i) => i.name),
+        [
+          "Software Engineers",
+          "Data Analysts",
+          "Product & Business",
+          "Campus Placements",
+          "Consultants",
+        ]
+      );
+    });
+
+    it("should correctly identify active state for use cases routes", () => {
+      const isUseCasesActive = (currentPath) => {
+        return currentPath.startsWith("/use-cases");
+      };
+
+      assert.equal(isUseCasesActive("/use-cases/software-engineers"), true);
+      assert.equal(isUseCasesActive("/use-cases/data-analysts"), true);
+      assert.equal(isUseCasesActive("/use-cases/consultants"), true);
+      assert.equal(isUseCasesActive("/interview"), false);
+      assert.equal(isUseCasesActive("/"), false);
     });
   });
 
@@ -211,25 +247,38 @@ describe("Navbar & Navigation Behavioral Verification", () => {
   // 4. Authoritative Billing & Credit Alignment
   // =========================================================================
   describe("Authoritative Billing & Credit System", () => {
-    it("should define authoritative INR pricing plans with Free, Starter, and Pro tiers", () => {
+    it("should define authoritative INR pricing plans with Free, Pro, and Ultra tiers", () => {
       assert.equal(PRICING_PLANS.length, 3);
 
       const [free, starter, pro] = PRICING_PLANS;
 
       assert.equal(free.id, "free");
+      assert.equal(free.name, "Free");
       assert.equal(free.price, "₹0");
       assert.equal(free.priceNumeric, 0);
       assert.equal(free.credits, 100);
 
       assert.equal(starter.id, "basic");
+      assert.equal(starter.name, "Pro");
       assert.equal(starter.price, "₹199");
       assert.equal(starter.priceNumeric, 199);
       assert.equal(starter.credits, 500);
 
       assert.equal(pro.id, "pro");
+      assert.equal(pro.name, "Ultra");
       assert.equal(pro.price, "₹499");
       assert.equal(pro.priceNumeric, 499);
       assert.equal(pro.credits, 1500);
+    });
+
+    it("should correctly resolve display names for plan IDs and legacy aliases", () => {
+      assert.equal(getPlanDisplayName("basic"), "Pro");
+      assert.equal(getPlanDisplayName("starter"), "Pro");
+      assert.equal(getPlanDisplayName("pro"), "Ultra");
+      assert.equal(getPlanDisplayName("ultra"), "Ultra");
+      assert.equal(getPlanDisplayName("free"), "Free");
+      assert.equal(getPlanDisplayName(null), "Free");
+      assert.equal(getPlanDisplayName(undefined), "Free");
     });
 
     it("should confirm zero unapproved demo pricing tiers exist", () => {
