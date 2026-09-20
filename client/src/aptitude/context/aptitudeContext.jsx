@@ -17,6 +17,7 @@ const STORAGE_ACTIVE_ID = 'aptitude_active_attempt_id';
 const initialState = {
   selectedCategory: 'quantitative',
   selectedTopic: null,
+  targetCompany: null,
   difficulty: 'Medium',
   questionCount: 5,
   timeLimit: 600,
@@ -43,6 +44,8 @@ function aptitudeReducer(state, action) {
       return { ...state, error: action.payload, loading: false };
     case 'CLEAR_ERROR':
       return { ...state, error: null };
+    case 'SET_TARGET_COMPANY':
+      return { ...state, targetCompany: action.payload };
     case 'SELECT_CATEGORY':
       return { ...state, selectedCategory: action.payload };
     case 'SELECT_TOPIC':
@@ -78,6 +81,7 @@ function aptitudeReducer(state, action) {
         attemptId: attempt.attemptId || attempt._id,
         selectedCategory: attempt.category || state.selectedCategory,
         selectedTopic: attempt.topic || state.selectedTopic,
+        targetCompany: attempt.targetCompany !== undefined ? attempt.targetCompany : state.targetCompany,
         difficulty: attempt.difficulty || state.difficulty,
         questionCount: attempt.questionCount || attempt.questions?.length || state.questionCount,
         timeLimit: attempt.timeLimitSeconds ?? state.timeLimit,
@@ -154,6 +158,7 @@ function aptitudeReducer(state, action) {
         ...initialState,
         selectedCategory: state.selectedCategory,
         selectedTopic: action.payload !== undefined ? action.payload : state.selectedTopic,
+        targetCompany: state.targetCompany,
         categories: state.categories,
         progress: state.progress,
       };
@@ -200,6 +205,7 @@ export function AptitudeProvider({ children }) {
       difficulty: customConfig.difficulty || state.difficulty || 'Medium',
       questionCount: Number(customConfig.questionCount || state.questionCount || 5),
       timeLimitSeconds: Number(customConfig.timeLimitSeconds ?? state.timeLimit ?? 600),
+      targetCompany: customConfig.targetCompany !== undefined ? customConfig.targetCompany : (state.targetCompany || null),
     };
 
     try {
@@ -219,7 +225,7 @@ export function AptitudeProvider({ children }) {
         status: err.response?.status || 500,
       };
     }
-  }, [state.selectedCategory, state.selectedTopic, state.difficulty, state.questionCount, state.timeLimit]);
+  }, [state.selectedCategory, state.selectedTopic, state.difficulty, state.questionCount, state.timeLimit, state.targetCompany]);
 
   // Answer question with optimistic update + backend persistence
   const selectAnswer = useCallback(async (questionId, optionKey) => {

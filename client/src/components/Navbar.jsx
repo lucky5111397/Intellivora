@@ -1,378 +1,1180 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate, useLocation } from "react-router-dom";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import axios from "axios";
+import { toast } from "sonner";
+import {
+    Video,
+    Sparkles,
+    Users,
+    FileText,
+    BookOpen,
+    HelpCircle,
+    Compass,
+    Newspaper,
+    CreditCard,
+    Coins,
+    Clock,
+    LogOut,
+    User as UserIcon,
+    Shield,
+    Menu,
+    X,
+    ChevronDown,
+    ArrowRight,
+    TrendingUp,
+    Code2,
+    BarChart2,
+    Briefcase,
+    GraduationCap,
+    Layers,
+} from "lucide-react";
 import { ServerUrl } from "../App";
 import { setUserData } from "../redux/userSlice";
 import logoDark from "../assets/logo-dark.png";
-import { toast } from "sonner";
-import {
-    Coins,
-    LogOut,
-    User,
-    Menu,
-    X,
-    Clock,
-    Sparkles,
-    ArrowRight,
-} from "lucide-react";
+import { Button, Badge } from "./ui";
 
-function Navbar() {
-    const { userData } = useSelector((state) => state.user);
+export function Navbar() {
+    const { userData, authLoading } = useSelector((state) => state.user);
     const navigate = useNavigate();
     const location = useLocation();
     const dispatch = useDispatch();
+    const shouldReduceMotion = useReducedMotion();
 
-    const [showCreditPopup, setShowCreditPopup] = useState(false);
-    const [showUserPopup, setShowUserPopup] = useState(false);
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [activeDropdown, setActiveDropdown] = useState(null);
+    const openTimeoutRef = useRef(null);
+    const closeTimeoutRef = useRef(null);
 
-    // Close popups on escape key
+    const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+    const [creditMenuOpen, setCreditMenuOpen] = useState(false);
+    const profileRef = useRef(null);
+    const creditRef = useRef(null);
+
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const [mobileProductsOpen, setMobileProductsOpen] = useState(false);
+    const [mobileUseCasesOpen, setMobileUseCasesOpen] = useState(false);
+    const [mobileResourcesOpen, setMobileResourcesOpen] = useState(false);
+
+    const [scrolled, setScrolled] = useState(false);
+
     useEffect(() => {
-        const handleKeyDown = (e) => {
-            if (e.key === "Escape") {
-                setShowCreditPopup(false);
-                setShowUserPopup(false);
-                setMobileMenuOpen(false);
-            }
+        const handleScroll = () => {
+            setScrolled(window.scrollY > 15);
         };
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
+        window.addEventListener("scroll", handleScroll, { passive: true });
+        handleScroll();
+        return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
-    // Close mobile menu on route change
+    // Outside click & Escape key listener
     useEffect(() => {
-        setMobileMenuOpen(false);
-        setShowCreditPopup(false);
-        setShowUserPopup(false);
+        const handleClickOutside = (e) => {
+            if (profileRef.current && !profileRef.current.contains(e.target)) {
+                setProfileMenuOpen(false);
+            }
+            if (creditRef.current && !creditRef.current.contains(e.target)) {
+                setCreditMenuOpen(false);
+            }
+        };
+
+        const handleKeyDown = (e) => {
+            if (e.key === "Escape") {
+                setActiveDropdown(null);
+                setProfileMenuOpen(false);
+                setCreditMenuOpen(false);
+                setMobileOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        window.addEventListener("keydown", handleKeyDown);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            window.removeEventListener("keydown", handleKeyDown);
+        };
+    }, []);
+
+    // Close all menus on route change
+    useEffect(() => {
+        setActiveDropdown(null);
+        setProfileMenuOpen(false);
+        setCreditMenuOpen(false);
+        setMobileOpen(false);
     }, [location.pathname]);
+
+    // Handle desktop dropdown hover timing
+    const handleDropdownEnter = (name) => {
+        if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+        openTimeoutRef.current = setTimeout(() => {
+            setActiveDropdown(name);
+        }, 100);
+    };
+
+    const handleDropdownLeave = () => {
+        if (openTimeoutRef.current) clearTimeout(openTimeoutRef.current);
+        closeTimeoutRef.current = setTimeout(() => {
+            setActiveDropdown(null);
+        }, 120);
+    };
 
     const handleLogout = async () => {
         try {
-            await axios.get(ServerUrl + "/api/auth/logout", {
-                withCredentials: true,
-            });
-
+            await axios.get(`${ServerUrl}/api/auth/logout`, { withCredentials: true });
             dispatch(setUserData(null));
-            setShowCreditPopup(false);
-            setShowUserPopup(false);
-            setMobileMenuOpen(false);
-
-            toast.success("Logged out successfully");
-            navigate("/");
-        } catch (error) {
-            console.error("Logout error:", error?.message || error);
-            toast.error("Failed to logout. Please try again.");
+            toast.success("Successfully logged out");
+            setProfileMenuOpen(false);
+            setMobileOpen(false);
+            navigate("/auth");
+        } catch {
+            toast.error("Logout failed. Please try again.");
         }
     };
 
-    const handleSectionOrRoute = (target) => {
-        if (target.startsWith("#")) {
-            if (location.pathname === "/") {
-                const element = document.querySelector(target);
-                if (element) {
-                    element.scrollIntoView({ behavior: "smooth" });
-                }
-            } else {
-                navigate("/" + target);
-            }
-        } else {
-            const protectedRoutes = ["/interview", "/aptitude", "/resume", "/gd", "/history"];
-            if (!userData && protectedRoutes.some((route) => target === route || target.startsWith(route + "/"))) {
-                navigate("/auth", { state: { from: { pathname: target } } });
-            } else {
-                navigate(target);
-            }
-        }
-        setMobileMenuOpen(false);
+    const handleNavigate = (path) => {
+        setActiveDropdown(null);
+        setProfileMenuOpen(false);
+        setCreditMenuOpen(false);
+        setMobileOpen(false);
+        navigate(path);
     };
 
-    const navItems = [
-        { name: "Features", path: "#modules", isHash: true },
-        { name: "How It Works", path: "#how-it-works", isHash: true },
-        { name: "Mock Interview", path: "/interview" },
-        { name: "Aptitude Tests", path: "/aptitude" },
-        { name: "Resume ATS", path: "/resume" },
-        { name: "Group Discussion", path: "/gd" },
-        { name: "Pricing & Credits", path: "/pricing" },
+    // Product & Resource item definitions
+    const productItems = [
+        {
+            name: "AI Interview",
+            path: "/interview",
+            icon: Video,
+            description: "Adaptive technical & behavioral mock rounds with real-time feedback",
+        },
+        {
+            name: "Aptitude Practice",
+            path: "/aptitude",
+            icon: Sparkles,
+            description: "Timed quantitative, logical & verbal diagnostic tests",
+        },
+        {
+            name: "Group Discussion",
+            path: "/gd",
+            icon: Users,
+            description: "Multi-agent conversational rounds with turn-taking telemetry",
+        },
+        {
+            name: "ATS Resume Check",
+            path: "/resume",
+            icon: FileText,
+            description: "Deep JD-resume matching score and bullet optimization",
+        },
     ];
 
-    return (
-        <header className="sticky top-0 z-50 w-full bg-[#05070a]/90 backdrop-blur-xl border-b border-[#151d25] transition-colors">
-            {/* Backdrop dismissal for popups */}
-            {(showCreditPopup || showUserPopup) && (
-                <div
-                    className="fixed inset-0 z-[99990]"
-                    onClick={() => {
-                        setShowCreditPopup(false);
-                        setShowUserPopup(false);
-                    }}
-                    aria-hidden="true"
-                />
-            )}
+    const resourceItems = [
+        {
+            name: "Documentation",
+            path: "/docs",
+            icon: BookOpen,
+            description: "Scoring rubrics, speech models, and architecture specs",
+        },
+        {
+            name: "Help Center",
+            path: "/help",
+            icon: HelpCircle,
+            description: "Troubleshooting setup, audio permissions & account support",
+        },
+        {
+            name: "FAQs",
+            path: "/faqs",
+            icon: HelpCircle,
+            description: "Answers on credits, grading benchmarks & device requirements",
+        },
+        {
+            name: "Guides",
+            path: "/guides",
+            icon: Compass,
+            description: "Step-by-step role roadmaps and preparation playbooks",
+        },
+        {
+            name: "Blog",
+            path: "/blog",
+            icon: Newspaper,
+            description: "Engineering updates, interview trends & career advice",
+        },
+    ];
 
-            <div className="h-16 w-full max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-4">
-                {/* Brand Logo */}
-                <div
-                    onClick={() => handleSectionOrRoute("/")}
-                    className="flex items-center gap-2.5 cursor-pointer select-none group"
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => e.key === "Enter" && handleSectionOrRoute("/")}
+    const useCaseItems = [
+        {
+            name: "Software Engineers",
+            path: "/use-cases/software-engineers",
+            icon: Code2,
+            description: "System design, live coding, and algorithmic rounds with AI",
+        },
+        {
+            name: "Data Analysts",
+            path: "/use-cases/data-analysts",
+            icon: BarChart2,
+            description: "SQL, statistical reasoning, and quantitative case studies",
+        },
+        {
+            name: "Product & Business",
+            path: "/use-cases/product-business",
+            icon: Briefcase,
+            description: "Product sense, estimation, and behavioral leadership rounds",
+        },
+        {
+            name: "Campus Placements",
+            path: "/use-cases/campus-placements",
+            icon: GraduationCap,
+            description: "Aptitude tests, group discussions, and entry-level mock rounds",
+        },
+        {
+            name: "Consultants",
+            path: "/use-cases/consultants",
+            icon: Layers,
+            description: "Market sizing, profitability frameworks, and structured problem solving",
+        },
+    ];
+
+    const isProductsActive = productItems.some(
+        (i) => location.pathname === i.path || location.pathname.startsWith(i.path + "/")
+    );
+    const isUseCasesActive = useCaseItems.some(
+        (i) => location.pathname === i.path || location.pathname.startsWith(i.path + "/")
+    );
+    const isResourcesActive = resourceItems.some(
+        (i) => location.pathname === i.path || location.pathname.startsWith(i.path + "/")
+    );
+    const isPricingActive = location.pathname === "/pricing";
+
+    const dropdownVariants = {
+        hidden: { opacity: 0, y: shouldReduceMotion ? 0 : -8 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: { duration: shouldReduceMotion ? 0.05 : 0.16, ease: "easeOut" },
+        },
+        exit: {
+            opacity: 0,
+            y: shouldReduceMotion ? 0 : -8,
+            transition: { duration: shouldReduceMotion ? 0.05 : 0.12, ease: "easeIn" },
+        },
+    };
+
+    const credits = userData?.credits ?? 0;
+    const creditBadgeStyle =
+        credits <= 0
+            ? "bg-[#280B0B] border-[#EF4444]/40 text-[#F87171] hover:border-[#EF4444]"
+            : credits < 5
+            ? "bg-[#271A04] border-[#F59E0B]/40 text-[#FBBF24] hover:border-[#F59E0B]"
+            : "bg-[#0D1E3A] border-[#2563EB]/40 text-[#93C5FD] hover:border-[#2563EB]";
+
+    const isAdmin = Boolean(
+        userData?.email &&
+        import.meta.env.VITE_ADMIN_EMAIL &&
+        userData.email.trim().toLowerCase() === import.meta.env.VITE_ADMIN_EMAIL.trim().toLowerCase()
+    );
+
+    return (
+        <motion.header
+            animate={{
+                backgroundColor: scrolled ? "rgba(6, 8, 11, 0.96)" : "rgba(6, 8, 11, 0.75)",
+                borderColor: scrolled ? "#1E2B45" : "rgba(30, 43, 69, 0.35)",
+                boxShadow: scrolled ? "0 10px 30px -10px rgba(0, 0, 0, 0.6)" : "none",
+            }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="sticky top-0 z-40 w-full backdrop-blur-xl border-b transition-colors"
+        >
+            <div className="h-16 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+                {/* ============================================================
+                    1. LEFT: LOGO + WORDMARK
+                    ============================================================ */}
+                <Link
+                    to="/"
+                    className="flex items-center gap-2.5 select-none group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] rounded-lg p-1"
                     aria-label="Intellivora Home"
                 >
                     <img
                         src={logoDark}
-                        alt="INTELLIVORA Logo"
-                        className="h-8 w-8 object-contain transition-transform duration-200 group-hover:scale-105"
+                        alt="Intellivora Logo"
+                        className="h-7 w-7 object-contain transition-transform duration-200 group-hover:scale-105"
                     />
-                    <span className="font-semibold text-base sm:text-lg tracking-tight text-[#f1f5f9] font-['Geist',sans-serif]">
-                        INTELLIVORA
+                    <span className="font-bold text-lg tracking-tight text-[#F1F5F9] font-sans">
+                        Intellivora
                     </span>
-                </div>
+                </Link>
 
-                {/* Desktop Navigation Links */}
+                {/* ============================================================
+                    2. CENTER-LEFT: DESKTOP NAV WITH DROPDOWNS
+                    ============================================================ */}
                 <nav
-                    className="hidden xl:flex items-center gap-1 bg-[#0a0f14]/80 border border-[#202a34] rounded-lg p-1"
-                    aria-label="Main navigation"
+                    className="hidden lg:flex items-center gap-1 bg-[#0A0D14]/80 border border-[#1E2B45]/80 rounded-xl px-2 py-1"
+                    aria-label="Primary Navigation"
                 >
-                    {navItems.map((item) => {
-                        const isActive =
-                            !item.isHash &&
-                            (location.pathname === item.path ||
-                                (item.path !== "/" && location.pathname.startsWith(item.path + "/")));
-
-                        return (
-                            <button
-                                key={item.name}
-                                onClick={() => handleSectionOrRoute(item.path)}
-                                className={`px-3 py-1.5 rounded text-xs font-medium transition-all duration-150 cursor-pointer ${
-                                    isActive
-                                        ? "bg-[#17212b] text-[#f1f5f9] border border-[#2a3540] shadow-sm"
-                                        : "text-[#a7b0ba] hover:text-[#f1f5f9] hover:bg-[#111923]"
+                    {/* Products Dropdown Trigger */}
+                    <div
+                        className="relative"
+                        onMouseEnter={() => handleDropdownEnter("products")}
+                        onMouseLeave={handleDropdownLeave}
+                    >
+                        <button
+                            type="button"
+                            onClick={() =>
+                                setActiveDropdown(activeDropdown === "products" ? null : "products")
+                            }
+                            className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${
+                                isProductsActive || activeDropdown === "products"
+                                    ? "text-[#F1F5F9] bg-[#141B2D]"
+                                    : "text-[#94A3B8] hover:text-[#F1F5F9] hover:bg-[#0E131F]"
+                            }`}
+                            aria-expanded={activeDropdown === "products"}
+                            aria-haspopup="true"
+                        >
+                            <span>Products</span>
+                            <ChevronDown
+                                size={13}
+                                className={`transition-transform duration-200 ${
+                                    activeDropdown === "products" ? "rotate-180 text-[#38BDF8]" : ""
                                 }`}
-                            >
-                                {item.name}
-                            </button>
-                        );
-                    })}
+                            />
+                            {isProductsActive && (
+                                <span className="absolute bottom-0.5 left-3 right-3 h-[2px] bg-[#2563EB] rounded-full" />
+                            )}
+                        </button>
+
+                        {/* Products Dropdown Panel */}
+                        <AnimatePresence>
+                            {activeDropdown === "products" && (
+                                <motion.div
+                                    variants={dropdownVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                    exit="exit"
+                                    className="absolute left-0 mt-2 w-80 bg-[#0E131F] border border-[#1E2B45] rounded-xl shadow-2xl shadow-black/70 p-2 z-50 backdrop-blur-xl"
+                                >
+                                    <div className="space-y-1">
+                                        {productItems.map((item) => {
+                                            const Icon = item.icon;
+                                            const isItemActive = location.pathname === item.path;
+                                            return (
+                                                <Link
+                                                    key={item.name}
+                                                    to={item.path}
+                                                    onClick={() => setActiveDropdown(null)}
+                                                    className={`group flex items-start gap-3 p-2.5 rounded-lg transition-all duration-150 text-left ${
+                                                        isItemActive
+                                                            ? "bg-[#141B2D] border border-[#2563EB]/40"
+                                                            : "hover:bg-[#141B2D] border border-transparent"
+                                                    }`}
+                                                >
+                                                    <div className="w-8 h-8 rounded-lg bg-[#06080B] border border-[#1E2B45] flex items-center justify-center text-[#94A3B8] group-hover:text-[#38BDF8] group-hover:border-[#2563EB]/50 transition-colors shrink-0 mt-0.5">
+                                                        <Icon size={16} />
+                                                    </div>
+                                                    <div className="space-y-0.5 min-w-0">
+                                                        <p className="text-xs font-semibold text-[#F1F5F9] group-hover:text-white transition-colors">
+                                                            {item.name}
+                                                        </p>
+                                                        <p className="text-[11px] text-[#94A3B8] line-clamp-2 leading-relaxed">
+                                                            {item.description}
+                                                        </p>
+                                                    </div>
+                                                </Link>
+                                            );
+                                        })}
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
+                    {/* Use Cases Dropdown Trigger */}
+                    <div
+                        className="relative"
+                        onMouseEnter={() => handleDropdownEnter("use-cases")}
+                        onMouseLeave={handleDropdownLeave}
+                    >
+                        <button
+                            type="button"
+                            onClick={() =>
+                                setActiveDropdown(activeDropdown === "use-cases" ? null : "use-cases")
+                            }
+                            className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${
+                                isUseCasesActive || activeDropdown === "use-cases"
+                                    ? "text-[#F1F5F9] bg-[#141B2D]"
+                                    : "text-[#94A3B8] hover:text-[#F1F5F9] hover:bg-[#0E131F]"
+                            }`}
+                            aria-expanded={activeDropdown === "use-cases"}
+                            aria-haspopup="true"
+                        >
+                            <span>Use Cases</span>
+                            <ChevronDown
+                                size={13}
+                                className={`transition-transform duration-200 ${
+                                    activeDropdown === "use-cases" ? "rotate-180 text-[#38BDF8]" : ""
+                                }`}
+                            />
+                            {isUseCasesActive && (
+                                <span className="absolute bottom-0.5 left-3 right-3 h-[2px] bg-[#2563EB] rounded-full" />
+                            )}
+                        </button>
+
+                        {/* Use Cases Dropdown Panel */}
+                        <AnimatePresence>
+                            {activeDropdown === "use-cases" && (
+                                <motion.div
+                                    variants={dropdownVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                    exit="exit"
+                                    className="absolute left-0 mt-2 w-80 bg-[#0E131F] border border-[#1E2B45] rounded-xl shadow-2xl shadow-black/70 p-2 z-50 backdrop-blur-xl"
+                                >
+                                    <div className="space-y-1">
+                                        {useCaseItems.map((item) => {
+                                            const Icon = item.icon;
+                                            const isItemActive = location.pathname === item.path;
+                                            return (
+                                                <Link
+                                                    key={item.name}
+                                                    to={item.path}
+                                                    onClick={() => setActiveDropdown(null)}
+                                                    className={`group flex items-start gap-3 p-2.5 rounded-lg transition-all duration-150 text-left ${
+                                                        isItemActive
+                                                            ? "bg-[#141B2D] border border-[#2563EB]/40"
+                                                            : "hover:bg-[#141B2D] border border-transparent"
+                                                    }`}
+                                                >
+                                                    <div className="w-8 h-8 rounded-lg bg-[#06080B] border border-[#1E2B45] flex items-center justify-center text-[#94A3B8] group-hover:text-[#38BDF8] group-hover:border-[#2563EB]/50 transition-colors shrink-0 mt-0.5">
+                                                        <Icon size={16} />
+                                                    </div>
+                                                    <div className="space-y-0.5 min-w-0">
+                                                        <p className="text-xs font-semibold text-[#F1F5F9] group-hover:text-white transition-colors">
+                                                            {item.name}
+                                                        </p>
+                                                        <p className="text-[11px] text-[#94A3B8] line-clamp-2 leading-relaxed">
+                                                            {item.description}
+                                                        </p>
+                                                    </div>
+                                                </Link>
+                                            );
+                                        })}
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
+                    {/* Resources Dropdown Trigger */}
+                    <div
+                        className="relative"
+                        onMouseEnter={() => handleDropdownEnter("resources")}
+                        onMouseLeave={handleDropdownLeave}
+                    >
+                        <button
+                            type="button"
+                            onClick={() =>
+                                setActiveDropdown(
+                                    activeDropdown === "resources" ? null : "resources"
+                                )
+                            }
+                            className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${
+                                isResourcesActive || activeDropdown === "resources"
+                                    ? "text-[#F1F5F9] bg-[#141B2D]"
+                                    : "text-[#94A3B8] hover:text-[#F1F5F9] hover:bg-[#0E131F]"
+                            }`}
+                            aria-expanded={activeDropdown === "resources"}
+                            aria-haspopup="true"
+                        >
+                            <span>Resources</span>
+                            <ChevronDown
+                                size={13}
+                                className={`transition-transform duration-200 ${
+                                    activeDropdown === "resources"
+                                        ? "rotate-180 text-[#38BDF8]"
+                                        : ""
+                                }`}
+                            />
+                            {isResourcesActive && (
+                                <span className="absolute bottom-0.5 left-3 right-3 h-[2px] bg-[#2563EB] rounded-full" />
+                            )}
+                        </button>
+
+                        {/* Resources Dropdown Panel */}
+                        <AnimatePresence>
+                            {activeDropdown === "resources" && (
+                                <motion.div
+                                    variants={dropdownVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                    exit="exit"
+                                    className="absolute left-0 mt-2 w-80 bg-[#0E131F] border border-[#1E2B45] rounded-xl shadow-2xl shadow-black/70 p-2 z-50 backdrop-blur-xl"
+                                >
+                                    <div className="space-y-1">
+                                        {resourceItems.map((item) => {
+                                            const Icon = item.icon;
+                                            const isItemActive = location.pathname === item.path;
+                                            return (
+                                                <Link
+                                                    key={item.name}
+                                                    to={item.path}
+                                                    onClick={() => setActiveDropdown(null)}
+                                                    className={`group flex items-start gap-3 p-2.5 rounded-lg transition-all duration-150 text-left ${
+                                                        isItemActive
+                                                            ? "bg-[#141B2D] border border-[#2563EB]/40"
+                                                            : "hover:bg-[#141B2D] border border-transparent"
+                                                    }`}
+                                                >
+                                                    <div className="w-8 h-8 rounded-lg bg-[#06080B] border border-[#1E2B45] flex items-center justify-center text-[#94A3B8] group-hover:text-[#38BDF8] group-hover:border-[#2563EB]/50 transition-colors shrink-0 mt-0.5">
+                                                        <Icon size={16} />
+                                                    </div>
+                                                    <div className="space-y-0.5 min-w-0">
+                                                        <p className="text-xs font-semibold text-[#F1F5F9] group-hover:text-white transition-colors">
+                                                            {item.name}
+                                                        </p>
+                                                        <p className="text-[11px] text-[#94A3B8] line-clamp-2 leading-relaxed">
+                                                            {item.description}
+                                                        </p>
+                                                    </div>
+                                                </Link>
+                                            );
+                                        })}
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
+                    {/* Pricing Direct Link */}
+                    <Link
+                        to="/pricing"
+                        className={`relative px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${
+                            isPricingActive
+                                ? "text-[#F1F5F9] bg-[#141B2D]"
+                                : "text-[#94A3B8] hover:text-[#F1F5F9] hover:bg-[#0E131F]"
+                        }`}
+                    >
+                        <span>Pricing</span>
+                        {isPricingActive && (
+                            <span className="absolute bottom-0.5 left-3 right-3 h-[2px] bg-[#2563EB] rounded-full" />
+                        )}
+                    </Link>
                 </nav>
 
-                {/* Right Side Actions */}
+                {/* ============================================================
+                    3. RIGHT SIDE: AUTH-AWARE ACTIONS
+                    ============================================================ */}
                 <div className="flex items-center gap-2 sm:gap-3">
-                    {/* If Authenticated: Show Credits & Profile Avatar */}
-                    {userData ? (
+                    {/* State A: Loading Skeleton */}
+                    {authLoading ? (
+                        <div className="flex items-center gap-2">
+                            <div className="w-16 h-8 rounded-lg bg-[#0E131F] border border-[#1E2B45] animate-pulse" />
+                            <div className="w-24 h-8 rounded-lg bg-[#141B2D] border border-[#1E2B45] animate-pulse" />
+                        </div>
+                    ) : userData ? (
                         <>
-                            {/* Credit Button & Popup */}
-                            <div className="relative">
+                            {/* Progress text link */}
+                            <Link
+                                to="/progress"
+                                className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${
+                                    location.pathname === "/progress"
+                                        ? "text-[#F1F5F9] bg-[#141B2D]"
+                                        : "text-[#94A3B8] hover:text-[#F1F5F9] hover:bg-[#0E131F]"
+                                }`}
+                            >
+                                <TrendingUp size={14} className="text-[#38BDF8]" />
+                                <span>Progress</span>
+                            </Link>
+
+                            {/* History text link */}
+                            <Link
+                                to="/history"
+                                className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${
+                                    location.pathname === "/history"
+                                        ? "text-[#F1F5F9] bg-[#141B2D]"
+                                        : "text-[#94A3B8] hover:text-[#F1F5F9] hover:bg-[#0E131F]"
+                                }`}
+                            >
+                                <Clock size={14} />
+                                <span>History</span>
+                            </Link>
+
+                            {/* Credits Badge & Dropdown */}
+                            <div className="relative" ref={creditRef}>
                                 <button
+                                    type="button"
                                     onClick={() => {
-                                        setShowCreditPopup(!showCreditPopup);
-                                        setShowUserPopup(false);
+                                        setCreditMenuOpen(!creditMenuOpen);
+                                        setProfileMenuOpen(false);
                                     }}
-                                    className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg bg-[#0b1b33] border border-[#2563eb]/40 text-[#adc6ff] hover:border-[#2563eb] hover:bg-[#0b1b33]/80 transition-all text-xs font-semibold cursor-pointer"
-                                    aria-expanded={showCreditPopup}
-                                    aria-label="View user credits"
+                                    className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${creditBadgeStyle}`}
+                                    aria-expanded={creditMenuOpen}
+                                    aria-label="View credit balance"
                                 >
-                                    <Coins size={14} className="text-[#3b82f6]" />
-                                    <span className="font-semibold text-[#f1f5f9] font-mono">
-                                        {userData?.credits ?? 0}
+                                    <Coins size={14} className="shrink-0" />
+                                    <span className="font-mono tabular-nums">{credits}</span>
+                                    <span className="hidden sm:inline text-[11px] opacity-80 font-normal">
+                                        Credits
                                     </span>
-                                    <span className="hidden sm:inline text-[#a7b0ba]">Credits</span>
                                 </button>
 
-                                {showCreditPopup && (
-                                    <div className="absolute top-12 right-0 w-72 rounded-xl bg-[#17212b] border border-[#2a3540] shadow-2xl p-4 z-[99999] animate-in fade-in zoom-in-95 duration-150">
-                                        <div className="pb-3 border-b border-[#202a34] mb-3">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-xs font-medium uppercase tracking-wider text-[#a7b0ba]">
+                                <AnimatePresence>
+                                    {creditMenuOpen && (
+                                        <motion.div
+                                            variants={dropdownVariants}
+                                            initial="hidden"
+                                            animate="visible"
+                                            exit="exit"
+                                            className="absolute right-0 mt-2 w-72 bg-[#0E131F] border border-[#1E2B45] rounded-xl shadow-2xl shadow-black/70 p-4 z-50 backdrop-blur-xl"
+                                        >
+                                            <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#1E2B45]">
+                                                <span className="text-xs font-semibold uppercase tracking-wider text-[#94A3B8] font-mono">
                                                     Credit Balance
                                                 </span>
-                                                <span className="font-mono text-sm font-bold text-[#3b82f6]">
-                                                    {userData?.credits ?? 0}
-                                                </span>
+                                                <div className="flex items-center gap-2">
+                                                    <Badge
+                                                        variant={
+                                                            userData?.currentPlan === "Ultra"
+                                                                ? "ai"
+                                                                : userData?.currentPlan === "Pro"
+                                                                ? "brand"
+                                                                : "neutral"
+                                                        }
+                                                        size="sm"
+                                                    >
+                                                        {userData?.currentPlan ? `${userData.currentPlan} Plan` : "Free Plan"}
+                                                    </Badge>
+                                                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#0D1E3A] border border-[#2563EB]/40 text-[#93C5FD]">
+                                                        {credits} Available
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <p className="text-xs text-[#a7b0ba] mt-1.5 leading-relaxed">
-                                                Credits unlock realistic voice interviews, proctored tests, and ATS deep scans.
+                                            <p className="text-xs text-[#94A3B8] leading-relaxed mb-4">
+                                                Credits power AI mock interviews, multi-agent discussions, and ATS resume scans.
                                             </p>
-                                        </div>
-
-                                        <button
-                                            onClick={() => {
-                                                setShowCreditPopup(false);
-                                                navigate("/pricing");
-                                            }}
-                                            className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#2563eb] hover:bg-[#1d4ed8] py-2 text-xs font-semibold text-[#f1f5f9] transition-all cursor-pointer shadow-sm"
-                                        >
-                                            <span>Buy More Credits</span>
-                                            <ArrowRight size={14} />
-                                        </button>
-                                    </div>
-                                )}
+                                            <Button
+                                                variant="primary"
+                                                size="sm"
+                                                rightIcon={ArrowRight}
+                                                onClick={() => handleNavigate("/pricing")}
+                                                className="w-full text-xs"
+                                            >
+                                                Get More Credits
+                                            </Button>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
 
-                            {/* User Profile Avatar & Popup */}
-                            <div className="relative">
+                            {/* Profile Avatar & Action Menu */}
+                            <div className="relative" ref={profileRef}>
                                 <button
+                                    type="button"
                                     onClick={() => {
-                                        setShowUserPopup(!showUserPopup);
-                                        setShowCreditPopup(false);
+                                        setProfileMenuOpen(!profileMenuOpen);
+                                        setCreditMenuOpen(false);
                                     }}
-                                    className="w-8 h-8 rounded-full bg-[#2563eb] text-white flex items-center justify-center text-xs font-bold border border-[#3b82f6]/50 hover:ring-2 hover:ring-[#3b82f6]/40 transition-all cursor-pointer"
-                                    aria-expanded={showUserPopup}
-                                    aria-label="User menu"
+                                    className="w-8 h-8 rounded-lg bg-[#141B2D] border border-[#2D3E63] hover:border-[#3B82F6] flex items-center justify-center text-xs font-semibold text-[#F1F5F9] transition-all cursor-pointer overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+                                    aria-expanded={profileMenuOpen}
+                                    aria-label="User account menu"
                                 >
                                     {userData?.name ? (
-                                        userData.name.slice(0, 1).toUpperCase()
+                                        userData.name.charAt(0).toUpperCase()
                                     ) : (
-                                        <User size={15} />
+                                        <UserIcon size={15} className="text-[#94A3B8]" />
                                     )}
                                 </button>
 
-                                {showUserPopup && (
-                                    <div className="absolute top-12 right-0 w-64 rounded-xl bg-[#17212b] border border-[#2a3540] shadow-2xl p-3.5 z-[99999] animate-in fade-in zoom-in-95 duration-150">
-                                        <div className="pb-3 border-b border-[#202a34] mb-2 px-1">
-                                            <p className="text-sm font-semibold text-[#f1f5f9] truncate">
-                                                {userData?.name || "User"}
-                                            </p>
-                                            <p className="text-xs text-[#a7b0ba] mt-0.5 truncate">
-                                                {userData?.email || `${userData?.credits ?? 0} Credits Available`}
-                                            </p>
-                                        </div>
+                                <AnimatePresence>
+                                    {profileMenuOpen && (
+                                        <motion.div
+                                            variants={dropdownVariants}
+                                            initial="hidden"
+                                            animate="visible"
+                                            exit="exit"
+                                            className="absolute right-0 mt-2 w-60 bg-[#0E131F] border border-[#1E2B45] rounded-xl shadow-2xl shadow-black/70 p-2 z-50 backdrop-blur-xl"
+                                        >
+                                            {/* User Info Header */}
+                                            <div className="px-3 py-2 border-b border-[#1E2B45] mb-1">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <p className="text-xs font-semibold text-[#F1F5F9] truncate">
+                                                        {userData?.name || "Candidate"}
+                                                    </p>
+                                                    <Badge
+                                                        variant={
+                                                            userData?.currentPlan === "Ultra"
+                                                                ? "ai"
+                                                                : userData?.currentPlan === "Pro"
+                                                                ? "brand"
+                                                                : "neutral"
+                                                        }
+                                                        size="sm"
+                                                    >
+                                                        {userData?.currentPlan ? `${userData.currentPlan} Plan` : "Free Plan"}
+                                                    </Badge>
+                                                </div>
+                                                <p className="text-[11px] text-[#64748B] truncate font-mono mt-0.5">
+                                                    {userData?.email || ""}
+                                                </p>
+                                            </div>
 
-                                        <div className="space-y-1">
+                                            {/* Links */}
+                                            {isAdmin && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleNavigate("/admin")}
+                                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-[#93C5FD] hover:text-[#F1F5F9] hover:bg-[#0D1E3A] rounded-lg transition-colors cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+                                                >
+                                                    <Shield size={14} className="text-[#3B82F6]" />
+                                                    <span className="font-semibold">Admin Console</span>
+                                                </button>
+                                            )}
+
                                             <button
-                                                onClick={() => {
-                                                    setShowUserPopup(false);
-                                                    navigate("/history");
-                                                }}
-                                                className="w-full flex items-center gap-2.5 text-left text-xs font-medium py-2 px-2.5 rounded-lg text-[#a7b0ba] hover:text-[#f1f5f9] hover:bg-[#111923] transition-colors cursor-pointer"
+                                                type="button"
+                                                onClick={() => handleNavigate("/progress")}
+                                                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-[#94A3B8] hover:text-[#F1F5F9] hover:bg-[#141B2D] rounded-lg transition-colors cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
                                             >
-                                                <Clock size={15} className="text-[#3b82f6]" />
+                                                <TrendingUp size={14} className="text-[#38BDF8]" />
+                                                <span>Progress Dashboard</span>
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => handleNavigate("/history")}
+                                                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-[#94A3B8] hover:text-[#F1F5F9] hover:bg-[#141B2D] rounded-lg transition-colors cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+                                            >
+                                                <Clock size={14} className="text-[#38BDF8]" />
                                                 <span>Activity History</span>
                                             </button>
 
                                             <button
-                                                onClick={handleLogout}
-                                                className="w-full flex items-center gap-2.5 text-left text-xs font-medium py-2 px-2.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors cursor-pointer"
+                                                type="button"
+                                                onClick={() => handleNavigate("/pricing")}
+                                                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-[#94A3B8] hover:text-[#F1F5F9] hover:bg-[#141B2D] rounded-lg transition-colors cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
                                             >
-                                                <LogOut size={15} />
-                                                <span>Logout</span>
+                                                <CreditCard size={14} className="text-[#38BDF8]" />
+                                                <span>Billing & Plans</span>
                                             </button>
-                                        </div>
-                                    </div>
-                                )}
+
+                                            <div className="my-1 border-t border-[#1E2B45]" />
+
+                                            {/* Logout */}
+                                            <button
+                                                type="button"
+                                                onClick={handleLogout}
+                                                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-[#EF4444] hover:bg-[#280B0B] hover:text-[#F87171] rounded-lg transition-colors cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#EF4444]"
+                                            >
+                                                <LogOut size={14} />
+                                                <span>Sign Out</span>
+                                            </button>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
                         </>
                     ) : (
-                        /* If Unauthenticated: Show Sign In and Start Practicing */
                         <div className="flex items-center gap-2">
-                            <button
+                            <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => navigate("/auth")}
-                                className="hidden sm:inline-flex px-3 py-1.5 text-xs font-medium text-[#a7b0ba] hover:text-[#f1f5f9] hover:bg-[#111923] rounded-lg transition-colors cursor-pointer"
+                                className="text-xs"
                             >
-                                Sign In
-                            </button>
-                            <button
-                                onClick={() => navigate("/auth", { state: { from: { pathname: "/interview" } } })}
-                                className="inline-flex items-center justify-center gap-1.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-[#f1f5f9] text-xs font-semibold px-3.5 py-1.5 rounded-lg transition-all shadow-sm cursor-pointer"
+                                Login
+                            </Button>
+                            <Button
+                                variant="primary"
+                                size="sm"
+                                rightIcon={ArrowRight}
+                                onClick={() => navigate("/auth")}
+                                className="text-xs shadow-md shadow-[#2563EB]/25"
                             >
-                                <Sparkles size={13} />
-                                <span>Start Practicing</span>
-                            </button>
+                                Get Started
+                            </Button>
                         </div>
                     )}
 
-                    {/* Mobile Menu Toggle Button */}
+                    {/* Mobile Hamburger Toggle Button (lg:hidden) */}
                     <button
-                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                        className="xl:hidden p-2 rounded-lg bg-[#0a0f14] border border-[#202a34] text-[#a7b0ba] hover:text-[#f1f5f9] hover:bg-[#111923] transition-colors cursor-pointer"
-                        aria-label="Toggle mobile menu"
-                        aria-expanded={mobileMenuOpen}
+                        type="button"
+                        onClick={() => setMobileOpen(!mobileOpen)}
+                        className="lg:hidden p-1.5 rounded-lg text-[#94A3B8] hover:text-[#F1F5F9] hover:bg-[#0E131F] border border-[#1E2B45] transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+                        aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
+                        aria-expanded={mobileOpen}
                     >
-                        {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+                        <AnimatePresence mode="wait" initial={false}>
+                            {mobileOpen ? (
+                                <motion.div
+                                    key="close"
+                                    initial={{ opacity: 0, rotate: -90 }}
+                                    animate={{ opacity: 1, rotate: 0 }}
+                                    exit={{ opacity: 0, rotate: 90 }}
+                                    transition={{ duration: 0.15 }}
+                                >
+                                    <X size={18} />
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    key="menu"
+                                    initial={{ opacity: 0, rotate: 90 }}
+                                    animate={{ opacity: 1, rotate: 0 }}
+                                    exit={{ opacity: 0, rotate: -90 }}
+                                    transition={{ duration: 0.15 }}
+                                >
+                                    <Menu size={18} />
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </button>
                 </div>
             </div>
 
-            {/* Responsive Mobile / Tablet Drawer */}
-            {mobileMenuOpen && (
-                <div className="xl:hidden bg-[#0a0f14] border-b border-[#202a34] px-4 pt-3 pb-5 space-y-3 animate-in slide-in-from-top-2 duration-200">
-                    <nav className="flex flex-col space-y-1" aria-label="Mobile navigation">
-                        {navItems.map((item) => {
-                            const isActive =
-                                !item.isHash &&
-                                (location.pathname === item.path ||
-                                    (item.path !== "/" && location.pathname.startsWith(item.path + "/")));
+            {/* ============================================================
+                4. MOBILE DRAWER WITH ACCORDIONS & AUTH ZONE
+                ============================================================ */}
+            <AnimatePresence>
+                {mobileOpen && (
+                    <>
+                        {/* Semi-transparent backdrop */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            onClick={() => setMobileOpen(false)}
+                            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm lg:hidden"
+                            aria-hidden="true"
+                        />
 
-                            return (
-                                <button
-                                    key={item.name}
-                                    onClick={() => handleSectionOrRoute(item.path)}
-                                    className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-                                        isActive
-                                            ? "bg-[#17212b] text-[#f1f5f9] border border-[#2a3540]"
-                                            : "text-[#a7b0ba] hover:text-[#f1f5f9] hover:bg-[#111923]"
-                                    }`}
-                                >
-                                    {item.name}
-                                </button>
-                            );
-                        })}
-                    </nav>
-
-                    {/* Mobile User Controls */}
-                    <div className="pt-3 border-t border-[#151d25] flex flex-col gap-2">
-                        {userData ? (
-                            <>
-                                <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-[#111923] text-xs">
-                                    <span className="text-[#a7b0ba]">Logged in as <strong className="text-[#f1f5f9]">{userData?.name}</strong></span>
-                                    <span className="font-mono text-[#3b82f6] font-semibold">{userData?.credits ?? 0} Credits</span>
+                        {/* Slide-over Drawer Panel */}
+                        <motion.div
+                            initial={{ x: "100%" }}
+                            animate={{ x: 0 }}
+                            exit={{ x: "100%" }}
+                            transition={{
+                                type: shouldReduceMotion ? "tween" : "spring",
+                                damping: 28,
+                                stiffness: 280,
+                                duration: shouldReduceMotion ? 0.05 : undefined,
+                            }}
+                            className="fixed top-0 right-0 bottom-0 z-50 w-full max-w-sm bg-[#0E131F] border-l border-[#1E2B45] flex flex-col shadow-2xl shadow-black/90 lg:hidden overflow-hidden"
+                            role="dialog"
+                            aria-modal="true"
+                            aria-label="Mobile navigation drawer"
+                        >
+                            {/* Drawer Header */}
+                            <div className="h-16 px-5 border-b border-[#1E2B45] flex items-center justify-between shrink-0">
+                                <div className="flex items-center gap-2.5">
+                                    <img
+                                        src={logoDark}
+                                        alt="Intellivora"
+                                        className="h-6 w-6 object-contain"
+                                    />
+                                    <span className="font-bold text-base tracking-tight text-[#F1F5F9]">
+                                        Intellivora
+                                    </span>
                                 </div>
                                 <button
-                                    onClick={() => {
-                                        navigate("/history");
-                                        setMobileMenuOpen(false);
-                                    }}
-                                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-[#a7b0ba] hover:text-[#f1f5f9] hover:bg-[#111923]"
+                                    type="button"
+                                    onClick={() => setMobileOpen(false)}
+                                    className="p-1.5 rounded-lg text-[#94A3B8] hover:text-[#F1F5F9] hover:bg-[#141B2D] border border-[#1E2B45] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+                                    aria-label="Close drawer"
                                 >
-                                    <Clock size={14} className="text-[#3b82f6]" />
-                                    <span>Activity History</span>
-                                </button>
-                                <button
-                                    onClick={handleLogout}
-                                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-red-400 hover:bg-red-500/10"
-                                >
-                                    <LogOut size={14} />
-                                    <span>Logout</span>
-                                </button>
-                            </>
-                        ) : (
-                            <div className="grid grid-cols-2 gap-2 pt-1">
-                                <button
-                                    onClick={() => {
-                                        navigate("/auth");
-                                        setMobileMenuOpen(false);
-                                    }}
-                                    className="w-full py-2 text-center rounded-lg bg-[#17212b] text-xs font-medium text-[#f1f5f9] hover:bg-[#1b2631]"
-                                >
-                                    Sign In
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        navigate("/auth", { state: { from: { pathname: "/interview" } } });
-                                        setMobileMenuOpen(false);
-                                    }}
-                                    className="w-full py-2 text-center rounded-lg bg-[#2563eb] text-xs font-semibold text-[#f1f5f9] hover:bg-[#1d4ed8]"
-                                >
-                                    Start Practicing
+                                    <X size={18} />
                                 </button>
                             </div>
-                        )}
-                    </div>
-                </div>
-            )}
-        </header>
+
+                            {/* Drawer Navigation Links & Accordions */}
+                            <div className="flex-1 overflow-y-auto px-4 py-5 space-y-3">
+                                {/* Products Accordion */}
+                                <div className="rounded-xl border border-[#1E2B45] bg-[#0A0D14]/60 overflow-hidden">
+                                    <button
+                                        type="button"
+                                        onClick={() => setMobileProductsOpen(!mobileProductsOpen)}
+                                        className="w-full flex items-center justify-between p-3 text-xs font-semibold uppercase tracking-wider text-[#94A3B8] hover:text-[#F1F5F9] transition-colors text-left"
+                                        aria-expanded={mobileProductsOpen}
+                                    >
+                                        <span className="font-mono">Products</span>
+                                        <ChevronDown
+                                            size={14}
+                                            className={`transition-transform duration-200 ${
+                                                mobileProductsOpen ? "rotate-180 text-[#38BDF8]" : ""
+                                            }`}
+                                        />
+                                    </button>
+
+                                    <AnimatePresence initial={false}>
+                                        {mobileProductsOpen && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.2, ease: "easeInOut" }}
+                                                className="border-t border-[#1E2B45] px-2 py-2 space-y-1"
+                                            >
+                                                {productItems.map((item) => {
+                                                    const Icon = item.icon;
+                                                    return (
+                                                        <button
+                                                            key={item.name}
+                                                            type="button"
+                                                            onClick={() => handleNavigate(item.path)}
+                                                            className="w-full flex items-start gap-2.5 p-2 rounded-lg text-left hover:bg-[#141B2D] transition-colors group"
+                                                        >
+                                                            <div className="w-7 h-7 rounded-md bg-[#0E131F] border border-[#1E2B45] flex items-center justify-center text-[#94A3B8] group-hover:text-[#38BDF8] shrink-0 mt-0.5">
+                                                                <Icon size={14} />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-xs font-semibold text-[#F1F5F9]">
+                                                                    {item.name}
+                                                                </p>
+                                                                <p className="text-[10px] text-[#64748B] line-clamp-1">
+                                                                    {item.description}
+                                                                </p>
+                                                            </div>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+
+                                {/* Use Cases Accordion */}
+                                <div className="rounded-xl border border-[#1E2B45] bg-[#0A0D14]/60 overflow-hidden">
+                                    <button
+                                        type="button"
+                                        onClick={() => setMobileUseCasesOpen(!mobileUseCasesOpen)}
+                                        className="w-full flex items-center justify-between p-3 text-xs font-semibold uppercase tracking-wider text-[#94A3B8] hover:text-[#F1F5F9] transition-colors text-left"
+                                        aria-expanded={mobileUseCasesOpen}
+                                    >
+                                        <span className="font-mono">Use Cases</span>
+                                        <ChevronDown
+                                            size={14}
+                                            className={`transition-transform duration-200 ${
+                                                mobileUseCasesOpen ? "rotate-180 text-[#38BDF8]" : ""
+                                            }`}
+                                        />
+                                    </button>
+
+                                    <AnimatePresence initial={false}>
+                                        {mobileUseCasesOpen && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.2, ease: "easeInOut" }}
+                                                className="border-t border-[#1E2B45] px-2 py-2 space-y-1"
+                                            >
+                                                {useCaseItems.map((item) => {
+                                                    const Icon = item.icon;
+                                                    return (
+                                                        <button
+                                                            key={item.name}
+                                                            type="button"
+                                                            onClick={() => handleNavigate(item.path)}
+                                                            className="w-full flex items-start gap-2.5 p-2 rounded-lg text-left hover:bg-[#141B2D] transition-colors group"
+                                                        >
+                                                            <div className="w-7 h-7 rounded-md bg-[#0E131F] border border-[#1E2B45] flex items-center justify-center text-[#94A3B8] group-hover:text-[#38BDF8] shrink-0 mt-0.5">
+                                                                <Icon size={14} />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-xs font-semibold text-[#F1F5F9]">
+                                                                    {item.name}
+                                                                </p>
+                                                                <p className="text-[10px] text-[#64748B] line-clamp-1">
+                                                                    {item.description}
+                                                                </p>
+                                                            </div>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+
+                                {/* Resources Accordion */}
+                                <div className="rounded-xl border border-[#1E2B45] bg-[#0A0D14]/60 overflow-hidden">
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setMobileResourcesOpen(!mobileResourcesOpen)
+                                        }
+                                        className="w-full flex items-center justify-between p-3 text-xs font-semibold uppercase tracking-wider text-[#94A3B8] hover:text-[#F1F5F9] transition-colors text-left"
+                                        aria-expanded={mobileResourcesOpen}
+                                    >
+                                        <span className="font-mono">Resources</span>
+                                        <ChevronDown
+                                            size={14}
+                                            className={`transition-transform duration-200 ${
+                                                mobileResourcesOpen ? "rotate-180 text-[#38BDF8]" : ""
+                                            }`}
+                                        />
+                                    </button>
+
+                                    <AnimatePresence initial={false}>
+                                        {mobileResourcesOpen && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.2, ease: "easeInOut" }}
+                                                className="border-t border-[#1E2B45] px-2 py-2 space-y-1"
+                                            >
+                                                {resourceItems.map((item) => {
+                                                    const Icon = item.icon;
+                                                    return (
+                                                        <button
+                                                            key={item.name}
+                                                            type="button"
+                                                            onClick={() => handleNavigate(item.path)}
+                                                            className="w-full flex items-start gap-2.5 p-2 rounded-lg text-left hover:bg-[#141B2D] transition-colors group"
+                                                        >
+                                                            <div className="w-7 h-7 rounded-md bg-[#0E131F] border border-[#1E2B45] flex items-center justify-center text-[#94A3B8] group-hover:text-[#38BDF8] shrink-0 mt-0.5">
+                                                                <Icon size={14} />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-xs font-semibold text-[#F1F5F9]">
+                                                                    {item.name}
+                                                                </p>
+                                                                <p className="text-[10px] text-[#64748B] line-clamp-1">
+                                                                    {item.description}
+                                                                </p>
+                                                            </div>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+
+                                {/* Pricing Direct Link in Drawer */}
+                                <button
+                                    type="button"
+                                    onClick={() => handleNavigate("/pricing")}
+                                    className={`w-full flex items-center justify-between p-3 rounded-xl border text-xs font-medium transition-all ${
+                                        isPricingActive
+                                            ? "bg-[#141B2D] border-[#2563EB]/40 text-[#F1F5F9]"
+                                            : "border-[#1E2B45] bg-[#0A0D14]/60 text-[#94A3B8] hover:text-[#F1F5F9] hover:bg-[#141B2D]"
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-2.5">
+                                        <CreditCard size={15} className="text-[#38BDF8]" />
+                                        <span>Pricing & Credits</span>
+                                    </div>
+                                    <ArrowRight size={13} className="text-[#64748B]" />
+                                </button>
+                            </div>
+
+                            {/* Drawer Footer (Auth Zone) */}
+                            <div className="p-4 border-t border-[#1E2B45] bg-[#0A0D14] shrink-0 space-y-3">
+                                {userData ? (
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                <div className="w-8 h-8 rounded-lg bg-[#141B2D] border border-[#2D3E63] flex items-center justify-center text-xs font-semibold text-[#F1F5F9] shrink-0">
+                                                    {userData?.name
+                                                        ? userData.name.charAt(0).toUpperCase()
+                                                        : "C"}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-xs font-semibold text-[#F1F5F9] truncate">
+                                                        {userData?.name || "Candidate"}
+                                                    </p>
+                                                    <p className="text-[10px] text-[#64748B] truncate font-mono">
+                                                        {userData?.email || ""}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                <Badge
+                                                    variant={
+                                                        userData?.currentPlan === "Ultra"
+                                                            ? "ai"
+                                                            : userData?.currentPlan === "Pro"
+                                                            ? "brand"
+                                                            : "neutral"
+                                                    }
+                                                    size="sm"
+                                                >
+                                                    {userData?.currentPlan ? `${userData.currentPlan} Plan` : "Free Plan"}
+                                                </Badge>
+                                                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-[#0D1E3A] border border-[#2563EB]/40 text-[#93C5FD] text-xs font-mono font-semibold">
+                                                    <Coins size={12} />
+                                                    <span>{credits}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {isAdmin && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handleNavigate("/admin")}
+                                                className="w-full text-xs text-[#93C5FD] border-[#2563EB]/40 bg-[#0D1E3A]/50 hover:bg-[#0D1E3A]"
+                                                leftIcon={Shield}
+                                            >
+                                                Admin Console
+                                            </Button>
+                                        )}
+
+                                        <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            onClick={() => handleNavigate("/progress")}
+                                            className="w-full text-xs"
+                                            leftIcon={TrendingUp}
+                                        >
+                                            Progress Dashboard
+                                        </Button>
+
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                onClick={() => handleNavigate("/history")}
+                                                className="text-xs"
+                                                leftIcon={Clock}
+                                            >
+                                                History
+                                            </Button>
+                                            <Button
+                                                variant="danger"
+                                                size="sm"
+                                                onClick={handleLogout}
+                                                className="text-xs"
+                                                leftIcon={LogOut}
+                                            >
+                                                Sign Out
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col gap-2">
+                                        <Button
+                                            variant="secondary"
+                                            size="md"
+                                            onClick={() => handleNavigate("/auth")}
+                                            className="w-full text-xs"
+                                        >
+                                            Login
+                                        </Button>
+                                        <Button
+                                            variant="primary"
+                                            size="md"
+                                            rightIcon={ArrowRight}
+                                            onClick={() => handleNavigate("/auth")}
+                                            className="w-full text-xs shadow-md shadow-[#2563EB]/20"
+                                        >
+                                            Get Started
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
+        </motion.header>
     );
 }
 

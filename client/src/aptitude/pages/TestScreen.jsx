@@ -2,6 +2,14 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAptitude } from '../context/aptitudeContext';
 import { findTopicById } from '../data/topicsData';
+import {
+  Flag,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  X,
+} from 'lucide-react';
+import { Button, Badge } from '@/components/ui';
 
 export default function TestScreen() {
   const {
@@ -26,7 +34,7 @@ export default function TestScreen() {
   const [visited, setVisited] = useState([0]);
   const [recovering, setRecovering] = useState(false);
 
-  // 1. Recover active test on page reload / direct entry
+  // Recover in-progress attempt if entered directly or reloaded
   useEffect(() => {
     let active = true;
     const checkAttempt = async () => {
@@ -47,7 +55,6 @@ export default function TestScreen() {
     };
   }, [questions.length, recoverActiveTest, navigate]);
 
-  // Submit test handler
   const handleSubmit = useCallback(async () => {
     if (state.isSubmitting) return;
     setSubmitError(null);
@@ -61,7 +68,7 @@ export default function TestScreen() {
     }
   }, [state.isSubmitting, submitTest, navigate]);
 
-  // 2. Authoritative Timer with countdown
+  // Synchronize local countdown against server-authoritative start timestamp
   useEffect(() => {
     if (!state.timeLimit || state.timeLimit <= 0) return undefined;
 
@@ -85,13 +92,11 @@ export default function TestScreen() {
     return () => window.clearInterval(timer);
   }, [state.timeLimit, state.testStartTime, handleSubmit]);
 
-  // 3. Mark current question as visited
   useEffect(() => {
     setVisited((prev) => (prev.includes(index) ? prev : [...prev, index]));
   }, [index]);
 
-  // 4. Keyboard navigation (Left / Right arrow keys)
-  // 4. Keyboard navigation (Left / Right arrow keys & 1-4 / A-D option selection)
+  // Keyboard navigation: arrow keys for question traversal, number/letter keys for answer selection
   useEffect(() => {
     const handleKey = (event) => {
       if (showSubmit) return;
@@ -126,9 +131,9 @@ export default function TestScreen() {
 
   if (recovering && !questions.length) {
     return (
-      <div className="min-h-screen bg-apt-bg flex flex-col items-center justify-center text-apt-text">
-        <div className="w-10 h-10 border-4 border-apt-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-sm text-apt-text-dim">Restoring active assessment attempt...</p>
+      <div className="min-h-screen bg-[#06080B] flex flex-col items-center justify-center text-[#F1F5F9]">
+        <div className="w-10 h-10 border-3 border-[#2563EB]/20 border-t-[#2563EB] rounded-full animate-spin mb-4" />
+        <p className="text-sm text-[#94A3B8]">Restoring active assessment attempt...</p>
       </div>
     );
   }
@@ -143,13 +148,13 @@ export default function TestScreen() {
     `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
   const timerClass =
     timeLeft < 60
-      ? 'text-rose-400 animate-pulse'
+      ? 'text-[#F87171] animate-pulse border-[#B91C1C]'
       : timeLeft < 300
-      ? 'text-amber-400'
-      : 'text-apt-text';
+      ? 'text-[#FBBF24] border-[#B45309]'
+      : 'text-[#F1F5F9] border-[#1E2B45]';
   const selectedKey = state.answers[qId];
 
-  // Palette styling helper
+  // Question palette state priority: current active > answered & flagged > answered > flagged > visited > unvisited
   const paletteClass = (item, itemIndex) => {
     const itemId = item.questionId || item.id;
     const isCurrent = itemIndex === index;
@@ -157,90 +162,104 @@ export default function TestScreen() {
     const isMarked = state.markedForReview[itemId];
 
     if (isCurrent) {
-      return 'bg-apt-primary-ctr text-white border-apt-primary-ctr ring-2 ring-apt-primary/50 shadow-md font-bold';
+      return 'bg-[#2563EB] text-white border-[#3B82F6] ring-2 ring-[#38BDF8]/50 shadow-md font-bold';
     }
     if (isAnswered && isMarked) {
-      return 'bg-amber-500/20 text-amber-300 border-amber-500/60 font-semibold';
+      return 'bg-[#271A04] text-[#FBBF24] border-[#B45309] font-semibold';
     }
     if (isAnswered) {
-      return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/60 font-semibold';
+      return 'bg-[#062319] text-[#34D399] border-[#047857] font-semibold';
     }
     if (isMarked) {
-      return 'bg-amber-500/20 text-amber-300 border-amber-500/60 font-semibold';
+      return 'bg-[#271A04] text-[#FBBF24] border-[#B45309] font-semibold';
     }
-    return visited.includes(itemIndex)
-      ? 'bg-apt-surface-low text-apt-text border-apt-outline-dim'
-      : 'bg-apt-surface-mid text-apt-text-dim border-transparent';
+    if (visited.includes(itemIndex)) {
+      return 'bg-[#141B2D] text-[#94A3B8] border-[#2D3E63]';
+    }
+    return 'bg-[#0A0D14] text-[#64748B] border-[#161F33]';
   };
 
   return (
-    <div className="min-h-screen bg-apt-bg text-apt-text font-family-jakarta flex flex-col">
-      {/* Fixed Top Header */}
-      <header className="fixed top-0 inset-x-0 h-16 bg-apt-surface-top border-b border-apt-outline-dim flex items-center justify-between px-4 lg:px-8 z-40">
+    <div className="min-h-screen bg-[#06080B] text-[#F1F5F9] flex flex-col selection:bg-[#2563EB] selection:text-white">
+      {/* Top Test Navigation Bar */}
+      <header className="sticky top-0 z-40 h-16 bg-[#06080B]/90 backdrop-blur-md border-b border-[#161F33] flex items-center justify-between px-4 lg:px-8">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <span className="hidden sm:block truncate font-semibold">{topicName}</span>
-          <span className="bg-apt-surface-mid px-3 py-1 rounded-full text-xs font-semibold">
+          <span className="hidden sm:block truncate font-semibold text-sm text-[#F1F5F9]">{topicName}</span>
+          <span className="bg-[#141B2D] border border-[#2D3E63] px-2.5 py-0.5 rounded-full text-xs font-mono text-[#93C5FD] tabular-nums">
             Q {index + 1} of {questions.length}
           </span>
         </div>
 
-        <div className={`font-family-jetbrains text-lg font-bold bg-apt-surface-low px-4 py-1.5 rounded-lg border border-apt-outline-dim ${timerClass}`}>
-          {state.timeLimit ? formatTime(timeLeft) : 'Untimed'}
+        {/* Authoritative Countdown Timer */}
+        <div className={`font-mono text-base font-bold bg-[#0A0D14] px-4 py-1.5 rounded-lg border tabular-nums ${timerClass}`}>
+          <div className="flex items-center gap-1.5">
+            <Clock size={15} />
+            <span>{state.timeLimit ? formatTime(timeLeft) : 'Untimed'}</span>
+          </div>
         </div>
 
         <div className="flex items-center justify-end gap-2 flex-1">
+          {/* Flag Question Button */}
           <button
             onClick={() => toggleReview(qId)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
               state.markedForReview[qId]
-                ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
-                : 'bg-apt-surface-low border-transparent hover:bg-apt-surface-mid text-apt-text-dim hover:text-apt-text'
+                ? 'bg-[#271A04] text-[#FBBF24] border-[#B45309]'
+                : 'bg-[#0E131F] border-[#1E2B45] text-[#94A3B8] hover:text-[#F1F5F9] hover:bg-[#141B2D]'
             }`}
           >
-            <span className="material-symbols-outlined text-base">
-              {state.markedForReview[qId] ? 'flag' : 'outlined_flag'}
-            </span>
-            <span className="hidden lg:inline text-xs font-semibold">
-              {state.markedForReview[qId] ? 'Flagged' : 'Flag'}
-            </span>
+            <Flag size={14} className={state.markedForReview[qId] ? 'fill-current' : ''} />
+            <span className="hidden lg:inline">{state.markedForReview[qId] ? 'Flagged' : 'Flag'}</span>
           </button>
 
-          <button
-            onClick={() => setShowSubmit(true)}
-            className="bg-apt-primary-ctr text-white px-4 py-1.5 rounded-lg font-semibold text-sm shadow hover:bg-opacity-90 transition-all cursor-pointer"
-          >
-            Submit Test
-          </button>
-
+          {/* Palette toggle on mobile */}
           <button
             onClick={() => setPaletteOpen(true)}
-            className="lg:hidden p-1.5 bg-apt-surface-high rounded-lg text-apt-text cursor-pointer"
+            className="lg:hidden px-3 py-1.5 rounded-lg bg-[#0E131F] border border-[#1E2B45] text-xs font-medium text-[#94A3B8]"
           >
-            <span className="material-symbols-outlined">grid_view</span>
+            Palette
+          </button>
+
+          {/* Submit Test Button */}
+          <button
+            onClick={() => setShowSubmit(true)}
+            className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 py-1.5 rounded-lg font-semibold text-xs transition-colors cursor-pointer"
+          >
+            Submit Test
           </button>
         </div>
       </header>
 
-      {/* Main Test Screen Content */}
-      <main className="flex-1 mt-16 max-w-7xl mx-auto w-full p-4 lg:p-6 flex flex-col lg:flex-row gap-6">
-
-        {/* Left Column: Question & Options */}
-        <div className="flex-1 flex flex-col min-w-0">
-          <section className="bg-apt-surface-mid rounded-xl p-5 sm:p-8 border border-apt-outline-dim flex-1 flex flex-col justify-between">
+      {/* Main Content: Question + Right Palette */}
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col lg:flex-row gap-6">
+        {/* Left Column: Current Question */}
+        <div className="flex-1 min-w-0 flex flex-col justify-between">
+          <section className="bg-[#0E131F] border border-[#1E2B45] rounded-xl p-6 sm:p-8 shadow-xl flex-1 flex flex-col justify-between">
             <div>
-              <div className="flex items-center justify-between mb-6">
-                <h1 className="text-xl font-bold">Question {index + 1}</h1>
-                <span className="text-xs px-2.5 py-1 rounded-full uppercase font-bold bg-apt-surface-high border border-apt-outline-dim text-apt-primary">
-                  1.0 Mark / -0.25
-                </span>
+              {/* Question Header */}
+              <div className="flex items-center justify-between pb-4 mb-6 border-b border-[#161F33]">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-[#2563EB] text-white flex items-center justify-center text-xs font-mono font-bold">
+                    {index + 1}
+                  </span>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-[#93C5FD]">
+                    {question.difficulty || 'Diagnostic'} Problem
+                  </span>
+                </div>
+                {state.markedForReview[qId] && (
+                  <Badge variant="warning" size="sm" dot>
+                    Review Later
+                  </Badge>
+                )}
               </div>
 
-              <p className="text-base sm:text-lg mb-8 leading-relaxed whitespace-pre-wrap font-medium">
-                {question.question}
-              </p>
+              {/* Question Statement */}
+              <h2 className="text-base sm:text-xl font-medium text-[#F1F5F9] leading-relaxed whitespace-pre-wrap break-words mb-8">
+                {question.questionText || question.text || question.question}
+              </h2>
 
-              {/* Options */}
-              <div className="flex flex-col gap-3">
+              {/* Options Grid */}
+              <div className="grid grid-cols-1 gap-3">
                 {question.options?.map((opt, optIndex) => {
                   const key = typeof opt === 'object' ? opt.key : String.fromCharCode(65 + optIndex);
                   const text = typeof opt === 'object' ? opt.text : opt;
@@ -250,73 +269,86 @@ export default function TestScreen() {
                     <button
                       key={key}
                       onClick={() => selectAnswer(qId, key)}
-                      className={`text-left p-4 rounded-xl border flex items-start gap-4 transition-all cursor-pointer ${
+                      className={`text-left p-4 rounded-xl border flex items-start gap-3.5 transition-all cursor-pointer ${
                         isSelected
-                          ? 'bg-apt-primary/20 border-apt-primary text-apt-text shadow-sm ring-1 ring-apt-primary/40'
-                          : 'bg-apt-surface-low border-transparent hover:bg-apt-surface-high text-apt-text'
+                          ? 'bg-[#0D1E3A] border-[#2563EB] text-[#93C5FD] ring-1 ring-[#2563EB]/40 shadow-sm'
+                          : 'bg-[#0A0D14] border-[#161F33] hover:border-[#2D3E63] text-[#F1F5F9]'
                       }`}
                     >
-                      <span className={`w-7 h-7 shrink-0 flex items-center justify-center rounded-lg text-xs font-bold ${
-                        isSelected
-                          ? 'bg-apt-primary-ctr text-white'
-                          : 'bg-apt-surface-high text-apt-text-dim'
-                      }`}>
+                      <span
+                        className={`w-6 h-6 shrink-0 flex items-center justify-center rounded-lg text-xs font-mono font-bold ${
+                          isSelected
+                            ? 'bg-[#2563EB] text-white'
+                            : 'bg-[#141B2D] text-[#94A3B8] border border-[#2D3E63]'
+                        }`}
+                      >
                         {key}
                       </span>
-                      <span className="text-sm sm:text-base leading-relaxed mt-0.5">{text}</span>
+                      <span className="text-xs sm:text-sm leading-relaxed mt-0.5">{text}</span>
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* Nav controls */}
-            <div className="flex items-center justify-between mt-8 pt-4 border-t border-apt-outline-dim">
-              <div className="flex gap-3">
-                <button
+            {/* Bottom Nav Controls */}
+            <div className="flex items-center justify-between mt-8 pt-4 border-t border-[#161F33]">
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
                   disabled={index === 0}
+                  leftIcon={ChevronLeft}
                   onClick={() => dispatch({ type: 'SET_CURRENT_QUESTION', payload: index - 1 })}
-                  className="bg-apt-surface-high px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-40 cursor-pointer"
                 >
                   Previous
-                </button>
+                </Button>
                 {selectedKey && (
                   <button
                     onClick={() => clearAnswer(qId)}
-                    className="bg-apt-surface-low text-apt-text-dim hover:text-apt-text px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer"
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-[#64748B] hover:text-[#F1F5F9] transition-colors cursor-pointer"
                   >
                     Clear Choice
                   </button>
                 )}
               </div>
 
-              <button
+              <Button
+                variant="primary"
+                size="sm"
+                rightIcon={index < questions.length - 1 ? ChevronRight : undefined}
                 onClick={() =>
                   index < questions.length - 1
                     ? dispatch({ type: 'SET_CURRENT_QUESTION', payload: index + 1 })
                     : setShowSubmit(true)
                 }
-                className="bg-apt-primary-ctr text-white px-5 py-2 rounded-lg text-sm font-bold shadow hover:bg-opacity-90 transition-all cursor-pointer"
               >
                 {index < questions.length - 1 ? 'Save & Next' : 'Review & Submit'}
-              </button>
+              </Button>
             </div>
           </section>
         </div>
 
         {/* Right Column: Question Palette */}
-        <aside className={`${paletteOpen ? 'fixed inset-0 z-50 bg-apt-bg p-4 overflow-y-auto' : 'hidden'} lg:flex lg:w-[320px] shrink-0`}>
-          <div className="w-full bg-apt-surface-mid rounded-xl p-5 border border-apt-outline-dim h-fit lg:sticky lg:top-20 space-y-5">
-            <div className="flex justify-between items-center">
-              <h2 className="font-bold text-base">Question Palette</h2>
+        <aside
+          className={`${
+            paletteOpen ? 'fixed inset-0 z-50 bg-[#06080B] p-4 overflow-y-auto' : 'hidden'
+          } lg:flex lg:w-[320px] shrink-0`}
+        >
+          <div className="w-full bg-[#0E131F] rounded-xl p-5 border border-[#1E2B45] h-fit lg:sticky lg:top-20 space-y-5">
+            <div className="flex justify-between items-center pb-3 border-b border-[#161F33]">
+              <h3 className="font-semibold text-xs uppercase tracking-wider text-[#F1F5F9]">
+                Question Palette
+              </h3>
               <button
                 onClick={() => setPaletteOpen(false)}
-                className="lg:hidden p-1.5 bg-apt-surface-high rounded-lg cursor-pointer"
+                className="lg:hidden p-1 rounded-lg text-[#64748B] hover:text-[#F1F5F9]"
               >
-                <span className="material-symbols-outlined text-sm">close</span>
+                <X size={16} />
               </button>
             </div>
 
+            {/* Grid of Palette Questions */}
             <div className="grid grid-cols-5 gap-2">
               {questions.map((item, itemIndex) => (
                 <button
@@ -325,7 +357,7 @@ export default function TestScreen() {
                     dispatch({ type: 'SET_CURRENT_QUESTION', payload: itemIndex });
                     setPaletteOpen(false);
                   }}
-                  className={`h-10 rounded-lg border font-family-jetbrains text-xs transition-all cursor-pointer ${paletteClass(
+                  className={`h-9 rounded-lg border font-mono text-xs transition-all cursor-pointer ${paletteClass(
                     item,
                     itemIndex
                   )}`}
@@ -335,59 +367,71 @@ export default function TestScreen() {
               ))}
             </div>
 
-            <div className="space-y-2 text-xs text-apt-text-dim bg-apt-surface-low rounded-xl p-4 border border-apt-outline-dim">
-              <div className="flex justify-between">
-                <span>Answered:</span>
-                <b className="text-emerald-400 font-family-jetbrains">{answered} / {questions.length}</b>
+            {/* Palette Legend */}
+            <div className="space-y-2 text-xs text-[#94A3B8] bg-[#0A0D14] rounded-lg p-3.5 border border-[#161F33]">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#22C55E]" />
+                  <span>Answered:</span>
+                </span>
+                <b className="text-[#34D399] font-mono tabular-nums">{answered} / {questions.length}</b>
               </div>
-              <div className="flex justify-between">
-                <span>Flagged for Review:</span>
-                <b className="text-amber-400 font-family-jetbrains">{marked}</b>
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#F59E0B]" />
+                  <span>Flagged:</span>
+                </span>
+                <b className="text-[#FBBF24] font-mono tabular-nums">{marked}</b>
               </div>
-              <div className="flex justify-between">
-                <span>Unvisited:</span>
-                <b className="font-family-jetbrains">{Math.max(0, questions.length - visited.length)}</b>
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#64748B]" />
+                  <span>Unvisited:</span>
+                </span>
+                <b className="text-[#F1F5F9] font-mono tabular-nums">{Math.max(0, questions.length - visited.length)}</b>
               </div>
             </div>
           </div>
         </aside>
-
       </main>
 
       {/* Submit Confirmation Modal */}
       {showSubmit && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-apt-surface-mid border border-apt-outline w-full max-w-md rounded-2xl p-6 space-y-4 shadow-2xl">
-            <h2 className="text-2xl font-bold text-apt-text">Submit Assessment?</h2>
-            <p className="text-sm text-apt-text-dim leading-relaxed">
-              You have answered <b className="text-emerald-400">{answered}</b> out of <b className="text-apt-text">{questions.length}</b> questions.
+        <div className="fixed inset-0 bg-[#06080B]/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0E131F] border border-[#1E2B45] w-full max-w-md rounded-xl p-6 space-y-4 shadow-2xl">
+            <h3 className="text-lg font-bold text-[#F1F5F9]">Submit Assessment?</h3>
+            <p className="text-xs sm:text-sm text-[#94A3B8] leading-relaxed">
+              You have answered <b className="text-[#34D399] font-mono">{answered}</b> out of{' '}
+              <b className="text-[#F1F5F9] font-mono">{questions.length}</b> questions.
               {questions.length - answered > 0 && (
-                <span className="text-amber-400 block mt-1">
-                  ({questions.length - answered} questions are currently skipped/unanswered).
+                <span className="text-[#FBBF24] block mt-1">
+                  ({questions.length - answered} questions remain unattempted).
                 </span>
               )}
             </p>
 
             {submitError && (
-              <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs leading-relaxed font-medium">
+              <div className="p-3 rounded-lg bg-[#280B0B] border border-[#B91C1C]/40 text-[#F87171] text-xs leading-relaxed">
                 {submitError}
               </div>
             )}
 
-            <div className="flex gap-3 pt-2">
-              <button
+            <div className="flex gap-3 pt-2 justify-end">
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => setShowSubmit(false)}
-                className="flex-1 bg-apt-surface-high hover:bg-apt-surface-top py-2.5 rounded-xl font-semibold text-sm cursor-pointer transition-colors"
               >
                 Return to Test
-              </button>
-              <button
-                disabled={state.isSubmitting}
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                isLoading={state.isSubmitting}
                 onClick={handleSubmit}
-                className="flex-1 bg-apt-primary-ctr hover:bg-opacity-90 text-white py-2.5 rounded-xl font-bold text-sm shadow-lg disabled:opacity-50 cursor-pointer transition-all"
               >
-                {state.isSubmitting ? 'Evaluating...' : submitError ? 'Retry Submit' : 'Confirm Submit'}
-              </button>
+                {submitError ? 'Retry Submit' : 'Confirm Submit'}
+              </Button>
             </div>
           </div>
         </div>

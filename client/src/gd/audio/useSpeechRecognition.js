@@ -114,7 +114,7 @@ export const useSpeechRecognition = () => {
           if (!isMountedRef.current) return;
 
           const errCode = event.error;
-          let userMessage = "Microphone error occurred.";
+          let userMessage;
 
           switch (errCode) {
             case "not-allowed":

@@ -17,7 +17,6 @@ import {
   Sliders,
   LogIn,
 } from "lucide-react";
-import Navbar from "../../components/Navbar";
 import { useGD } from "../context/gdContext";
 import {
   VALID_CATEGORIES,
@@ -35,10 +34,8 @@ export default function GDSetup() {
   const { userData } = useSelector((state) => state.user);
   const { initSession, loading, error, clearError } = useGD();
 
-  // Authentication state
   const isAuthenticated = Boolean(userData);
 
-  // Configuration Form State
   const [selectedCategory, setSelectedCategory] = useState("Technology & AI");
   const [currentTopicIndex, setCurrentTopicIndex] = useState(0);
   const [customTopic, setCustomTopic] = useState("");
@@ -46,11 +43,9 @@ export default function GDSetup() {
   const [durationMinutes, setDurationMinutes] = useState(10);
   const [formErrors, setFormErrors] = useState({});
 
-  // Credit calculation (authenticated users only)
   const userCredits = userData?.credits ?? 0;
   const hasSufficientCredits = isAuthenticated && userCredits >= GD_CREDIT_COST;
 
-  // Active topic resolution
   const topicsForCategory = useMemo(() => {
     return getTopicsByCategory(selectedCategory);
   }, [selectedCategory]);
@@ -65,14 +60,12 @@ export default function GDSetup() {
   const resolvedTopicTitle =
     selectedCategory === "Custom" ? customTopic : activeCuratedTopic.title;
 
-  // Cycle topic within category
   const handleShuffleTopic = () => {
     if (selectedCategory === "Custom") return;
     setCurrentTopicIndex((prev) => (prev + 1) % topicsForCategory.length);
     setFormErrors((prev) => ({ ...prev, topic: undefined }));
   };
 
-  // Category change
   const handleSelectCategory = (cat) => {
     setSelectedCategory(cat);
     setCurrentTopicIndex(0);
@@ -80,7 +73,6 @@ export default function GDSetup() {
     clearError();
   };
 
-  // Submission handler
   const handleEnterChamber = async (e) => {
     e.preventDefault();
 
@@ -136,10 +128,7 @@ export default function GDSetup() {
   };
 
   return (
-    <div className="min-h-screen bg-[#080b12] text-slate-100 flex flex-col selection:bg-indigo-500/20 selection:text-indigo-300">
-      {/* Top Standard Navigation */}
-      <Navbar />
-
+    <div className="min-h-screen bg-[#06080B] text-[#F1F5F9] flex flex-col selection:bg-[#2563EB] selection:text-white">
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
         {/* Top Breadcrumb & Stage Indicator */}
         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -713,19 +702,6 @@ export default function GDSetup() {
           </div>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="w-full bg-[#06080e] border-t border-white/[0.06] py-5 mt-auto">
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-          <div>
-            © 2025 Intellivora Systems Inc. · Executive Multi-Agent Cognitive Assessment &amp; Placement Prep
-          </div>
-          <div className="flex items-center gap-2 text-emerald-400 text-xs">
-            <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" />
-            <span className="text-slate-400">Latency: 22ms · Neural Engine v4.2</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

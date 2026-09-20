@@ -1,7 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAptitude } from '../context/aptitudeContext';
 import { findTopicById, categoriesData } from '../data/topicsData';
+import {
+  Home,
+  SlidersHorizontal,
+  ListOrdered,
+  Clock,
+  ArrowRight,
+  ArrowLeft,
+  AlertCircle,
+  X,
+  Building2,
+} from 'lucide-react';
+import { Button, Badge } from '@/components/ui';
 
 export default function TestSetup() {
   const { state, dispatch, startTest } = useAptitude();
@@ -57,88 +69,92 @@ export default function TestSetup() {
   };
 
   return (
-    <div className="min-h-screen bg-apt-bg text-apt-text font-family-jakarta selection:bg-apt-primary/30 overflow-x-hidden">
+    <div className="min-h-screen bg-[#06080B] text-[#F1F5F9] pb-24">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-
         {/* 1. Breadcrumb Rail */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex items-center text-sm font-medium text-apt-text-dim">
-            <span className="material-symbols-outlined text-[18px] mr-1">home</span>
-            <span className="hover:text-apt-text cursor-pointer transition-colors" onClick={() => navigate('/aptitude')}>
-              Home
-            </span>
-            <span className="mx-2 text-apt-outline-dim">/</span>
-            <span className="hover:text-apt-text cursor-pointer transition-colors" onClick={() => navigate('/aptitude/topics')}>
+          <nav className="flex items-center space-x-2 text-xs font-medium text-[#94A3B8]">
+            <Link to="/" className="hover:text-[#F1F5F9] transition-colors flex items-center gap-1">
+              <Home size={14} />
+              <span>Home</span>
+            </Link>
+            <span>/</span>
+            <Link to="/aptitude" className="hover:text-[#F1F5F9] transition-colors">
+              Aptitude Hub
+            </Link>
+            <span>/</span>
+            <Link to="/aptitude/topics" className="hover:text-[#F1F5F9] transition-colors">
               {categoryObj.name}
-            </span>
-            <span className="mx-2 text-apt-outline-dim">/</span>
-            <span className="text-apt-secondary font-semibold">{topicObj.name} Setup</span>
-          </div>
+            </Link>
+            <span>/</span>
+            <span className="text-[#38BDF8] font-semibold">{topicObj.name} Setup</span>
+          </nav>
 
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={ArrowLeft}
             onClick={() => navigate('/aptitude/topics')}
-            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 bg-apt-surface-low border border-apt-outline-dim rounded-lg hover:bg-apt-surface-mid transition-colors cursor-pointer"
           >
-            <span className="material-symbols-outlined text-sm">swap_horiz</span>
-            <span>Change Topic</span>
-          </button>
+            Change Topic
+          </Button>
         </div>
 
-        {/* Error Alert (e.g. 422 Insufficient Pool or Provider Failure) */}
+        {/* Error Alert */}
         {errorMessage && (
-          <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-4 flex items-start gap-3 text-rose-300">
-            <span className="material-symbols-outlined text-rose-400 mt-0.5">error</span>
+          <div className="bg-[#280B0B] border border-[#B91C1C]/40 rounded-xl p-4 flex items-start gap-3 text-[#F87171]">
+            <AlertCircle size={18} className="mt-0.5 shrink-0" />
             <div className="flex-1">
-              <h4 className="font-bold text-sm text-rose-300">Test Initialization Error</h4>
-              <p className="text-xs text-rose-300/80 mt-1 leading-relaxed">{errorMessage}</p>
+              <h4 className="font-bold text-xs uppercase tracking-wider">Test Initialization Error</h4>
+              <p className="text-xs text-[#F87171]/90 mt-1 leading-relaxed">{errorMessage}</p>
             </div>
             <button
               onClick={() => setErrorMessage('')}
-              className="text-rose-400 hover:text-rose-200 cursor-pointer text-sm"
+              className="text-[#F87171] hover:text-white cursor-pointer"
             >
-              ✕
+              <X size={16} />
             </button>
           </div>
         )}
 
         {/* 2. Topic Header Card */}
-        <div className="relative overflow-hidden bg-apt-surface-mid rounded-2xl p-6 sm:p-8 border border-apt-outline-dim">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-            <span className="px-3 py-1 text-xs font-bold bg-apt-primary/20 text-apt-primary rounded-full border border-apt-primary/30 uppercase tracking-wider">
+        <div className="bg-[#0E131F] rounded-2xl p-6 sm:p-8 border border-[#1E2B45]">
+          <div className="flex items-center justify-between gap-4 mb-3">
+            <Badge variant="brand" size="sm">
               {categoryObj.name}
-            </span>
-            <span className="text-xs text-apt-text-dim">
-              Verified Psychometric Assessment
+            </Badge>
+            <span className="text-xs font-mono text-[#64748B]">
+              Verified Psychometric Diagnostic
             </span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-apt-text tracking-tight mb-3">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#F1F5F9] tracking-tight mb-2">
             {topicObj.name}
           </h1>
-          <p className="text-apt-text-dim max-w-2xl text-base leading-relaxed">
+          <p className="text-[#94A3B8] max-w-2xl text-xs sm:text-sm leading-relaxed">
             {topicObj.description}
           </p>
         </div>
 
         {/* 3. Setup Controls Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
           {/* LEFT: Controls */}
           <div className="lg:col-span-8 space-y-6">
-
             {/* Setting 1: Difficulty Level */}
-            <div className="bg-apt-surface-mid rounded-xl p-6 border border-apt-outline-dim space-y-4">
+            <div className="bg-[#0E131F] rounded-xl p-6 border border-[#1E2B45] space-y-4">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-apt-primary text-xl">tune</span>
-                <h2 className="text-lg font-bold text-apt-text">Difficulty Calibration</h2>
+                <SlidersHorizontal size={16} className="text-[#38BDF8]" />
+                <h2 className="text-sm font-bold uppercase tracking-wider text-[#F1F5F9]">
+                  Difficulty Calibration
+                </h2>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
-                  { id: 'Easy', desc: 'Foundation concepts, formulas, and straightforward evaluation.' },
-                  { id: 'Medium', desc: 'Industry-standard benchmarks and multi-step reasoning.' },
-                  { id: 'Hard', desc: 'Advanced problem solving, intricate edge cases, and traps.' },
-                  { id: 'Adaptive', desc: 'Dynamically balanced mix across difficulty tiers.' },
+                  { id: 'Easy', desc: 'Core formulas, single-step arithmetic, and fundamentals.' },
+                  { id: 'Medium', desc: 'Standard placement benchmarks and multi-step reasoning.' },
+                  { id: 'Hard', desc: 'Complex problem solving, intricate edge cases, and time traps.' },
+                  { id: 'Adaptive', desc: 'Dynamically balanced mix across all difficulty tiers.' },
                 ].map((diff) => {
                   const isSelected = state.difficulty === diff.id;
                   return (
@@ -147,19 +163,21 @@ export default function TestSetup() {
                       onClick={() => dispatch({ type: 'SET_DIFFICULTY', payload: diff.id })}
                       className={`p-4 rounded-xl cursor-pointer border transition-all ${
                         isSelected
-                          ? 'bg-apt-surface-high border-apt-primary shadow-md ring-1 ring-apt-primary/40'
-                          : 'bg-apt-surface-low border-apt-outline-dim hover:bg-apt-surface-high'
+                          ? 'bg-[#0D1E3A] border-[#2563EB] text-[#93C5FD] ring-1 ring-[#2563EB]/40'
+                          : 'bg-[#0A0D14] border-[#161F33] hover:border-[#2D3E63] text-[#94A3B8]'
                       }`}
                     >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-bold text-apt-text">{diff.id}</span>
-                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                          isSelected ? 'border-apt-primary bg-apt-primary' : 'border-apt-outline-dim'
-                        }`}>
-                          {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="font-bold text-xs sm:text-sm text-[#F1F5F9]">{diff.id}</span>
+                        <div
+                          className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                            isSelected ? 'border-[#2563EB] bg-[#2563EB]' : 'border-[#2D3E63]'
+                          }`}
+                        >
+                          {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                         </div>
                       </div>
-                      <p className="text-xs text-apt-text-dim leading-relaxed">{diff.desc}</p>
+                      <p className="text-[11px] leading-relaxed">{diff.desc}</p>
                     </div>
                   );
                 })}
@@ -167,23 +185,25 @@ export default function TestSetup() {
             </div>
 
             {/* Setting 2: Question Load */}
-            <div className="bg-apt-surface-mid rounded-xl p-6 border border-apt-outline-dim space-y-4">
+            <div className="bg-[#0E131F] rounded-xl p-6 border border-[#1E2B45] space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-blue-400 text-xl">format_list_numbered</span>
-                  <h2 className="text-lg font-bold text-apt-text">Question Load</h2>
+                  <ListOrdered size={16} className="text-[#38BDF8]" />
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-[#F1F5F9]">
+                    Question Load
+                  </h2>
                 </div>
-                <span className="text-xs font-semibold px-2.5 py-1 rounded bg-apt-surface-low text-apt-secondary">
+                <span className="text-xs font-mono font-semibold text-[#38BDF8] tabular-nums">
                   {state.questionCount} Questions Selected
                 </span>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { count: 5, label: 'Quick Sprint', sub: '5 Questions' },
+                  { count: 5, label: 'Sprint Drill', sub: '5 Questions' },
                   { count: 10, label: 'Standard Set', sub: '10 Questions' },
                   { count: 15, label: 'Deep Practice', sub: '15 Questions' },
-                  { count: 20, label: 'Comprehensive', sub: '20 Questions' },
+                  { count: 20, label: 'Full Mock', sub: '20 Questions' },
                 ].map((opt) => {
                   const isSelected = state.questionCount === opt.count;
                   return (
@@ -192,11 +212,11 @@ export default function TestSetup() {
                       onClick={() => dispatch({ type: 'SET_QUESTION_COUNT', payload: opt.count })}
                       className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all cursor-pointer ${
                         isSelected
-                          ? 'bg-apt-primary/20 border-apt-primary text-white shadow-md'
-                          : 'bg-apt-surface-low border-apt-outline-dim text-apt-text-dim hover:text-apt-text hover:bg-apt-surface-high'
+                          ? 'bg-[#0D1E3A] border-[#2563EB] text-[#93C5FD]'
+                          : 'bg-[#0A0D14] border-[#161F33] text-[#94A3B8] hover:border-[#2D3E63]'
                       }`}
                     >
-                      <span className="font-family-jetbrains text-2xl font-bold text-apt-text mb-1">
+                      <span className="font-mono text-2xl font-bold text-[#F1F5F9] mb-1 tabular-nums">
                         {opt.count}
                       </span>
                       <span className="text-xs font-semibold">{opt.label}</span>
@@ -207,13 +227,15 @@ export default function TestSetup() {
             </div>
 
             {/* Setting 3: Time Allocation */}
-            <div className="bg-apt-surface-mid rounded-xl p-6 border border-apt-outline-dim space-y-4">
+            <div className="bg-[#0E131F] rounded-xl p-6 border border-[#1E2B45] space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-amber-400 text-xl">timer</span>
-                  <h2 className="text-lg font-bold text-apt-text">Timer & Constraints</h2>
+                  <Clock size={16} className="text-[#F59E0B]" />
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-[#F1F5F9]">
+                    Timer & Constraints
+                  </h2>
                 </div>
-                <span className="text-xs font-semibold px-2.5 py-1 rounded bg-apt-surface-low text-amber-400">
+                <span className="text-xs font-mono font-semibold text-[#FBBF24] tabular-nums">
                   {formatTime(state.timeLimit)}
                 </span>
               </div>
@@ -233,8 +255,8 @@ export default function TestSetup() {
                       onClick={() => dispatch({ type: 'SET_TIME_LIMIT', payload: t.seconds })}
                       className={`py-3 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center ${
                         isSelected
-                          ? 'bg-amber-500/20 border-amber-500 text-amber-300 shadow-md'
-                          : 'bg-apt-surface-low border-apt-outline-dim text-apt-text-dim hover:text-apt-text hover:bg-apt-surface-high'
+                          ? 'bg-[#271A04] border-[#F59E0B] text-[#FBBF24]'
+                          : 'bg-[#0A0D14] border-[#161F33] text-[#94A3B8] hover:border-[#2D3E63]'
                       }`}
                     >
                       {t.label}
@@ -243,71 +265,62 @@ export default function TestSetup() {
                 })}
               </div>
             </div>
-
           </div>
 
-          {/* RIGHT: Test Summary & Launch */}
+          {/* RIGHT: Test Summary & Launch Card */}
           <div className="lg:col-span-4 space-y-6">
-            <div className="bg-apt-surface-mid rounded-xl p-6 border border-apt-outline-dim space-y-5">
-              <h3 className="text-lg font-bold text-apt-text border-b border-apt-outline-dim pb-3">
-                Drill Specification
-              </h3>
+            <div className="bg-[#0E131F] rounded-xl p-6 border border-[#1E2B45] space-y-6 lg:sticky lg:top-24 shadow-xl">
+              <div>
+                <h3 className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider mb-4">
+                  Assessment Summary
+                </h3>
 
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-apt-text-dim">Domain:</span>
-                  <span className="font-semibold text-apt-text">{topicObj.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-apt-text-dim">Category:</span>
-                  <span className="font-semibold text-apt-text">{categoryObj.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-apt-text-dim">Difficulty:</span>
-                  <span className="font-semibold text-apt-primary">{state.difficulty}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-apt-text-dim">Questions:</span>
-                  <span className="font-family-jetbrains font-bold text-apt-text">{state.questionCount}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-apt-text-dim">Time Limit:</span>
-                  <span className="font-semibold text-amber-400">{formatTime(state.timeLimit)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-apt-text-dim">Negative Marking:</span>
-                  <span className="font-semibold text-rose-400">-0.25 / wrong</span>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-apt-outline-dim space-y-3">
-                <button
-                  disabled={starting}
-                  onClick={handleStartTest}
-                  className="w-full flex items-center justify-center gap-2 bg-apt-primary-ctr text-white py-3 px-6 rounded-xl font-bold shadow-lg hover:bg-opacity-90 disabled:opacity-50 transition-all cursor-pointer"
-                >
-                  {starting ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Preparing Assessment...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="material-symbols-outlined">rocket_launch</span>
-                      <span>Begin Assessment</span>
-                    </>
+                <div className="space-y-3 text-xs">
+                  <div className="flex justify-between py-2 border-b border-[#161F33]">
+                    <span className="text-[#94A3B8]">Domain Category</span>
+                    <span className="font-semibold text-[#F1F5F9]">{categoryObj.name}</span>
+                  </div>
+                  {state.targetCompany && (
+                    <div className="flex justify-between py-2 border-b border-[#161F33]">
+                      <span className="text-[#94A3B8] flex items-center gap-1.5">
+                        <Building2 size={13} className="text-[#38BDF8]" />
+                        <span>Target Company</span>
+                      </span>
+                      <span className="font-semibold text-[#38BDF8]">{state.targetCompany}</span>
+                    </div>
                   )}
-                </button>
-
-                <p className="text-[11px] text-apt-text-dim text-center leading-relaxed">
-                  Questions are dynamically served from validated database and AI pools. Answers will be evaluated server-side.
-                </p>
+                  <div className="flex justify-between py-2 border-b border-[#161F33]">
+                    <span className="text-[#94A3B8]">Calibrated Tier</span>
+                    <span className="font-semibold text-[#38BDF8]">{state.difficulty || 'Medium'}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-[#161F33]">
+                    <span className="text-[#94A3B8]">Question Load</span>
+                    <span className="font-mono font-semibold text-[#F1F5F9] tabular-nums">
+                      {state.questionCount} Questions
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-[#161F33]">
+                    <span className="text-[#94A3B8]">Time Constraint</span>
+                    <span className="font-mono font-semibold text-[#FBBF24] tabular-nums">
+                      {formatTime(state.timeLimit)}
+                    </span>
+                  </div>
+                </div>
               </div>
+
+              <Button
+                variant="primary"
+                size="lg"
+                className="w-full"
+                isLoading={starting}
+                rightIcon={ArrowRight}
+                onClick={handleStartTest}
+              >
+                Launch Assessment
+              </Button>
             </div>
           </div>
-
         </div>
-
       </main>
     </div>
   );

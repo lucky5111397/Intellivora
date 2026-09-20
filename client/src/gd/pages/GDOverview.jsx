@@ -17,8 +17,8 @@ import {
   MessageSquare,
   Activity,
 } from "lucide-react";
-import Navbar from "../../components/Navbar";
 import { useGD } from "../context/gdContext";
+import { BackButton } from "@/components/ui";
 
 export default function GDOverview() {
   const { overviewStats, recentSessions, fetchOverview } = useGD();
@@ -50,11 +50,13 @@ export default function GDOverview() {
   };
 
   return (
-    <div className="min-h-screen bg-[#080b12] text-slate-100 flex flex-col selection:bg-indigo-500/20 selection:text-indigo-300">
-      {/* Top Standard Navigation */}
-      <Navbar />
-
+    <div className="min-h-screen bg-[#06080B] text-[#F1F5F9] flex flex-col selection:bg-[#2563EB] selection:text-white">
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-12 relative overflow-hidden">
+        {/* Back Button */}
+        <div className="relative z-10 -mb-6">
+          <BackButton to="/" fallback="/" />
+        </div>
+
         {/* Subtle Ambient Glowing Backdrops */}
         <div className="absolute top-0 right-1/4 w-[600px] h-[400px] bg-indigo-600/10 blur-[130px] rounded-full pointer-events-none" />
         <div className="absolute top-1/3 left-10 w-[450px] h-[350px] bg-emerald-500/5 blur-[120px] rounded-full pointer-events-none" />
@@ -567,19 +569,6 @@ export default function GDOverview() {
           </div>
         </div>
       )}
-
-      {/* Footer */}
-      <footer className="w-full bg-[#06080e] border-t border-white/[0.06] py-5 mt-auto">
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-          <div>
-            © 2025 Intellivora Systems Inc. · Executive Multi-Agent Cognitive Assessment &amp; Placement Prep
-          </div>
-          <div className="flex items-center gap-2 text-emerald-400 text-xs">
-            <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" />
-            <span className="text-slate-400">Latency: 22ms · Neural Engine v4.2</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
