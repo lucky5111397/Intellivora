@@ -1,21 +1,46 @@
 import fs from "fs";
+import path from "path";
 import mongoose from "mongoose";
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 import { generateText, generateStructured } from "../services/aiGateway.service.js";
 import Interview from "../models/interview.model.js";
 import User from "../models/user.model.js";
 import { hasPdfMagicBytes } from "../utils/pdfValidator.js";
+import { getCompanyProfile } from "../config/companyProfiles.js";
 
+/**
+ * Mock Interview Controller
+ * Manages resume extraction, AI question synthesis, answer evaluation,
+ * and interview session lifecycle with transactional credit deduction and rollback.
+ */
+
+/**
+ * Extracts text and structured entities (role, experience, skills, projects) from an uploaded resume.
+ * POST /api/interview/analyze-resume
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
 export const analyzeResume = async (req, res) => {
-  const filepath = req.file?.path;
+  let filepath = null;
 
   try {
-    if (!req.file) {
+    if (!req.file || !req.file.path) {
       return res.status(400).json({
         success: false,
         message: "Resume file is required.",
       });
     }
+
+    const uploadBasePath = path.resolve("uploads", "resumes");
+    const resolvedPath = path.resolve(req.file.path);
+    if (!resolvedPath.startsWith(uploadBasePath)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid file path.",
+      });
+    }
+    filepath = resolvedPath;
 
     const fileBuffer = await fs.promises.readFile(filepath);
 
@@ -117,6 +142,15 @@ export const analyzeResume = async (req, res) => {
   }
 };
 
+/**
+ * Generates tailored interview questions via AI based on candidate role, experience, and resume.
+ * Charges user credits according to selected plan (short: 100, medium: 150, long: 250).
+ * Implements compensating refund rollback if subsequent session persistence fails.
+ * POST /api/interview/generate-question
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
 export const generateQuestion = async (req, res) => {
   let questionsArray = [];
   let creditDeducted = false;
@@ -131,12 +165,14 @@ export const generateQuestion = async (req, res) => {
       resumeText,
       projects,
       skills,
+      targetCompany,
     } = req.body;
 
     role = role?.trim();
     experience = experience?.trim();
     mode = mode?.trim();
 
+    // Plan tier configuration: maps question volume to required credit balance
     const planConfig = {
       short: { questions: 10, credits: 100 },
       medium: { questions: 15, credits: 150 },
@@ -173,10 +209,18 @@ export const generateQuestion = async (req, res) => {
 
     const safeResume = resumeText?.trim() || "None";
 
+    let companyPrompt = "";
+    if (targetCompany && typeof targetCompany === "string" && targetCompany.trim()) {
+      const profile = getCompanyProfile(targetCompany.trim());
+      const compName = profile?.displayName || targetCompany.trim();
+      const style = profile?.interviewStyle || "";
+      companyPrompt = `\nTarget Company: ${compName}\nCompany Style Adaptation: ${style}`;
+    }
+
     const userPrompt = `
 Role: ${role}
 Experience: ${experience}
-InterviewMode: ${mode}
+InterviewMode: ${mode}${companyPrompt}
 Projects: ${projectText}
 Skills: ${skillsText}
 Resume: ${safeResume}
@@ -231,6 +275,7 @@ Rules:
       });
     }
 
+    // Atomically verify balance and deduct credits to prevent overdrafts across concurrent requests
     const updatedUser = await User.findOneAndUpdate(
       {
         _id: req.userId,
@@ -261,6 +306,7 @@ Rules:
       role,
       experience,
       mode,
+      targetCompany: targetCompany?.trim() || null,
       resumeText: safeResume,
       interviewPlan,
       questionCount: selectedPlan.questions,
@@ -287,6 +333,7 @@ Rules:
 
     return res.json({
       interviewId: interview._id,
+      targetCompany: interview.targetCompany || null,
       creditsLeft: updatedUser.credits,
       userName: updatedUser.name,
       questions: interview.questions,
@@ -322,7 +369,10 @@ export const submitAnswer = async (req, res) => {
   try {
     const { interviewId, questionIndex, answer, timeTaken } = req.body;
 
-    if (!mongoose.isValidObjectId(interviewId)) {
+    if (
+      typeof interviewId !== "string" ||
+      !mongoose.isValidObjectId(interviewId)
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid interview ID.",
@@ -330,7 +380,7 @@ export const submitAnswer = async (req, res) => {
     }
 
     const interview = await Interview.findOne({
-      _id: interviewId,
+      _id: String(interviewId),
       userId: req.userId,
     });
 
@@ -342,6 +392,7 @@ export const submitAnswer = async (req, res) => {
     }
 
     if (
+      typeof questionIndex !== "number" ||
       !Number.isInteger(questionIndex) ||
       questionIndex < 0 ||
       questionIndex >= interview.questions.length
@@ -352,7 +403,8 @@ export const submitAnswer = async (req, res) => {
       });
     }
 
-    const question = interview.questions[questionIndex];
+    const safeIndex = Number(questionIndex);
+    const question = interview.questions[safeIndex];
 
     if (!answer) {
       question.score = 0;
@@ -443,7 +495,10 @@ export const finishInterview = async (req, res) => {
   try {
     const { interviewId } = req.body;
 
-    if (!mongoose.isValidObjectId(interviewId)) {
+    if (
+      typeof interviewId !== "string" ||
+      !mongoose.isValidObjectId(interviewId)
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid interview ID.",
@@ -451,7 +506,7 @@ export const finishInterview = async (req, res) => {
     }
 
     const interview = await Interview.findOne({
-      _id: interviewId,
+      _id: String(interviewId),
       userId: req.userId,
     });
 
@@ -526,7 +581,7 @@ export const getMyInterviews = async (req, res) => {
       userId: req.userId,
     })
       .sort({ createdAt: -1 })
-      .select("role experience mode finalScore status createdAt");
+      .select("role experience mode targetCompany finalScore status createdAt");
 
     return res.status(200).json(interviews);
   } catch (error) {
@@ -585,6 +640,7 @@ export const getInterviewReport = async (req, res) => {
 
     return res.json({
       finalScore: interview.finalScore,
+      targetCompany: interview.targetCompany || null,
       confidence: Number(avgConfidence.toFixed(1)),
       communication: Number(avgCommunication.toFixed(1)),
       correctness: Number(avgCorrectness.toFixed(1)),
@@ -667,6 +723,7 @@ export const getInterviewById = async (req, res) => {
       role: interview.role,
       experience: interview.experience,
       mode: interview.mode,
+      targetCompany: interview.targetCompany || null,
       interviewPlan: interview.interviewPlan,
       status: interview.status,
       finalScore: interview.finalScore,

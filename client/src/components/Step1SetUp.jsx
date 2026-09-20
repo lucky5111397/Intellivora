@@ -1,673 +1,473 @@
-import React from "react";
-import { motion } from "motion/react";
+import React, { useState } from "react";
 import {
-  FaUserTie,
-  FaBriefcase,
-  FaFileUpload,
-  FaMicrophoneAlt,
-  FaChartLine,
-  FaBolt,
-  FaStar,
-  FaCrown,
-  FaCheckCircle,
-  FaClock,
-  FaCoins,
-} from "react-icons/fa";
-import { useState } from "react";
-import axios from "axios"
+    User,
+    Briefcase,
+    Upload,
+    Mic,
+    TrendingUp,
+    Zap,
+    Star,
+    Crown,
+    CheckCircle2,
+    Clock,
+    Coins,
+    Camera,
+    CameraOff,
+    ArrowRight,
+    Building2,
+} from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { setUserData } from "../redux/userSlice";
 import { toast } from "sonner";
 import { ServerUrl } from "../App";
+import { Button, Badge, Input, BackButton } from "@/components/ui";
+import { companyProfiles, getCompanyOptions, getCompanyProfile } from "../config/companyProfiles";
 
-// Interview Setup Form
 function Step1SetUp({ onStart }) {
-  const { userData } = useSelector((state) => state.user);
-  const dispatch = useDispatch();
-  const [role, setRole] = useState("");
-  const [experience, setExperience] = useState("");
-  const [mode, setMode] = useState("Technical");
-  const [resumeFile, setResumeFile] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [projects, setProjects] = useState([]);
-  const [skills, setSkills] = useState([]);
-  const [resumeText, setResumeText] = useState("");
-  const [analysisDone, setAnalysisDone] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [interviewPlan, setInterviewPlan] = useState("medium");
-  const [cameraEnabled, setCameraEnabled] = useState(false);
-  const interviewPlans = [
-    {
-      id: "short",
-      title: "Quick Practice",
-      icon: <FaBolt className="text-yellow-500 text-xl" />,
-      questions: 10,
-      duration: "10 min",
-      credits: 100,
-      description: "Fast revision before interviews",
-    },
-    {
-      id: "medium",
-      title: "Standard Interview",
-      icon: <FaStar className="text-green-500 text-xl" />,
-      questions: 15,
-      duration: "20 min",
-      credits: 150,
-      description: "Balanced technical assessment",
-      recommended: true,
-    },
-    {
-      id: "long",
-      title: "Full Mock Assessment",
-      icon: <FaCrown className="text-purple-500 text-xl" />,
-      questions: 25,
-      duration: "35 min",
-      credits: 250,
-      description: "Complete interview simulation",
-    },
-  ];
+    const { userData } = useSelector((state) => state.user);
+    const dispatch = useDispatch();
+    const [role, setRole] = useState("");
+    const [experience, setExperience] = useState("");
+    const [mode, setMode] = useState("Technical");
+    const [selectedCompany, setSelectedCompany] = useState("");
+    const [customCompany, setCustomCompany] = useState("");
+    const [resumeFile, setResumeFile] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [projects, setProjects] = useState([]);
+    const [skills, setSkills] = useState([]);
+    const [resumeText, setResumeText] = useState("");
+    const [analysisDone, setAnalysisDone] = useState(false);
+    const [analyzing, setAnalyzing] = useState(false);
+    const [interviewPlan, setInterviewPlan] = useState("medium");
+    const [cameraEnabled, setCameraEnabled] = useState(false);
+    const [roleError, setRoleError] = useState("");
 
-  async function handleUploadResume() {
-    if (!resumeFile) {
-      toast.warning("Please upload your resume first.");
-      return;
-    }
+    const companyOptions = getCompanyOptions();
+    const effectiveCompany = selectedCompany === "other" ? customCompany.trim() : (companyProfiles[selectedCompany]?.name || "");
+    const activeProfile = selectedCompany ? getCompanyProfile(selectedCompany, customCompany) : null;
 
-    if (analyzing) return;
-
-    setAnalyzing(true);
-
-    const formdata = new FormData();
-    formdata.append("resume", resumeFile);
-
-    try {
-      const result = await axios.post(
-        ServerUrl + "/api/interview/resume",
-        formdata,
-        { withCredentials: true }
-      );
-
-      console.log(result.data);
-      console.log("API Response:", result.data);
-      console.log("Questions:", result.data.questions);
-      console.log("InterviewId:", result.data.interviewId);
-
-      setRole(result.data.role || "");
-      setExperience(result.data.experience || "");
-      setProjects(result.data.projects || []);
-      setSkills(result.data.skills || []);
-      setResumeText(result.data.resumeText || "");
-      setAnalysisDone(true);
-      toast.success("Resume analyzed successfully!");
-      setAnalyzing(false);
-    } catch (error) {
-      console.log("Status:", error.response?.status);
-      console.log("Response:", error.response?.data);
-      console.log(error);
-
-      console.error("Failed to analyze resume:", error?.response?.data?.message || error?.message || error);
-      setAnalyzing(false);
-
-      toast.error("Failed to analyze resume. Please try again.");
-      toast.error(error?.response?.data?.message || "Failed to analyze resume. Please try again.");
-    }
-  }
-
-  const handleStart = async () => {
-    setLoading(true);
-
-    try {
-      const result = await axios.post(
-        ServerUrl + "/api/interview/generate-questions",
+    const interviewPlans = [
         {
-          role,
-          experience,
-          mode,
-          interviewPlan,
-          resumeText,
-          projects,
-          skills,
-          cameraEnabled,
+            id: "short",
+            title: "Quick Practice",
+            icon: Zap,
+            questions: 10,
+            duration: "10 min",
+            credits: 100,
+            description: "Fast revision before interviews",
         },
         {
-          withCredentials: true,
+            id: "medium",
+            title: "Standard Interview",
+            icon: Star,
+            questions: 15,
+            duration: "20 min",
+            credits: 150,
+            description: "Balanced technical assessment",
+            recommended: true,
+        },
+        {
+            id: "long",
+            title: "Full Mock Assessment",
+            icon: Crown,
+            questions: 25,
+            duration: "35 min",
+            credits: 250,
+            description: "Complete interview simulation",
+        },
+    ];
+
+    async function handleUploadResume() {
+        if (!resumeFile) {
+            toast.warning("Please select your resume PDF first.");
+            return;
         }
-      );
 
-      console.log(result.data);
+        if (analyzing) return;
+        setAnalyzing(true);
 
-      console.log("Questions Length:", result.data.questions.length);
-      console.log(result.data.questions);
+        const formdata = new FormData();
+        formdata.append("resume", resumeFile);
 
-      console.log("Questions:", result.data.questions);
-      console.log("InterviewId:", result.data.interviewId);
+        try {
+            const result = await axios.post(
+                `${ServerUrl}/api/interview/resume`,
+                formdata,
+                { withCredentials: true }
+            );
 
-      if (userData) {
-        dispatch(
-          setUserData({
-            ...userData,
-            credits: result.data.creditsLeft,
-          })
-        );
-      }
-
-      setLoading(false);
-      toast.success("Interview is ready!");
-      onStart(result.data);
-    } catch (error) {
-      console.log("Status:", error.response?.status);
-      console.log("Response:", error.response?.data);
-      console.log(error);
-
-      console.error("Failed to generate interview:", error?.response?.data?.message || error?.message || error);
-      setLoading(false);
-
-      toast.error("Failed to generate interview. Please try again.");
-      toast.error(error?.response?.data?.message || "Failed to generate interview. Please try again.");
+            setRole(result.data.role || "");
+            setExperience(result.data.experience || "");
+            setProjects(result.data.projects || []);
+            setSkills(result.data.skills || []);
+            setResumeText(result.data.resumeText || "");
+            setAnalysisDone(true);
+            toast.success("Resume parsed and context extracted!");
+            setAnalyzing(false);
+        } catch (error) {
+            console.error("Failed to analyze resume:", error?.response?.data?.message || error?.message || error);
+            setAnalyzing(false);
+            toast.error(error?.response?.data?.message || "Failed to parse resume. Please try again.");
+        }
     }
-  };
 
+    const handleStart = async () => {
+        if (!role.trim()) {
+            setRoleError("Target role is required to configure your interview questions.");
+            toast.warning("Please specify your target role.");
+            return;
+        }
+        setRoleError("");
 
+        setLoading(true);
 
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.6 }}
-      className="
-min-h-screen
-flex
-items-center
-justify-center
-bg-transparent
-px-6
-py-10
-"
-    >
-      <div className="
-w-full
-max-w-6xl
-rounded-3xl
-border
-border-white/10
-bg-[#0B1220]
-shadow-[0_20px_80px_rgba(0,0,0,0.45)]
-grid
-md:grid-cols-2
-overflow-hidden
-">
+        const effectiveCompany = selectedCompany === "other" ? customCompany.trim() : (companyProfiles[selectedCompany]?.name || "");
 
-        <motion.div
-          initial={{ x: -60, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ duration: 0.6 }}
-          className="relative overflow-hidden bg-gradient-to-br from-[#0B1220] to-[#111827] p-10 lg:p-12 flex flex-col justify-center border-r border-white/10"
-        >
-
-          <div className="absolute -top-20 -left-20 h-60 w-60 rounded-full bg-blue-500/10 blur-[100px]" />
-          <div className="absolute bottom-0 right-0 h-52 w-52 rounded-full bg-violet-500/10 blur-[100px]" />
-
-          <div className="relative z-10">
-
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-widest text-blue-300">
-              AI Powered Interview
-            </span>
-
-            <h2 className="mt-6 text-4xl font-bold leading-tight text-white">
-              Prepare Like It's
-              <span className="block gradient-text mt-2">
-                Your Real Interview
-              </span>
-            </h2>
-
-            <p className="mt-5 max-w-md text-slate-400 leading-7">
-              Practice realistic AI interviews, receive instant feedback,
-              improve communication skills and build confidence before your
-              next opportunity.
-            </p>
-
-            <div className="mt-10 space-y-4">
-
-              {[
+        try {
+            const result = await axios.post(
+                `${ServerUrl}/api/interview/generate-questions`,
                 {
-                  icon: <FaUserTie className="text-blue-400 text-lg" />,
-                  title: "Choose Your Role",
-                  desc: "Select role and experience level.",
+                    role,
+                    experience,
+                    mode,
+                    interviewPlan,
+                    resumeText,
+                    projects,
+                    skills,
+                    cameraEnabled,
+                    targetCompany: effectiveCompany || null,
                 },
-                {
-                  icon: <FaMicrophoneAlt className="text-violet-400 text-lg" />,
-                  title: "AI Voice Interview",
-                  desc: "Realistic interview conversation.",
-                },
-                {
-                  icon: <FaChartLine className="text-cyan-400 text-lg" />,
-                  title: "Detailed AI Report",
-                  desc: "Get instant performance insights.",
-                },
-              ].map((item, index) => (
+                { withCredentials: true }
+            );
 
-                <motion.div
-                  key={index}
-                  whileHover={{ x: 6 }}
-                  className="glass flex items-center gap-4 p-4"
-                >
+            if (userData && result.data.creditsLeft !== undefined) {
+                dispatch(
+                    setUserData({
+                        ...userData,
+                        credits: result.data.creditsLeft,
+                    })
+                );
+            }
 
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/5">
-                    {item.icon}
-                  </div>
+            setLoading(false);
+            toast.success("Interview session initialized!");
+            onStart(result.data);
+        } catch (error) {
+            console.error("Failed to generate interview:", error?.response?.data?.message || error?.message || error);
+            setLoading(false);
+            toast.error(error?.response?.data?.message || "Failed to generate interview. Please check your credit balance.");
+        }
+    };
 
-                  <div>
-                    <h4 className="font-semibold text-white">
-                      {item.title}
-                    </h4>
+    return (
+        <div className="w-full bg-[#06080B] py-10 px-4 sm:px-6">
+            <div className="w-full max-w-6xl mx-auto rounded-2xl border border-[#1E2B45] bg-[#0A0D14] shadow-2xl shadow-black/60 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
+                {/* Left Orientation Column */}
+                <div className="lg:col-span-5 p-8 lg:p-10 bg-[#0E131F] border-b lg:border-b-0 lg:border-r border-[#1E2B45] flex flex-col justify-between">
+                    <div>
+                        <div className="mb-4">
+                            <BackButton to="/" fallback="/" />
+                        </div>
 
-                    <p className="text-sm text-slate-400">
-                      {item.desc}
-                    </p>
-                  </div>
+                        <div className="flex items-center gap-2 mb-4">
+                            <Badge variant="brand" size="sm">
+                                MODULE CONFIGURATION
+                            </Badge>
+                            <span className="text-xs font-mono text-[#64748B]">Step 01 / 03</span>
+                        </div>
 
-                </motion.div>
+                        <h2 className="text-2xl sm:text-3xl font-bold text-[#F1F5F9] tracking-tight mb-3">
+                            Configure Your AI Mock Interview
+                        </h2>
 
-              ))}
+                        <p className="text-xs sm:text-sm text-[#94A3B8] leading-relaxed mb-8">
+                            Calibrate interview difficulty, targeted role expectations, and duration. Upload your resume to unlock hyper-personalized situational questions based on your actual tech stack.
+                        </p>
 
-            </div>
+                        <div className="space-y-3">
+                            <div className="flex items-start gap-3 p-3.5 rounded-lg bg-[#0A0D14] border border-[#161F33]">
+                                <div className="p-2 rounded-md bg-[#141B2D] text-[#38BDF8] shrink-0">
+                                    <User size={16} />
+                                </div>
+                                <div>
+                                    <h4 className="text-xs font-semibold text-[#F1F5F9]">Role-Specific Questioning</h4>
+                                    <p className="text-[11px] text-[#94A3B8] mt-0.5">Tailored to exact industry expectations and seniority levels.</p>
+                                </div>
+                            </div>
 
-          </div>
+                            <div className="flex items-start gap-3 p-3.5 rounded-lg bg-[#0A0D14] border border-[#161F33]">
+                                <div className="p-2 rounded-md bg-[#141B2D] text-[#A78BFA] shrink-0">
+                                    <Mic size={16} />
+                                </div>
+                                <div>
+                                    <h4 className="text-xs font-semibold text-[#F1F5F9]">Interactive Speech Pipeline</h4>
+                                    <p className="text-[11px] text-[#94A3B8] mt-0.5">Natural voice interaction with speech-to-text response logging.</p>
+                                </div>
+                            </div>
 
-        </motion.div>
+                            <div className="flex items-start gap-3 p-3.5 rounded-lg bg-[#0A0D14] border border-[#161F33]">
+                                <div className="p-2 rounded-md bg-[#141B2D] text-[#34D399] shrink-0">
+                                    <TrendingUp size={16} />
+                                </div>
+                                <div>
+                                    <h4 className="text-xs font-semibold text-[#F1F5F9]">Comprehensive Rubric Report</h4>
+                                    <p className="text-[11px] text-[#94A3B8] mt-0.5">Evaluation on technical correctness, cadence, and confidence.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-        <motion.div
-          transition={{ duration: 0.7 }}
-          className="bg-[#0B1220] p-8 lg:p-10"
-        >
-          <div className="mb-8 flex items-start justify-between">
-
-            <div>
-              <p className="text-sm uppercase tracking-[0.2em] text-blue-400">
-                Interview Setup
-              </p>
-
-              <h2 className="mt-2 text-3xl font-bold text-white">
-                Configure Your Interview
-              </h2>
-
-              <p className="mt-2 text-slate-400">
-                Select your preferences before starting your AI interview.
-              </p>
-            </div>
-
-          </div>
-
-          <div className="space-y-6">
-            <label className="mb-2 block text-sm font-medium text-slate-300">
-              Target Role
-            </label>
-
-            <div className="relative">
-              <FaUserTie className="absolute top-4 left-4 text-slate-500" />
-
-              <input
-                type="text"
-                placeholder="Enter role"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="
-w-full
-rounded-xl
-border
-border-white/10
-bg-white/5
-py-3
-pl-12
-pr-4
-text-white
-placeholder:text-slate-500
-outline-none
-transition
-focus:border-blue-500
-focus:bg-white/10
-"
-              />
-            </div>
-
-            <label className="mt-5 mb-2 block text-sm font-medium text-slate-300">
-              Experience
-            </label>
-
-            <div className="relative">
-              <FaBriefcase className="absolute top-4 left-4 text-slate-500" />
-
-              <input
-                type="text"
-                placeholder="Experience (e.g. 2 years)"
-                value={experience}
-                onChange={(e) => setExperience(e.target.value)}
-                className="
-w-full
-rounded-xl
-border
-border-white/10
-bg-white/5
-py-3
-pl-12
-pr-4
-text-white
-placeholder:text-slate-500
-outline-none
-transition
-focus:border-blue-500
-focus:bg-white/10
-"
-              />
-            </div>
-
-            <label className="mt-5 mb-2 block text-sm font-medium text-slate-300">
-              Interview Type
-            </label>
-
-            <select
-              value={mode}
-              onChange={(e) => setMode(e.target.value)}
-              className="
-w-full
-rounded-xl
-border
-border-white/10
-bg-[#111827]
-px-4
-py-3
-text-white
-outline-none
-focus:border-blue-500
-"
-            >
-              <option value="Technical" className="bg-[#111827] text-white">
-                Technical Interview
-              </option>
-
-              <option value="HR" className="bg-[#111827] text-white">
-                HR Interview
-              </option>
-            </select>
-
-            <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5">
-
-              <h3 className="text-lg font-semibold text-white">
-                Interview Preferences
-              </h3>
-
-              <p className="mt-1 text-sm text-slate-400">
-                Configure optional interview settings.
-              </p>
-
-              <div className="mt-5 flex items-center justify-between">
-
-                <div>
-                  <p className="font-medium text-white">
-                    🎥 Camera
-                  </p>
-
-                  <p className="text-sm text-slate-400">
-                    Recommended for eye-contact analysis.
-                  </p>
+                    <div className="pt-6 mt-6 border-t border-[#161F33] flex items-center justify-between text-xs text-[#64748B]">
+                        <span>Available Credits:</span>
+                        <span className="font-mono font-bold text-[#38BDF8] tabular-nums">
+                            {userData?.credits ?? 0} Credits
+                        </span>
+                    </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setCameraEnabled(!cameraEnabled)}
-                  className={`relative h-7 w-14 rounded-full transition-all ${cameraEnabled
-                      ? "bg-blue-600"
-                      : "bg-white/10"
-                    }`}
-                >
-                  <div
-                    className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-all ${cameraEnabled
-                        ? "left-8"
-                        : "left-1"
-                      }`}
-                  />
-                </button>
+                {/* Right Form Column */}
+                <div className="lg:col-span-7 p-6 sm:p-10 flex flex-col justify-between">
+                    <div className="space-y-6">
+                        {/* Target Role & Experience */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-medium text-[#94A3B8] mb-1.5">
+                                    Target Role *
+                                </label>
+                                <Input
+                                    leftIcon={Briefcase}
+                                    placeholder="e.g. Senior Frontend Engineer"
+                                    value={role}
+                                    error={roleError}
+                                    onChange={(e) => {
+                                        setRole(e.target.value);
+                                        if (roleError) setRoleError("");
+                                    }}
+                                />
+                            </div>
 
-              </div>
+                            <div>
+                                <label className="block text-xs font-medium text-[#94A3B8] mb-1.5">
+                                    Experience Level
+                                </label>
+                                <Input
+                                    leftIcon={Clock}
+                                    placeholder="e.g. 3-5 Years"
+                                    value={experience}
+                                    onChange={(e) => setExperience(e.target.value)}
+                                />
+                            </div>
+                        </div>
 
-            </div>
+                        {/* Target Company Selector (Optional) */}
+                        <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                                <label className="text-xs font-medium text-[#94A3B8] flex items-center gap-1.5">
+                                    <Building2 size={14} className="text-[#38BDF8]" />
+                                    <span>Target Company (Optional)</span>
+                                </label>
+                                {effectiveCompany && (
+                                    <Badge variant="brand" size="sm">
+                                        Style Adapted
+                                    </Badge>
+                                )}
+                            </div>
 
-            <div className="mt-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Choose Your Interview Plan
-              </h3>
+                            <select
+                                value={selectedCompany}
+                                onChange={(e) => setSelectedCompany(e.target.value)}
+                                className="w-full h-10 px-3 rounded-lg bg-[#0A0D14] border border-[#1E2B45] text-sm text-[#F1F5F9] outline-none cursor-pointer focus:border-[#3B82F6] transition-colors"
+                            >
+                                <option value="">None (General Practice)</option>
+                                {companyOptions.map((opt) => (
+                                    <option key={opt.id} value={opt.id}>
+                                        {opt.name} ({opt.category === "product" ? "Product" : opt.category === "service" ? "Service" : opt.category === "startup" ? "Startup" : "Custom"})
+                                    </option>
+                                ))}
+                            </select>
 
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                Select the interview experience that best matches your preparation goal.
-              </p>
+                            <AnimatePresence>
+                                {selectedCompany === "other" && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                                        animate={{ opacity: 1, height: "auto", marginTop: 8 }}
+                                        exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="overflow-hidden"
+                                    >
+                                        <Input
+                                            leftIcon={Building2}
+                                            placeholder="Enter company name (e.g. Netflix, Uber)"
+                                            value={customCompany}
+                                            onChange={(e) => setCustomCompany(e.target.value)}
+                                        />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
-              <div className="space-y-3">
-                {interviewPlans.map((plan) => (
-                  <div
-                    key={plan.id}
-                    onClick={() => setInterviewPlan(plan.id)}
-                    className={`relative cursor-pointer overflow-hidden rounded-2xl border p-5 transition-all duration-300 ${interviewPlan === plan.id
-                      ? "border-blue-500 bg-blue-500/10 shadow-[0_0_30px_rgba(59,130,246,0.15)]"
-                      : "border-white/10 bg-white/5 hover:bg-white/10 hover:border-blue-500/30"
-                      }`}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <div className="flex items-center gap-3">
-                          {plan.icon}
-
-                          <div>
-                            <h4 className="text-lg font-semibold text-white">
-                              {plan.title}
-                            </h4>
-
-                            <p className="mt-1 text-sm text-slate-400">
-                              {plan.description}
-                            </p>
-
-                            {plan.recommended && (
-                              <span className="mt-2 inline-flex rounded-full bg-blue-500/15 px-3 py-1 text-xs font-medium text-blue-300">
-                                Recommended
-                              </span>
+                            {/* Active Company Info Card & Dynamic Disclaimer */}
+                            {activeProfile && (effectiveCompany || selectedCompany !== "other") && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 4 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="mt-2.5 p-3 rounded-lg bg-[#0E131F] border border-[#1E2B45]/80 space-y-1.5"
+                                >
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                                        <span className="text-xs font-semibold text-[#F1F5F9] shrink-0">
+                                            {activeProfile.name} Focus:
+                                        </span>
+                                        <span className="text-[11px] text-[#94A3B8]">
+                                            {activeProfile.interviewStyle.focus}
+                                        </span>
+                                    </div>
+                                    <p className="text-[10px] text-[#64748B] italic leading-tight">
+                                        Question style is adapted to match {activeProfile.name}'s general interview approach — not affiliated with or endorsed by {activeProfile.name}.
+                                    </p>
+                                </motion.div>
                             )}
-                          </div>
                         </div>
 
-                        <div className="mt-4 flex flex-wrap gap-4 text-sm text-slate-400">
-                          <span className="flex items-center gap-1">
-                            <FaCheckCircle className="text-green-500" />
-                            {plan.questions} Questions
-                          </span>
+                        {/* Interview Mode & Camera */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-medium text-[#94A3B8] mb-1.5">
+                                    Interview Mode
+                                </label>
+                                <select
+                                    value={mode}
+                                    onChange={(e) => setMode(e.target.value)}
+                                    className="w-full h-10 px-3 rounded-lg bg-[#0A0D14] border border-[#1E2B45] text-sm text-[#F1F5F9] outline-none cursor-pointer focus:border-[#3B82F6]"
+                                >
+                                    <option value="Technical">Technical Drill (Code & Systems)</option>
+                                    <option value="Behavioral">Behavioral (STAR Method)</option>
+                                    <option value="Mixed">Comprehensive (Technical + Behavioral)</option>
+                                </select>
+                            </div>
 
-                          <span className="flex items-center gap-1">
-                            <FaClock />
-                            {plan.duration}
-                          </span>
-
-                          <span className="flex items-center gap-1">
-                            <FaCoins className="text-yellow-500" />
-                            {plan.credits} Credits
-                          </span>
+                            <div>
+                                <label className="block text-xs font-medium text-[#94A3B8] mb-1.5">
+                                    Webcam Proctored Stream
+                                </label>
+                                <button
+                                    type="button"
+                                    onClick={() => setCameraEnabled(!cameraEnabled)}
+                                    className={`w-full h-10 px-3 rounded-lg border text-xs font-medium flex items-center justify-between transition-colors cursor-pointer ${
+                                        cameraEnabled
+                                            ? "bg-[#062319] border-[#047857] text-[#34D399]"
+                                            : "bg-[#0A0D14] border-[#1E2B45] text-[#94A3B8]"
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        {cameraEnabled ? <Camera size={16} /> : <CameraOff size={16} />}
+                                        <span>{cameraEnabled ? "Camera Enabled" : "Camera Disabled"}</span>
+                                    </div>
+                                    <span className="text-[10px] font-mono uppercase">
+                                        {cameraEnabled ? "ON" : "OFF"}
+                                    </span>
+                                </button>
+                            </div>
                         </div>
-                      </div>
 
-                      <div
-                        className={`flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all ${interviewPlan === plan.id
-                          ? "border-blue-500 bg-blue-500"
-                          : "border-white/20"
-                          }`}
-                      >
-                        {interviewPlan === plan.id && (
-                          <div className="w-2 h-2 rounded-full bg-white"></div>
-                        )}
-                      </div>
+                        {/* Optional Resume Upload */}
+                        <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                                <label className="text-xs font-medium text-[#94A3B8]">
+                                    Upload Resume (Optional Context Extraction)
+                                </label>
+                                {analysisDone && (
+                                    <span className="text-[11px] text-[#22C55E] flex items-center gap-1">
+                                        <CheckCircle2 size={13} />
+                                        <span>Extracted {skills.length} skills</span>
+                                    </span>
+                                )}
+                            </div>
+
+                            <div className="flex gap-2">
+                                <input
+                                    type="file"
+                                    accept=".pdf"
+                                    onChange={(e) => setResumeFile(e.target.files[0])}
+                                    className="flex-1 text-xs text-[#94A3B8] file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-[#141B2D] file:text-[#F1F5F9] hover:file:bg-[#1A233A] file:cursor-pointer cursor-pointer border border-[#1E2B45] rounded-lg p-1 bg-[#0A0D14]"
+                                />
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    leftIcon={Upload}
+                                    isLoading={analyzing}
+                                    onClick={handleUploadResume}
+                                >
+                                    Parse
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* Plan / Drill Length Selection */}
+                        <div>
+                            <label className="block text-xs font-medium text-[#94A3B8] mb-2">
+                                Session Duration & Question Load
+                            </label>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                {interviewPlans.map((plan) => {
+                                    const isSelected = interviewPlan === plan.id;
+                                    const Icon = plan.icon;
+                                    return (
+                                        <button
+                                            key={plan.id}
+                                            type="button"
+                                            onClick={() => setInterviewPlan(plan.id)}
+                                            className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer relative ${
+                                                isSelected
+                                                    ? "bg-[#0D1E3A] border-[#2563EB] text-[#93C5FD]"
+                                                    : "bg-[#0A0D14] border-[#1E2B45] text-[#94A3B8] hover:border-[#2D3E63]"
+                                            }`}
+                                        >
+                                            <div className="flex items-center justify-between mb-2">
+                                                <Icon size={16} className={isSelected ? "text-[#38BDF8]" : "text-[#64748B]"} />
+                                                <span className="text-[11px] font-mono tabular-nums font-bold">
+                                                    {plan.credits} cr
+                                                </span>
+                                            </div>
+                                            <h4 className="text-xs font-semibold text-[#F1F5F9] mb-0.5">
+                                                {plan.title}
+                                            </h4>
+                                            <p className="text-[11px] text-[#64748B] mb-2">{plan.duration} • {plan.questions} Qs</p>
+                                            <p className="text-[10px] text-[#94A3B8] leading-tight">{plan.description}</p>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+
+                    {/* Submit Bar */}
+                    <div className="pt-8 mt-8 border-t border-[#161F33] flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="text-xs text-[#94A3B8] flex items-center gap-2">
+                            <Coins size={14} className="text-[#38BDF8]" />
+                            <span>
+                                Cost:{" "}
+                                <span className="font-mono font-bold text-[#F1F5F9] tabular-nums">
+                                    {interviewPlans.find((p) => p.id === interviewPlan)?.credits} Credits
+                                </span>
+                            </span>
+                        </div>
+
+                        <Button
+                            variant="primary"
+                            size="lg"
+                            isLoading={loading}
+                            rightIcon={ArrowRight}
+                            onClick={handleStart}
+                            className="w-full sm:w-auto"
+                        >
+                            Initialize AI Interview
+                        </Button>
+                    </div>
+                </div>
             </div>
-
-
-            {!analysisDone && (
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                onClick={() => document.getElementById("resumeUpload").click()}
-                className="
-glass
-cursor-pointer
-rounded-2xl
-border-2
-border-dashed
-border-white/10
-px-6
-py-8
-text-center
-transition-all
-duration-300
-hover:border-blue-500/40
-hover:bg-white/10
-">
-                <FaFileUpload className="mx-auto mb-4 text-5xl text-blue-400" />
-
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  id="resumeUpload"
-                  className="hidden"
-                  onChange={(e) => setResumeFile(e.target.files[0])} />
-
-                <p className="font-medium text-white">
-                  {resumeFile
-                    ? resumeFile.name
-                    : "Click to upload resume (Optional)"}
-                </p>
-                <p className="mt-2 text-sm text-slate-400">
-                  PDF format • Max 5MB • AI analyzes skills & projects
-                </p>
-                {resumeFile && (
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleUploadResume()
-                    }}
-                    className="
-mt-5
-rounded-xl
-bg-gradient-to-r
-from-blue-600
-to-violet-600
-px-6
-py-3
-font-medium
-text-white
-transition-all
-duration-300
-hover:scale-[1.02]
-hover:shadow-[0_0_25px_rgba(59,130,246,0.35)]
-">
-                    {analyzing ? "Analyzing..." : "Analyze Resume"}
-                  </motion.button>
-                )}
-
-              </motion.div>
-            )}
-
-            {analysisDone && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="
-glass
-space-y-5
-rounded-2xl
-p-6
-">
-                <h3 className="text-lg font-semibold text-white">Resume Analysis Result</h3>
-
-                {projects.length > 0 && (
-                  <div>
-                    <p className="mb-2 font-medium text-blue-400">
-                      projects:</p>
-                    <ul className="list-disc list-inside text-gray-600 dark:text-gray-300 space-y-1">
-                      {projects.map((p, i) => (
-                        <li key={i}>{p}</li>
-                      ))}
-                    </ul>
-                  </div>
-
-                )}
-
-                {skills.length > 0 && (
-                  <div>
-                    <p className="mb-2 font-medium text-blue-400">
-                      skills:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {skills.map((s, i) => (
-                        <span key={i} className="
-rounded-full
-border
-border-blue-500/20
-bg-blue-500/10
-px-3
-py-1
-text-sm
-text-blue-300
-">{s}</span>
-                      ))}
-                    </div>
-                  </div>
-
-                )}
-
-              </motion.div>
-            )}
-
-
-
-            <motion.button
-              onClick={handleStart}
-              disabled={!role || !experience}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.95 }}
-              className="
-mt-6
-w-full
-rounded-2xl
-bg-gradient-to-r
-from-blue-600
-via-violet-600
-to-blue-500
-py-4
-text-base
-font-semibold
-text-white
-transition-all
-duration-300
-hover:scale-[1.02]
-hover:shadow-[0_0_30px_rgba(59,130,246,0.35)]
-disabled:cursor-not-allowed
-disabled:opacity-50
-disabled:hover:scale-100
-">
-              <div className="flex items-center justify-center gap-2">
-                {loading ? (
-                  "Preparing Interview..."
-                ) : (
-                  <>
-                    <FaBolt />
-                    Start AI Interview
-                  </>
-                )}
-              </div>
-            </motion.button>
-
-          </div>
-        </motion.div>
-
-      </div>
-    </motion.div>
-  );
+        </div>
+    );
 }
 
 export default Step1SetUp;

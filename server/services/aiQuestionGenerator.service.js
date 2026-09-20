@@ -199,9 +199,12 @@ async function persistQuestions({
   topic,
   difficulty,
 }) {
+  const safeCategory = String(category || "").trim();
+  const safeTopic = String(topic || "").trim();
+
   const existingQuestions = await AptitudeQuestion.find({
-    category,
-    topic,
+    category: safeCategory,
+    topic: safeTopic,
     active: true,
   })
     .select("question")
@@ -322,8 +325,8 @@ export async function generateAptitudeQuestions({
 
       const savedQuestions = await persistQuestions({
         questions: validQuestions,
-        category,
-        topic,
+        category: catObj.id,
+        topic: topicObj.id,
         difficulty: normalizedDifficulty,
       });
 
@@ -355,8 +358,8 @@ export async function generateAptitudeQuestions({
     }
 
     const dbPool = await AptitudeQuestion.find({
-      category,
-      topic,
+      category: catObj.id,
+      topic: topicObj.id,
       active: true,
       difficulty: normalizedDifficulty,
     }).lean();

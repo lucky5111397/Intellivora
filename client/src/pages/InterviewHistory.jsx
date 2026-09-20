@@ -1,62 +1,94 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import axios from "axios";
 import { ServerUrl } from "../App";
-import { FaArrowLeft, FaTrash } from "react-icons/fa";
+import {
+    Search,
+    Trash2,
+    ArrowRight,
+    Brain,
+    Timer,
+    Users,
+    FileText,
+    Clock,
+    Sparkles,
+    CheckCircle2,
+    AlertTriangle,
+    Download,
+    Building2,
+} from "lucide-react";
+import { Button, Badge, Modal, Input, EmptyState, ErrorState, Skeleton, BackButton } from "@/components/ui";
+import { toast } from "sonner";
+import { generateATSReportPdf } from "@/utils/pdfReportGenerator";
 
 function InterviewHistory() {
+    const { userData } = useSelector((state) => state.user);
     const [historyItems, setHistoryItems] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [search, setSearch] = useState("");
+    const [activeFilter, setActiveFilter] = useState("all");
     const [sortBy, setSortBy] = useState("latest");
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null); // { id, type }
+    const [selectedResumeItem, setSelectedResumeItem] = useState(null);
+    const [showResumeModal, setShowResumeModal] = useState(false);
+    const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
     const navigate = useNavigate();
 
+    const fetchHistory = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            // Try unified history API first
+            const result = await axios.get(
+                `${ServerUrl}/api/history`,
+                { withCredentials: true }
+            );
+            if (Array.isArray(result.data)) {
+                setHistoryItems(result.data);
+                setLoading(false);
+                return;
+            }
+        } catch (error) {
+            console.warn("[History] Unified history endpoint unavailable, falling back to interviews:", error.message);
+        }
+
+        // Fallback to legacy interview endpoint
+        try {
+            const legacyRes = await axios.get(
+                `${ServerUrl}/api/interview/get-interviews`,
+                { withCredentials: true }
+            );
+            const mapped = (legacyRes.data || []).map((item) => ({
+                id: item._id,
+                _id: item._id,
+                type: "interview",
+                module: "interview",
+                title: item.role,
+                subtitle: `${item.experience || ""} • ${item.mode || ""}`.trim(),
+                role: item.role,
+                experience: item.experience,
+                mode: item.mode,
+                targetCompany: item.targetCompany || null,
+                score: item.finalScore || 0,
+                finalScore: item.finalScore || 0,
+                status: item.status || "Completed",
+                createdAt: item.createdAt,
+                route: `/report/${item._id}`,
+            }));
+            setHistoryItems(mapped);
+        } catch (err) {
+            console.error("[History] Error fetching interview history fallback:", err);
+            setError("Unable to retrieve assessment history. Please check your network connection.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchHistory = async () => {
-            try {
-                // Try unified history API first
-                const result = await axios.get(
-                    `${ServerUrl}/api/history`,
-                    { withCredentials: true }
-                );
-                if (Array.isArray(result.data)) {
-                    setHistoryItems(result.data);
-                    return;
-                }
-            } catch (error) {
-                console.warn("[History] Unified history endpoint unavailable, falling back to interviews:", error.message);
-            }
-
-            // Fallback to legacy interview endpoint
-            try {
-                const legacyRes = await axios.get(
-                    `${ServerUrl}/api/interview/get-interviews`,
-                    { withCredentials: true }
-                );
-                const mapped = (legacyRes.data || []).map((item) => ({
-                    id: item._id,
-                    _id: item._id,
-                    type: "interview",
-                    module: "interview",
-                    title: item.role,
-                    subtitle: `${item.experience || ""} • ${item.mode || ""}`.trim(),
-                    role: item.role,
-                    experience: item.experience,
-                    mode: item.mode,
-                    score: item.finalScore || 0,
-                    finalScore: item.finalScore || 0,
-                    status: item.status || "Completed",
-                    createdAt: item.createdAt,
-                    route: `/report/${item._id}`,
-                }));
-                setHistoryItems(mapped);
-            } catch (err) {
-                console.error("[History] Error fetching interview history fallback:", err);
-            }
-        };
-
         fetchHistory();
     }, []);
 
@@ -80,7 +112,6 @@ function InterviewHistory() {
                     { withCredentials: true }
                 );
             } else {
-                // Try unified history delete or fallback to delete-interview
                 try {
                     await axios.delete(
                         `${ServerUrl}/api/history/interview/${selectedItem.id}`,
@@ -99,7 +130,50 @@ function InterviewHistory() {
             setSelectedItem(null);
         } catch (error) {
             console.error("[History] Error deleting item:", error);
-            alert("Unable to delete history entry.");
+            toast.error("Unable to delete history entry. Please try again.");
+        }
+    };
+
+    const handleViewReport = (item) => {
+        const itemType = (item.type || item.module || "interview").toLowerCase();
+        const itemId = item._id || item.id;
+
+        if (itemType === "resume" || itemType === "ats") {
+            setSelectedResumeItem(item);
+            setShowResumeModal(true);
+            return;
+        }
+
+        let destination = item.route;
+        if (itemType === "aptitude") {
+            destination = `/aptitude/result/${itemId}`;
+        } else if (itemType === "gd") {
+            destination = `/gd/analysis/${itemId}`;
+        } else if (itemType === "interview") {
+            destination = `/report/${itemId}`;
+        }
+
+        navigate(destination, { state: { from: "/history" } });
+    };
+
+    const handleDownloadResumePdf = async () => {
+        if (!selectedResumeItem) return;
+        setIsDownloadingPdf(true);
+        try {
+            await generateATSReportPdf({
+                analysis: selectedResumeItem,
+                targetRole: selectedResumeItem.targetRole || selectedResumeItem.role || "Software Engineer",
+                experienceLevel: selectedResumeItem.experienceLevel || "Mid Level",
+                candidateName: userData?.name || "Candidate",
+                candidateEmail: userData?.email || "candidate@intellivora.app",
+                date: selectedResumeItem.createdAt ? new Date(selectedResumeItem.createdAt) : undefined,
+            });
+            toast.success("ATS Resume Scorecard downloaded successfully.");
+        } catch (err) {
+            console.error("[History] Error downloading resume PDF:", err);
+            toast.error("Failed to generate PDF report.");
+        } finally {
+            setIsDownloadingPdf(false);
         }
     };
 
@@ -122,8 +196,34 @@ function InterviewHistory() {
         (item) => item.status?.toLowerCase() === "completed" || item.status?.toLowerCase() === "submitted"
     ).length;
 
+    const getModuleIcon = (type) => {
+        switch (type?.toLowerCase()) {
+            case "interview":
+                return Brain;
+            case "aptitude":
+                return Timer;
+            case "gd":
+                return Users;
+            case "resume":
+            case "ats":
+                return FileText;
+            default:
+                return Sparkles;
+        }
+    };
+
     const filteredItems = [...historyItems]
         .filter((item) => {
+            // Module filter
+            if (activeFilter !== "all") {
+                const itemType = (item.type || item.module || "").toLowerCase();
+                if (activeFilter === "interview" && itemType !== "interview") return false;
+                if (activeFilter === "aptitude" && itemType !== "aptitude") return false;
+                if (activeFilter === "gd" && itemType !== "gd") return false;
+                if (activeFilter === "resume" && itemType !== "resume" && itemType !== "ats") return false;
+            }
+
+            // Search filter
             const query = search.toLowerCase();
             const textToMatch = [
                 item.role,
@@ -153,311 +253,255 @@ function InterviewHistory() {
         });
 
     return (
-        <div className="relative min-h-screen overflow-hidden bg-[#050816] py-10 text-white">
-            <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute -top-20 -left-20 h-80 w-80 rounded-full bg-blue-500/15 blur-[120px]" />
-                <div className="absolute top-40 right-0 h-80 w-80 rounded-full bg-violet-500/15 blur-[120px]" />
-                <div className="absolute bottom-0 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-cyan-500/10 blur-[120px]" />
-            </div>
-            <div className="relative z-10 w-[92%] max-w-7xl mx-auto">
+        <div className="w-full bg-[#06080B] py-8 sm:py-12">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                <div className="mb-4">
+                    <BackButton to="/" fallback="/" />
+                </div>
 
                 {/* Header */}
-                <div className="mb-8 w-full flex items-center gap-4">
-                    <button
-                        onClick={() => navigate("/")}
-                        className="w-14 h-14 flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl text-white transition-all duration-300 hover:-translate-y-1 hover:border-blue-500/30 hover:bg-white/10 hover:shadow-[0_10px_30px_rgba(59,130,246,.2)] cursor-pointer"
-                    >
-                        <FaArrowLeft size={20} />
-                    </button>
-
-                    <div>
-                        <h1 className="text-3xl font-bold text-white">
-                            Activity & Interview History
-                        </h1>
-                        <p className="mt-1 text-slate-400">
-                            Track your past interviews and aptitude assessment performance reports
-                        </p>
+                <div className="mb-8">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="brand" size="sm">
+                            ANALYTICS & ARCHIVE
+                        </Badge>
+                        <span className="text-xs font-mono text-[#64748B]">Unified History Hub</span>
                     </div>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-[#F1F5F9] tracking-tight">
+                        Assessment History & Analytics
+                    </h1>
+                    <p className="mt-1 text-sm text-[#94A3B8]">
+                        Review past mock interviews, timed aptitude exams, ATS keyword audits, and group discussion scorecards.
+                    </p>
                 </div>
 
                 {/* 4 Stats Grid */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                    <div className="glass p-6 rounded-2xl border border-white/10 hover:-translate-y-1 transition-all duration-300">
-                        <p className="text-sm text-slate-400">Total Activities</p>
-                        <h2 className="mt-3 text-3xl font-bold text-emerald-400 font-mono">
-                            {totalSessions}
-                        </h2>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div className="bg-[#0E131F] border border-[#1E2B45] p-5 rounded-xl">
+                        <span className="text-xs text-[#94A3B8] block mb-1">Total Activities</span>
+                        {loading ? (
+                            <Skeleton variant="title" className="h-8 w-16" />
+                        ) : (
+                            <span className="text-2xl sm:text-3xl font-bold text-[#F1F5F9] font-mono tabular-nums">
+                                {totalSessions}
+                            </span>
+                        )}
                     </div>
-
-                    <div className="glass p-6 rounded-2xl border border-white/10 hover:-translate-y-1 transition-all duration-300">
-                        <p className="text-sm text-slate-400">Average Score</p>
-                        <h2 className="mt-3 text-3xl font-bold text-cyan-400 font-mono">
-                            {averageScore}
-                        </h2>
+                    <div className="bg-[#0E131F] border border-[#1E2B45] p-5 rounded-xl">
+                        <span className="text-xs text-[#94A3B8] block mb-1">Average Score</span>
+                        {loading ? (
+                            <Skeleton variant="title" className="h-8 w-16" />
+                        ) : (
+                            <span className="text-2xl sm:text-3xl font-bold text-[#38BDF8] font-mono tabular-nums">
+                                {averageScore}
+                            </span>
+                        )}
                     </div>
-
-                    <div className="glass p-6 rounded-2xl border border-white/10 hover:-translate-y-1 transition-all duration-300">
-                        <p className="text-sm text-slate-400">Highest Score</p>
-                        <h2 className="mt-3 text-3xl font-bold text-green-400 font-mono">
-                            {highestScore}
-                        </h2>
+                    <div className="bg-[#0E131F] border border-[#1E2B45] p-5 rounded-xl">
+                        <span className="text-xs text-[#94A3B8] block mb-1">Highest Score</span>
+                        {loading ? (
+                            <Skeleton variant="title" className="h-8 w-16" />
+                        ) : (
+                            <span className="text-2xl sm:text-3xl font-bold text-[#22C55E] font-mono tabular-nums">
+                                {highestScore}
+                            </span>
+                        )}
                     </div>
-
-                    <div className="glass p-6 rounded-2xl border border-white/10 hover:-translate-y-1 transition-all duration-300">
-                        <p className="text-sm text-slate-400">Completed</p>
-                        <h2 className="mt-3 text-3xl font-bold text-violet-400 font-mono">
-                            {completedSessions}
-                        </h2>
+                    <div className="bg-[#0E131F] border border-[#1E2B45] p-5 rounded-xl">
+                        <span className="text-xs text-[#94A3B8] block mb-1">Completed</span>
+                        {loading ? (
+                            <Skeleton variant="title" className="h-8 w-16" />
+                        ) : (
+                            <span className="text-2xl sm:text-3xl font-bold text-[#A78BFA] font-mono tabular-nums">
+                                {completedSessions}
+                            </span>
+                        )}
                     </div>
                 </div>
 
-                {/* Search & Sort */}
-                <div className="flex flex-col md:flex-row gap-4 justify-between mb-8">
-                    <input
-                        type="text"
-                        placeholder="🔍 Search by role, topic, or category..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="flex-1 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl px-5 py-3 text-white placeholder:text-slate-500 outline-none transition-all duration-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                {/* Filters, Search & Sort Bar */}
+                <div className="flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center mb-6">
+                    {/* Module Filter Pills */}
+                    <div className="flex flex-wrap gap-1 p-1 bg-[#0A0D14] border border-[#161F33] rounded-lg">
+                        {[
+                            { id: "all", label: "All Sessions" },
+                            { id: "interview", label: "Interviews" },
+                            { id: "aptitude", label: "Aptitude" },
+                            { id: "gd", label: "GD Chamber" },
+                            { id: "resume", label: "ATS Resume" },
+                        ].map((filter) => (
+                            <button
+                                key={filter.id}
+                                onClick={() => setActiveFilter(filter.id)}
+                                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                                    activeFilter === filter.id
+                                        ? "bg-[#141B2D] text-[#F1F5F9] border border-[#2D3E63]"
+                                        : "text-[#94A3B8] hover:text-[#F1F5F9]"
+                                }`}
+                            >
+                                {filter.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        {/* Search Input */}
+                        <div className="w-full md:w-64">
+                            <Input
+                                leftIcon={Search}
+                                placeholder="Search by role or topic..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                            />
+                        </div>
+
+                        {/* Sort Dropdown */}
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                            className="h-10 px-3 rounded-lg bg-[#0A0D14] border border-[#1E2B45] text-xs text-[#F1F5F9] outline-none cursor-pointer focus:border-[#3B82F6]"
+                        >
+                            <option value="latest">Latest First</option>
+                            <option value="highest">Highest Score</option>
+                            <option value="lowest">Lowest Score</option>
+                            <option value="role">Title A-Z</option>
+                        </select>
+                    </div>
+                </div>
+
+                {/* Items Feed */}
+                {loading ? (
+                    <div className="space-y-3">
+                        {[1, 2, 3].map((n) => (
+                            <div
+                                key={n}
+                                className="bg-[#0E131F] border border-[#1E2B45] p-5 rounded-xl space-y-3"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <Skeleton variant="avatar" className="w-10 h-10 rounded-lg" />
+                                    <div className="space-y-1.5 flex-1">
+                                        <Skeleton variant="text" className="w-24 h-3" />
+                                        <Skeleton variant="title" className="w-48 h-4" />
+                                    </div>
+                                    <Skeleton variant="button" className="w-20 h-8" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : error && historyItems.length === 0 ? (
+                    <ErrorState
+                        title="Unable to Load Assessment History"
+                        description={error}
+                        onRetry={fetchHistory}
                     />
-
-                    <select
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
-                        className="rounded-2xl border border-white/10 bg-[#111827] px-5 py-3 text-white outline-none appearance-none transition-all duration-300 focus:border-blue-500 cursor-pointer"
-                    >
-                        <option value="latest" className="bg-[#111827] text-white">Latest</option>
-                        <option value="highest" className="bg-[#111827] text-white">Highest Score</option>
-                        <option value="lowest" className="bg-[#111827] text-white">Lowest Score</option>
-                        <option value="role" className="bg-[#111827] text-white">Title A-Z</option>
-                    </select>
-                </div>
-
-                {/* Items List */}
-                {historyItems.length === 0 ? (
-                    <div className="bg-white/5 border border-white/10 p-12 rounded-3xl text-center flex flex-col items-center justify-center gap-4">
-                        <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-3xl">
-                            📋
-                        </div>
-                        <div>
-                            <h3 className="text-xl font-bold text-white">No Activity Records Yet</h3>
-                            <p className="text-sm text-slate-400 mt-1 max-w-md">
-                                You haven't taken any mock interviews or aptitude drills yet. Start your first practice session to build your career readiness!
-                            </p>
-                        </div>
-                        <div className="flex flex-wrap gap-3 mt-2">
-                            <button
-                                onClick={() => navigate("/interview")}
-                                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 font-semibold text-sm hover:scale-105 transition cursor-pointer"
-                            >
-                                Start Mock Interview
-                            </button>
-                            <button
-                                onClick={() => navigate("/aptitude/topics")}
-                                className="px-5 py-2.5 rounded-xl bg-white/10 border border-white/10 font-semibold text-sm hover:bg-white/15 transition cursor-pointer"
-                            >
-                                Practice Aptitude
-                            </button>
-                            <button
-                                onClick={() => navigate("/gd")}
-                                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 font-semibold text-sm hover:scale-105 transition cursor-pointer"
-                            >
-                                Try Group Discussion
-                            </button>
-                            <button
-                                onClick={() => navigate("/resume")}
-                                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 font-semibold text-sm hover:scale-105 transition cursor-pointer"
-                            >
-                                Analyze Resume
-                            </button>
-                        </div>
-                    </div>
                 ) : filteredItems.length === 0 ? (
-                    <div className="bg-white/5 border border-white/10 p-10 rounded-2xl text-center text-slate-400">
-                        <p className="text-lg font-medium text-white mb-1">No matching activities found</p>
-                        <p className="text-sm text-slate-400">No records match "{search}". Try searching for another topic or role.</p>
-                    </div>
+                    <EmptyState
+                        icon={Clock}
+                        title={search ? "No matching records found" : "No assessment history yet"}
+                        description={
+                            search
+                                ? "Try adjusting your search query or filter."
+                                : "You haven't completed any mock interviews or aptitude diagnostics yet. Start your first session to build your portfolio."
+                        }
+                        actionLabel="Start Mock Interview"
+                        onAction={() => navigate("/interview")}
+                    />
                 ) : (
-                    <div className="grid gap-6">
-                        {filteredItems.map((item, index) => {
-                            const isAptitude = item.type === "aptitude";
-                            const isGD = item.type === "gd";
-                            const isResume = item.type === "resume" || item.type === "ats";
-                            const targetRoute = item.route || (
-                                isGD
-                                    ? `/gd/analysis/${item._id || item.id}`
-                                    : isAptitude
-                                    ? `/aptitude/result/${item._id || item.id}`
-                                    : isResume
-                                    ? `/resume`
-                                    : `/report/${item._id || item.id}`
-                            );
+                    <div className="space-y-3">
+                        {filteredItems.map((item) => {
                             const itemId = item._id || item.id;
+                            const itemType = (item.type || item.module || "interview").toLowerCase();
+                            const Icon = getModuleIcon(itemType);
+                            const score = item.finalScore ?? item.score ?? 0;
+                            const title = item.title || item.role || item.topic || "Assessment";
+                            const subtitle = item.subtitle || `${item.category || ""} • ${item.difficulty || ""}`.trim();
 
                             return (
                                 <div
-                                    key={itemId || index}
-                                    onClick={() => navigate(targetRoute)}
-                                    className="group glass rounded-3xl border border-white/10 p-5 cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:border-blue-500/30 hover:shadow-[0_20px_50px_rgba(59,130,246,.18)]"
+                                    key={itemId}
+                                    className="bg-[#0E131F] border border-[#1E2B45] hover:border-[#2D3E63] p-4 sm:p-5 rounded-xl transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                                 >
-                                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                    <div className="flex items-start gap-3.5">
+                                        <div className="w-10 h-10 rounded-lg bg-[#141B2D] border border-[#2D3E63] flex items-center justify-center text-[#38BDF8] shrink-0 mt-0.5">
+                                            <Icon size={18} />
+                                        </div>
                                         <div>
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
-                                                    isGD
-                                                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                                                        : isAptitude
-                                                        ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
-                                                        : isResume
-                                                        ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
-                                                        : "bg-blue-500/20 text-blue-300 border border-blue-500/30"
-                                                }`}>
-                                                    {isGD ? "Group Discussion" : isAptitude ? "Aptitude Assessment" : isResume ? "ATS Resume Audit" : "Mock Interview"}
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <Badge
+                                                    variant={
+                                                        itemType === "gd"
+                                                            ? "success"
+                                                            : itemType === "aptitude"
+                                                            ? "brand"
+                                                            : "neutral"
+                                                    }
+                                                    size="sm"
+                                                >
+                                                    {itemType}
+                                                </Badge>
+                                                {item.targetCompany && (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-[#141B2D] text-[#38BDF8] border border-[#1E2B45]">
+                                                        <Building2 size={11} />
+                                                        <span>{item.targetCompany}</span>
+                                                    </span>
+                                                )}
+                                                <span className="text-[11px] font-mono text-[#64748B]">
+                                                    {item.createdAt
+                                                        ? new Date(item.createdAt).toLocaleDateString("en-US", {
+                                                              month: "short",
+                                                              day: "numeric",
+                                                              year: "numeric",
+                                                          })
+                                                        : "Recently"}
                                                 </span>
                                             </div>
-
-                                            <h3 className="text-2xl font-bold text-white">
-                                                {item.title || item.role}
+                                            <h3 className="text-sm sm:text-base font-semibold text-[#F1F5F9]">
+                                                {title}
                                             </h3>
+                                            {subtitle && (
+                                                <p className="text-xs text-[#94A3B8] mt-0.5">{subtitle}</p>
+                                            )}
+                                        </div>
+                                    </div>
 
-                                            <div className="text-sm mt-2 flex flex-wrap gap-2 items-center">
-                                                {isGD ? (
-                                                    <>
-                                                        <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
-                                                            {item.category || item.subtitle}
-                                                        </span>
-                                                        {item.difficulty && (
-                                                            <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-300 capitalize">
-                                                                {item.difficulty}
-                                                            </span>
-                                                        )}
-                                                        <span className="rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300">
-                                                            {item.durationMinutes || 10} Mins
-                                                        </span>
-                                                    </>
-                                                ) : isAptitude ? (
-                                                    <>
-                                                        <span className="rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs font-medium text-violet-300">
-                                                            {item.subtitle || item.category}
-                                                        </span>
-                                                        {item.difficulty && (
-                                                            <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-300">
-                                                                {item.difficulty}
-                                                            </span>
-                                                        )}
-                                                        {item.accuracy !== undefined && (
-                                                            <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
-                                                                {item.accuracy}% Accuracy
-                                                            </span>
-                                                        )}
-                                                    </>
-                                                ) : isResume ? (
-                                                    <>
-                                                        <span className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1 text-xs font-medium text-cyan-300">
-                                                            {item.role || item.subtitle || "Target Role"}
-                                                        </span>
-                                                        {item.experience && (
-                                                            <span className="rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300">
-                                                                {item.experience}
-                                                            </span>
-                                                        )}
-                                                        {item.readinessScore !== undefined && (
-                                                            <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
-                                                                Readiness: {item.readinessScore}%
-                                                            </span>
-                                                        )}
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        {item.experience && (
-                                                            <span className="rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300">
-                                                                {item.experience}
-                                                            </span>
-                                                        )}
-                                                        {item.mode && (
-                                                            <span className="rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs font-medium text-violet-300">
-                                                                {item.mode}
-                                                            </span>
-                                                        )}
-                                                    </>
-                                                )}
-                                            </div>
-
-                                            <p className="mt-3 text-sm text-slate-400">
-                                                📅 {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "Recent"}
-                                            </p>
+                                    <div className="flex items-center justify-between sm:justify-end gap-4 pt-3 sm:pt-0 border-t sm:border-t-0 border-[#161F33]">
+                                        <div className="text-right">
+                                            <span className="text-[11px] text-[#64748B] block uppercase">Score</span>
+                                            <span
+                                                className={`text-base sm:text-lg font-bold font-mono tabular-nums ${
+                                                    score >= 80
+                                                        ? "text-[#22C55E]"
+                                                        : score >= 60
+                                                        ? "text-[#F59E0B]"
+                                                        : "text-[#EF4444]"
+                                                }`}
+                                            >
+                                                {score}
+                                                <span className="text-xs text-[#64748B] font-normal font-sans">
+                                                    /100
+                                                </span>
+                                            </span>
                                         </div>
 
-                                        <div>
-                                            <div className="flex flex-wrap items-center justify-end gap-4">
-
-                                                {/* SCORE */}
-                                                <div className="min-w-[90px] text-center font-family-jetbrains">
-                                                    <p className="text-3xl font-bold text-emerald-400">
-                                                        {isGD
-                                                            ? `${item.finalScore ?? item.score ?? 0}/100`
-                                                            : isAptitude
-                                                            ? `${item.score}/${item.totalMarks || 10}`
-                                                            : isResume
-                                                            ? `${item.atsScore ?? item.score ?? 0}/100`
-                                                            : `${item.finalScore || 0}/10`
-                                                        }
-                                                    </p>
-                                                    <p className="mt-1 text-[10px] uppercase tracking-wider text-slate-500 font-sans">
-                                                        Score
-                                                    </p>
-
-                                                    <div className="mt-2 h-1.5 w-24 overflow-hidden rounded-full bg-white/10 mx-auto">
-                                                        <div
-                                                            className="h-full rounded-full bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400"
-                                                            style={{
-                                                                width: isGD
-                                                                    ? `${Math.min(100, Math.max(0, item.finalScore ?? item.score ?? 0))}%`
-                                                                    : isAptitude
-                                                                    ? `${item.totalMarks ? Math.min(100, Math.max(0, (item.score / item.totalMarks) * 100)) : 0}%`
-                                                                    : isResume
-                                                                    ? `${Math.min(100, Math.max(0, item.atsScore ?? item.score ?? 0))}%`
-                                                                    : `${(item.finalScore || 0) * 10}%`,
-                                                            }}
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                {/* STATUS BADGE */}
-                                                <span
-                                                    className={`px-4 py-1.5 rounded-full border text-xs font-semibold capitalize ${
-                                                        ["completed", "submitted"].includes(item.status?.toLowerCase())
-                                                            ? "border-green-500/20 bg-green-500/15 text-green-400"
-                                                            : "border-yellow-500/20 bg-yellow-500/15 text-yellow-400"
-                                                    }`}
-                                                >
-                                                    {item.status}
-                                                </span>
-
-                                                {/* DELETE BUTTON */}
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setSelectedItem({ id: itemId, type: item.type });
-                                                        setShowDeleteModal(true);
-                                                    }}
-                                                    className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-red-400 transition-all duration-300 hover:bg-red-500/20 cursor-pointer"
-                                                    title="Delete Entry"
-                                                >
-                                                    <div className="flex items-center gap-1.5">
-                                                        <FaTrash size={14} />
-                                                        <span className="text-xs font-medium">Delete</span>
-                                                    </div>
-                                                </button>
-
-                                                {/* ACTION BUTTON */}
-                                                <button
-                                                    className="rounded-xl bg-gradient-to-r from-blue-600 via-violet-600 to-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_0_20px_rgba(59,130,246,.25)] transition-all duration-300 group-hover:scale-105 cursor-pointer"
-                                                >
-                                                    {isGD ? "View Analysis →" : isAptitude ? "View Result →" : isResume ? "View Resume Audit →" : "View Report →"}
-                                                </button>
-
-                                            </div>
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                rightIcon={ArrowRight}
+                                                onClick={() => handleViewReport(item)}
+                                            >
+                                                View Report
+                                            </Button>
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedItem({ id: itemId, type: itemType });
+                                                    setShowDeleteModal(true);
+                                                }}
+                                                className="p-2 rounded-lg text-[#64748B] hover:text-[#F87171] hover:bg-[#280B0B] transition-colors cursor-pointer"
+                                                aria-label="Delete assessment record"
+                                            >
+                                                <Trash2 size={15} />
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -466,48 +510,169 @@ function InterviewHistory() {
                     </div>
                 )}
 
-                {/* Delete Modal */}
-                {showDeleteModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                        <div className="w-full max-w-md rounded-2xl bg-[#111827] p-6 shadow-2xl border border-gray-700 space-y-4">
-                            <h2 className="text-xl font-bold text-white">
-                                Delete Activity Record?
-                            </h2>
-
-                            <p className="text-sm text-gray-300 leading-relaxed">
-                                This action cannot be undone. Are you sure you want to permanently delete this {
-                                    selectedItem?.type === 'aptitude'
-                                        ? 'aptitude assessment attempt'
-                                        : (selectedItem?.type === 'resume' || selectedItem?.type === 'ats')
-                                        ? 'resume audit record'
-                                        : selectedItem?.type === 'gd'
-                                        ? 'group discussion session'
-                                        : 'interview session'
-                                }?
-                            </p>
-
-                            <div className="flex justify-end gap-3 pt-2">
-                                <button
-                                    onClick={() => {
-                                        setShowDeleteModal(false);
-                                        setSelectedItem(null);
-                                    }}
-                                    className="px-4 py-2 rounded-xl border border-gray-600 text-gray-300 hover:bg-gray-800 transition text-sm cursor-pointer"
-                                >
-                                    Cancel
-                                </button>
-
-                                <button
-                                    onClick={deleteItem}
-                                    className="px-5 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 transition font-semibold text-sm cursor-pointer"
-                                >
-                                    Confirm Delete
-                                </button>
+                {/* ATS Resume Analysis Details Modal */}
+                <Modal
+                    isOpen={showResumeModal}
+                    onClose={() => {
+                        setShowResumeModal(false);
+                        setSelectedResumeItem(null);
+                    }}
+                    size="lg"
+                    title={selectedResumeItem?.title || "ATS Resume Scorecard"}
+                    description={
+                        selectedResumeItem?.createdAt
+                            ? `Evaluated on ${new Date(selectedResumeItem.createdAt).toLocaleDateString("en-US", {
+                                  month: "long",
+                                  day: "numeric",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                              })} for ${selectedResumeItem.targetRole || "Target Role"} (${selectedResumeItem.experienceLevel || "Mid Level"})`
+                            : "Detailed applicant tracking system analysis and keyword breakdown."
+                    }
+                    footer={
+                        <>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                    setShowResumeModal(false);
+                                    setSelectedResumeItem(null);
+                                }}
+                            >
+                                Close
+                            </Button>
+                            <Button
+                                variant="primary"
+                                size="sm"
+                                leftIcon={Download}
+                                loading={isDownloadingPdf}
+                                onClick={handleDownloadResumePdf}
+                            >
+                                Download ATS Report (PDF)
+                            </Button>
+                        </>
+                    }
+                >
+                    {selectedResumeItem && (
+                        <div className="space-y-5 max-h-[65vh] overflow-y-auto pr-1">
+                            {/* 3 Score Pillars */}
+                            <div className="grid grid-cols-3 gap-3">
+                                <div className="p-3.5 rounded-xl bg-[#141B2D] border border-[#1E2B45] text-center">
+                                    <span className="text-[10px] uppercase font-semibold text-[#94A3B8] block">ATS Match</span>
+                                    <span className="text-xl sm:text-2xl font-bold font-mono text-[#38BDF8]">
+                                        {selectedResumeItem.atsScore ?? selectedResumeItem.score ?? 0}%
+                                    </span>
+                                </div>
+                                <div className="p-3.5 rounded-xl bg-[#141B2D] border border-[#1E2B45] text-center">
+                                    <span className="text-[10px] uppercase font-semibold text-[#94A3B8] block">Resume Score</span>
+                                    <span className="text-xl sm:text-2xl font-bold font-mono text-[#22C55E]">
+                                        {selectedResumeItem.resumeScore ?? selectedResumeItem.score ?? 0}%
+                                    </span>
+                                </div>
+                                <div className="p-3.5 rounded-xl bg-[#141B2D] border border-[#1E2B45] text-center">
+                                    <span className="text-[10px] uppercase font-semibold text-[#94A3B8] block">Interview Prep</span>
+                                    <span className="text-xl sm:text-2xl font-bold font-mono text-[#A78BFA]">
+                                        {selectedResumeItem.interviewReadinessScore ?? 0}%
+                                    </span>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                )}
 
+                            {/* Strengths */}
+                            {selectedResumeItem.strengths && selectedResumeItem.strengths.length > 0 && (
+                                <div className="p-4 rounded-xl bg-[#062319]/40 border border-[#047857]/30 space-y-2">
+                                    <div className="flex items-center gap-2 text-[#34D399] text-xs font-semibold uppercase tracking-wider">
+                                        <CheckCircle2 size={14} />
+                                        <span>Observed Strengths</span>
+                                    </div>
+                                    <ul className="space-y-1.5 text-xs text-[#CBD5E1] pl-5 list-disc">
+                                        {selectedResumeItem.strengths.map((s, idx) => (
+                                            <li key={idx} className="leading-relaxed">{s}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {/* Weaknesses / Areas for Elevation */}
+                            {selectedResumeItem.weaknesses && selectedResumeItem.weaknesses.length > 0 && (
+                                <div className="p-4 rounded-xl bg-[#280B0B]/40 border border-[#B91C1C]/30 space-y-2">
+                                    <div className="flex items-center gap-2 text-[#F87171] text-xs font-semibold uppercase tracking-wider">
+                                        <AlertTriangle size={14} />
+                                        <span>Areas for Elevation</span>
+                                    </div>
+                                    <ul className="space-y-1.5 text-xs text-[#CBD5E1] pl-5 list-disc">
+                                        {selectedResumeItem.weaknesses.map((w, idx) => (
+                                            <li key={idx} className="leading-relaxed">{w}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {/* Missing Skills */}
+                            {selectedResumeItem.missingSkills && selectedResumeItem.missingSkills.length > 0 && (
+                                <div className="p-4 rounded-xl bg-[#141B2D] border border-[#1E2B45] space-y-2">
+                                    <span className="text-[11px] font-semibold text-[#38BDF8] uppercase tracking-wider block">
+                                        Missing Target Keywords & Skills
+                                    </span>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {selectedResumeItem.missingSkills.map((skill, idx) => (
+                                            <span
+                                                key={idx}
+                                                className="px-2.5 py-1 rounded-md bg-[#0A0D14] border border-[#2D3E63] text-xs font-mono text-[#F1F5F9]"
+                                            >
+                                                {skill}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Actionable Improvement Suggestions */}
+                            {selectedResumeItem.improvementSuggestions && selectedResumeItem.improvementSuggestions.length > 0 && (
+                                <div className="p-4 rounded-xl bg-[#141B2D] border border-[#1E2B45] space-y-2">
+                                    <span className="text-[11px] font-semibold text-[#F59E0B] uppercase tracking-wider block">
+                                        Actionable Recommendations
+                                    </span>
+                                    <ul className="space-y-1.5 text-xs text-[#CBD5E1] pl-5 list-disc">
+                                        {selectedResumeItem.improvementSuggestions.map((sug, idx) => (
+                                            <li key={idx} className="leading-relaxed">{sug}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </Modal>
+
+                {/* Delete Confirmation Modal */}
+                <Modal
+                    isOpen={showDeleteModal}
+                    onClose={() => setShowDeleteModal(false)}
+                    title="Delete Assessment Record?"
+                    description="This action cannot be undone. The evaluation metrics and report data will be permanently purged from your account."
+                    footer={
+                        <>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setShowDeleteModal(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={deleteItem}
+                            >
+                                Confirm Delete
+                            </Button>
+                        </>
+                    }
+                >
+                    <p className="text-xs text-[#94A3B8]">
+                        Item ID: <span className="font-mono text-[#F1F5F9]">{selectedItem?.id}</span>
+                    </p>
+                </Modal>
             </div>
         </div>
     );

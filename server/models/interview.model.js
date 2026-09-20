@@ -1,5 +1,10 @@
 import mongoose from "mongoose";
 
+/**
+ * Embedded Schema: Individual Interview Question & Evaluation
+ * Records question prompt, difficulty tier, time allocation, candidate transcription,
+ * and multi-dimensional AI scoring (confidence, communication, correctness).
+ */
 const questionsSchema = new mongoose.Schema({
   question: String,
   difficulty: String,
@@ -12,7 +17,10 @@ const questionsSchema = new mongoose.Schema({
   correctness: { type: Number, default: 0 },
 });
 
-// MongoDB Interview Schema
+/**
+ * Root Interview Session Schema
+ * Persists configuration, resume context, question trajectory, and final scores.
+ */
 const interviewSchema = new mongoose.Schema(
   {
     userId: {
@@ -37,6 +45,12 @@ const interviewSchema = new mongoose.Schema(
       required: true,
     },
 
+    targetCompany: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+
     resumeText: {
       type: String,
     },
@@ -47,7 +61,6 @@ const interviewSchema = new mongoose.Schema(
       default: "standard",
     },
 
-    // ⭐ NEW FIELDS
     interviewPlan: {
       type: String,
       enum: ["short", "medium", "long"],

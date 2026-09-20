@@ -29,7 +29,7 @@ export const PRICING_PLANS = [
   },
   {
     id: "basic",
-    name: "Starter Pack",
+    name: "Pro",
     price: "₹199",
     priceNumeric: 199,
     credits: 500,
@@ -41,11 +41,11 @@ export const PRICING_PLANS = [
       "Detailed AI performance analytics",
       "Unlimited history & report retention",
     ],
-    ctaText: "Get Starter Pack",
+    ctaText: "Get Pro",
   },
   {
     id: "pro",
-    name: "Pro Pack",
+    name: "Ultra",
     price: "₹499",
     priceNumeric: 499,
     credits: 1500,
@@ -57,10 +57,25 @@ export const PRICING_PLANS = [
       "In-depth competency and rubric feedback",
       "Priority AI model response latency",
     ],
-    ctaText: "Get Pro Pack",
+    ctaText: "Get Ultra",
     badge: "Best Value",
   },
 ];
+
+/**
+ * Maps internal plan IDs (or legacy names) to their authoritative display names.
+ *
+ * @param {string} [planId]
+ * @returns {"Free" | "Pro" | "Ultra" | string}
+ */
+export const getPlanDisplayName = (planId) => {
+  if (!planId) return "Free";
+  const lower = String(planId).toLowerCase();
+  if (lower === "basic" || lower === "starter") return "Pro";
+  if (lower === "pro" || lower === "ultra") return "Ultra";
+  if (lower === "free") return "Free";
+  return planId;
+};
 
 export const SERVICE_CREDIT_COSTS = {
   interview: {

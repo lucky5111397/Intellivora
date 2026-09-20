@@ -16,10 +16,10 @@ import {
   Sparkles,
   Sliders,
 } from "lucide-react";
-import Navbar from "../../components/Navbar";
 import { useGD } from "../context/gdContext";
 import { useMediaStream } from "../audio/useMediaStream";
 import { toast } from "sonner";
+import { AmbientBackground } from "../../components/ui/AmbientBackground";
 
 export default function GDLobby() {
   const { id } = useParams();
@@ -37,7 +37,6 @@ export default function GDLobby() {
   const [countdown, setCountdown] = useState(1);
   const timerRef = useRef(null);
 
-  // Load session by ID on mount
   useEffect(() => {
     if (id) {
       loadSession(id)
@@ -49,24 +48,18 @@ export default function GDLobby() {
             navigate(`/gd/analysis/${id}`, { replace: true });
           }
         })
-        .catch(() => {
-          // Error captured by context
-        });
+        .catch(() => {});
     }
   }, [id, loadSession, navigate]);
 
-  // Start microphone diagnostics on mount
   useEffect(() => {
-    startMedia({ video: false, audio: true }).catch(() => {
-      // Handled in useMediaStream
-    });
+    startMedia({ video: false, audio: true }).catch(() => {});
 
     return () => {
       stopMedia();
     };
   }, [startMedia, stopMedia]);
 
-  // Brief auto-readiness countdown
   useEffect(() => {
     timerRef.current = setInterval(() => {
       setCountdown((prev) => {
@@ -107,11 +100,9 @@ export default function GDLobby() {
       : "Medium Difficulty";
 
   return (
-    <div className="min-h-screen bg-[#080b12] text-slate-100 flex flex-col selection:bg-indigo-500/20 selection:text-indigo-300">
-      {/* Top Standard Navigation */}
-      <Navbar />
-
-      <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 flex flex-col gap-6 relative">
+    <div className="relative min-h-screen bg-[#06080B] text-[#F1F5F9] flex flex-col selection:bg-[#2563EB] selection:text-white overflow-hidden">
+      <AmbientBackground variant="subtle" />
+      <main className="relative z-10 flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 flex flex-col gap-6">
         {/* Top Breadcrumb & Stage Indicator */}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -512,17 +503,6 @@ export default function GDLobby() {
           </div>
         </section>
       </main>
-
-      {/* Footer */}
-      <footer className="w-full border-t border-white/[0.05] py-3.5 px-6 bg-[#080B12] mt-auto">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-slate-500">
-          <div>© 2025 Intellivora Systems Inc. · Executive Multi-Agent Cognitive Assessment</div>
-          <div className="flex items-center gap-2 text-emerald-400 text-xs">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            <span className="text-slate-400">Latency: 22ms · Neural Engine v4.2</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

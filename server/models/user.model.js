@@ -1,5 +1,10 @@
 import mongoose from "mongoose";
 
+/**
+ * User Entity Schema
+ * Represents candidate and administrator accounts with platform credit balances.
+ * Uses sparse unique indexes for email and phone to accommodate multiple authentication providers.
+ */
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -24,6 +29,16 @@ const userSchema = new mongoose.Schema(
     credits: {
       type: Number,
       default: 100,
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
+    isBanned: {
+      type: Boolean,
+      default: false,
     },
   },
   {

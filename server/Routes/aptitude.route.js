@@ -13,9 +13,11 @@ import {
   getAttemptResult,
   deleteAttempt,
 } from "../controllers/aptitude.controller.js";
+import { generalLimiter } from "../middlewares/rateLimiter.js";
 
 const aptitudeRouter = express.Router();
 
+aptitudeRouter.use(generalLimiter);
 aptitudeRouter.use(isAuth);
 aptitudeRouter.get("/categories", getCategories);
 aptitudeRouter.get("/categories/:category/topics", getTopics);

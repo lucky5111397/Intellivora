@@ -3,22 +3,50 @@ import Payment from "../models/payment.model.js";
 import razorpay from "../services/razorpay.service.js";
 import User from "../models/user.model.js";
 
-// Authoritative plan catalog defined on backend
+/**
+ * Payment & Billing Controller
+ * Handles Razorpay checkout order creation, timing-safe signature verification,
+ * idempotent credit top-ups via atomic CAS, and asynchronous webhook handling.
+ */
+
+// Authoritative pricing catalog: client-submitted prices are ignored in favor of these constants
 export const AUTHORITATIVE_PLANS = {
   basic: {
     planId: "basic",
-    name: "Starter Pack",
+    name: "Pro",
     amount: 199,
     credits: 500,
   },
   pro: {
     planId: "pro",
-    name: "Pro Pack",
+    name: "Ultra",
     amount: 499,
     credits: 1500,
   },
 };
 
+/**
+ * Maps internal plan IDs (or legacy names) to their authoritative display names.
+ *
+ * @param {string} [planId]
+ * @returns {"Free" | "Pro" | "Ultra" | string}
+ */
+export const getPlanDisplayName = (planId) => {
+  if (!planId) return "Free";
+  const lower = String(planId).toLowerCase();
+  if (lower === "basic" || lower === "starter") return "Pro";
+  if (lower === "pro" || lower === "ultra") return "Ultra";
+  if (lower === "free") return "Free";
+  return planId;
+};
+
+/**
+ * Creates a Razorpay checkout order and registers a pending Payment document.
+ * POST /api/payment/create-order
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
 export const createOrder = async (req, res) => {
   try {
     const { planId } = req.body;
@@ -30,13 +58,12 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    // Backend-authoritative price and credits
     const plan = AUTHORITATIVE_PLANS[planId];
     const amount = plan.amount;
     const credits = plan.credits;
 
     const options = {
-      amount: amount * 100, // convert to paise
+      amount: amount * 100,
       currency: "INR",
       receipt: `receipt_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     };
@@ -62,6 +89,14 @@ export const createOrder = async (req, res) => {
   }
 };
 
+/**
+ * Verifies Razorpay HMAC-SHA256 signature using timing-safe comparison.
+ * On success, performs an atomic CAS transition to 'paid' and credits the user's account.
+ * POST /api/payment/verify-payment
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
 export const verifyPayment = async (req, res) => {
   try {
     const {
@@ -70,12 +105,23 @@ export const verifyPayment = async (req, res) => {
       razorpay_signature,
     } = req.body;
 
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    if (
+      typeof razorpay_order_id !== "string" ||
+      typeof razorpay_payment_id !== "string" ||
+      typeof razorpay_signature !== "string" ||
+      !razorpay_order_id.trim() ||
+      !razorpay_payment_id.trim() ||
+      !razorpay_signature.trim()
+    ) {
       return res.status(400).json({
         success: false,
         message: "Missing required payment verification parameters.",
       });
     }
+
+    const safeOrderId = String(razorpay_order_id).trim();
+    const safePaymentId = String(razorpay_payment_id).trim();
+    const safeSignature = String(razorpay_signature).trim();
 
     if (!process.env.RAZORPAY_KEY_SECRET) {
       console.error("[Payment] RAZORPAY_KEY_SECRET is not configured.");
@@ -85,7 +131,7 @@ export const verifyPayment = async (req, res) => {
       });
     }
 
-    const body = `${razorpay_order_id}|${razorpay_payment_id}`;
+    const body = `${safeOrderId}|${safePaymentId}`;
     const expectedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
       .update(body)
@@ -93,7 +139,7 @@ export const verifyPayment = async (req, res) => {
 
     // Timing-safe signature comparison to prevent timing attack side-channels
     const expectedBuf = Buffer.from(expectedSignature, "utf8");
-    const receivedBuf = Buffer.from(String(razorpay_signature), "utf8");
+    const receivedBuf = Buffer.from(safeSignature, "utf8");
     const isSignatureValid =
       expectedBuf.length === receivedBuf.length &&
       crypto.timingSafeEqual(expectedBuf, receivedBuf);
@@ -106,7 +152,7 @@ export const verifyPayment = async (req, res) => {
     }
 
     const existingPayment = await Payment.findOne({
-      razorpayOrderId: razorpay_order_id,
+      razorpayOrderId: safeOrderId,
     });
 
     if (!existingPayment) {
@@ -128,13 +174,13 @@ export const verifyPayment = async (req, res) => {
     // Only transitions status if not already 'paid'
     const updatedPayment = await Payment.findOneAndUpdate(
       {
-        razorpayOrderId: razorpay_order_id,
+        razorpayOrderId: safeOrderId,
         status: { $ne: "paid" },
       },
       {
         $set: {
           status: "paid",
-          razorpayPaymentId: razorpay_payment_id,
+          razorpayPaymentId: safePaymentId,
         },
       },
       { new: true }
@@ -218,16 +264,18 @@ export const handleRazorpayWebhook = async (req, res) => {
       const orderId = paymentEntity?.order_id || event.payload?.order?.entity?.id;
       const paymentId = paymentEntity?.id;
 
-      if (orderId) {
+      if (typeof orderId === "string" && orderId.trim()) {
+        const safeOrderId = String(orderId).trim();
+        const safePaymentId = typeof paymentId === "string" && paymentId.trim() ? String(paymentId).trim() : `webhook_${Date.now()}`;
         const updatedPayment = await Payment.findOneAndUpdate(
           {
-            razorpayOrderId: orderId,
+            razorpayOrderId: safeOrderId,
             status: { $ne: "paid" },
           },
           {
             $set: {
               status: "paid",
-              razorpayPaymentId: paymentId || `webhook_${Date.now()}`,
+              razorpayPaymentId: safePaymentId,
             },
           },
           { new: true }
@@ -237,7 +285,8 @@ export const handleRazorpayWebhook = async (req, res) => {
           await User.findByIdAndUpdate(updatedPayment.userId, {
             $inc: { credits: updatedPayment.credits },
           });
-          console.log(`[Razorpay Webhook] Credited ${updatedPayment.credits} credits for order ${orderId}`);
+          const safeOrderId = String(orderId || "").replace(/[\r\n]/g, "");
+          console.log(`[Razorpay Webhook] Credited ${updatedPayment.credits} credits for order ${safeOrderId}`);
         }
       }
     }

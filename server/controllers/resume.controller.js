@@ -4,6 +4,13 @@ import { analyzeResumeText } from "../services/resumeAnalysis.service.js";
 import User from "../models/user.model.js";
 import ResumeAnalysis from "../models/resumeAnalysis.model.js";
 
+/**
+ * ATS Resume Audit Controller
+ * Handles document ingestion, PDF text extraction, AI-powered ATS compatibility analysis,
+ * and transactional credit charges with automated compensation rollback on analysis failure.
+ */
+
+// Fixed credit cost for comprehensive ATS resume audit and feedback generation
 const ATS_CREDIT_COST = 200;
 
 export const uploadResume = async (req, res, next) => {
@@ -69,6 +76,7 @@ export const analyzeResume = async (req, res, next) => {
       });
     }
 
+    // Atomically deduct credits before invoking the LLM service
     const chargedUser = await User.findOneAndUpdate(
       { _id: userId, credits: { $gte: ATS_CREDIT_COST } },
       { $inc: { credits: -ATS_CREDIT_COST } },
@@ -106,6 +114,7 @@ export const analyzeResume = async (req, res, next) => {
         ...analysis,
       });
     } catch (analysisError) {
+      // Compensating refund: restore credits if AI synthesis or record creation fails
       try {
         await User.findByIdAndUpdate(userId, { $inc: { credits: ATS_CREDIT_COST } });
       } catch (refundError) {

@@ -27,6 +27,7 @@ const aptitudeAttemptSchema = new mongoose.Schema(
     category: { type: String, required: true, index: true },
     topic: { type: String, required: true, index: true },
     difficulty: { type: String, required: true },
+    targetCompany: { type: String, trim: true, default: null },
     questionCount: { type: Number, required: true },
     timeLimitSeconds: { type: Number, default: 0 },
     questions: { type: [attemptQuestionSchema], required: true },

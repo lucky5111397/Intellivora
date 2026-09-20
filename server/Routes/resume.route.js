@@ -6,8 +6,10 @@ import {
   extractResumeText,
   analyzeResume,
 } from "../controllers/resume.controller.js";
+import { generalLimiter } from "../middlewares/rateLimiter.js";
 
 const resumeRouter = express.Router();
+resumeRouter.use(generalLimiter);
 
 resumeRouter.post(
   "/upload",

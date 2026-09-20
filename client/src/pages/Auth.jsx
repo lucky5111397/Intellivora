@@ -34,7 +34,7 @@ function Auth({ isModel = false }) {
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [authMode, setAuthMode] = useState("google");
   const [mobile, setMobile] = useState("");
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
 

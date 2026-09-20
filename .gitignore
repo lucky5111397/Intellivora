@@ -36,6 +36,8 @@ lerna-debug.log*
 coverage/
 *.lcov
 .nyc_output/
+.playwright-mcp/
+.codeql-local/
 
 # Cache and build tools
 .cache/

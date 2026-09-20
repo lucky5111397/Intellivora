@@ -1,16 +1,32 @@
 import React, { useState, useRef, useEffect } from "react";
 import femaleVideo from "../assets/videos/female-ai.mp4";
 import Timer from "./Timer";
-import { motion } from "motion/react";
-import { FaMicrophone, FaMicrophoneSlash } from "react-icons/fa";
+import {
+  Mic,
+  MicOff,
+  Maximize2,
+  Minimize2,
+  Video,
+  VideoOff,
+  LogOut,
+  Sparkles,
+  Building2,
+} from "lucide-react";
 import axios from 'axios';
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { FaExpand } from "react-icons/fa";
-import { FaVideo, FaVideoSlash } from "react-icons/fa";
 import { ServerUrl } from "../App";
+import { AmbientBackground } from "./ui/AmbientBackground";
 
-// AI Interview Screen
+/**
+ * Interactive Mock Interview Session Screen
+ * Manages video avatar playback, SpeechSynthesis text-to-speech audio,
+ * continuous Web Speech API speech recognition, and live webcam feed.
+ *
+ * @param {Object} props
+ * @param {Object} props.interviewData
+ * @param {(result: Object) => void} props.onFinish
+ */
 function Step2Interview({ interviewData, onFinish }) {
   const navigate = useNavigate();
   const interviewId = interviewData?.interviewId;
@@ -180,7 +196,6 @@ function Step2Interview({ interviewData, onFinish }) {
       } else if (currentQuestion) {
         await new Promise((r) => setTimeout(r, 200));
 
-        // If last question (hard level)
         if (currentIndex === questions.length - 1) {
           await speakText(
             "Alright, this one might be a bit more challenging."
@@ -259,7 +274,6 @@ function Step2Interview({ interviewData, onFinish }) {
     };
 
     recognition.onerror = (e) => {
-      console.log(e);
       console.error("Speech recognition error:", e?.error || e);
     };
 
@@ -308,7 +322,6 @@ function Step2Interview({ interviewData, onFinish }) {
 
       toast.success("Camera enabled.");
     } catch (error) {
-      console.log(error);
       console.error("Camera error:", error?.message || error);
       toast.error("Camera permission denied.");
     }
@@ -340,7 +353,6 @@ function Step2Interview({ interviewData, onFinish }) {
     setTimeout(() => setThinkingStep(3), 1500);
 
     try {
-      console.log("Answer Sending:", answer);
       const result = await axios.post(
         ServerUrl + "/api/interview/submit-answer",
         {
@@ -349,7 +361,11 @@ function Step2Interview({ interviewData, onFinish }) {
           answer,
           timeTaken:
             currentQuestion.timeLimit - timeLeft,
-        }, { withCredentials: true }
+        },
+        {
+          withCredentials: true,
+          timeout: 35000,
+        }
       );
       setFeedback(result.data.feedback);
       speakText(result.data.feedback);
@@ -362,7 +378,6 @@ function Step2Interview({ interviewData, onFinish }) {
   };
 
   const handleNext = () => {
-    console.log("Next Clicked");
     stopMic();
     setIsUserTurn(false);
 
@@ -391,7 +406,6 @@ function Step2Interview({ interviewData, onFinish }) {
         setIsFullscreen(false);
       }
     } catch (error) {
-      console.log(error);
       console.error("Fullscreen error:", error?.message || error);
       toast.error("Fullscreen is not supported.");
     }
@@ -412,6 +426,7 @@ function Step2Interview({ interviewData, onFinish }) {
         },
         {
           withCredentials: true,
+          timeout: 45000,
         }
       );
 
@@ -461,8 +476,6 @@ function Step2Interview({ interviewData, onFinish }) {
     const handleBackButton = () => {
       // Re-trap history entry to prevent premature navigation
       window.history.pushState(null, "", window.location.href);
-
-      // Display exit confirmation dialog
       setShowExitDialog(true);
     };
 
@@ -551,34 +564,15 @@ function Step2Interview({ interviewData, onFinish }) {
     }
   }, [interviewData]);
 
-  if (!questions.length) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0B1220] text-slate-400">
-        Loading Interview...
-      </div>
-    );
-  }
-
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-[#050816] via-[#0B1220] to-[#111827] p-6 flex items-center justify-center">
-
-        <div className="w-full max-w-7xl h-[92vh] rounded-3xl border border-white/10 bg-[#0B1220] shadow-[0_20px_80px_rgba(0,0,0,.45)] overflow-y-auto flex flex-col lg:flex-row">
-
-          {/* LEFT SECTION */}
-
-          <div className="w-full lg:w-[30%] border-r border-white/10 p-6 flex flex-col gap-5">
-
-            {/* AI VIDEO */}
-
-            {/* AI VIDEO */}
-
-            <div className="relative h-[240px] flex-shrink-0 overflow-hidden rounded-3xl border border-white/10 bg-[#111827]">
-
-              <div className="absolute -top-10 -left-10 h-32 w-32 rounded-full bg-blue-500/20 blur-3xl" />
-              <div className="absolute bottom-0 right-0 h-32 w-32 rounded-full bg-violet-500/20 blur-3xl" />
-
-
+      <div className="relative min-h-screen bg-[#06080B] p-4 sm:p-6 flex items-center justify-center overflow-hidden">
+        <AmbientBackground variant="subtle" />
+        <div className="relative z-10 w-full max-w-7xl h-[92vh] rounded-2xl border border-[#1E2B45] bg-[#0A0D14] shadow-2xl shadow-black/60 overflow-y-auto flex flex-col lg:flex-row">
+          {/* LEFT SECTION: AI AVATAR & PROCTORED STREAMS */}
+          <div className="w-full lg:w-[32%] border-b lg:border-b-0 lg:border-r border-[#1E2B45] p-5 flex flex-col gap-4 bg-[#0E131F]">
+            {/* AI Video Container */}
+            <div className="relative h-[220px] flex-shrink-0 overflow-hidden rounded-xl border border-[#1E2B45] bg-[#06080B]">
               <video
                 ref={videoRef}
                 src={videoSource}
@@ -588,69 +582,30 @@ function Step2Interview({ interviewData, onFinish }) {
                 loop
                 className="w-full h-full object-cover"
               />
-              <div className="absolute bottom-5 left-5 z-10">
-
-                <div className="
-inline-flex
-items-center
-gap-2
-rounded-full
-border
-border-emerald-500/20
-bg-emerald-500/15
-px-3
-py-2
-text-xs
-font-semibold
-text-emerald-300
-">
-
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-
-                  LIVE
-
+              <div className="absolute bottom-3 left-3 z-10">
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-[#047857]/50 bg-[#062319] px-2.5 py-1 text-[11px] font-semibold text-[#34D399]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E] animate-pulse" />
+                  <span>AI INTERVIEWER</span>
                 </div>
-
               </div>
-
             </div>
 
             {/* Webcam Preview */}
-
-            <div
-              className="
-mt-6
-rounded-3xl
-border
-border-white/10
-bg-white/5
-backdrop-blur-xl
-p-5
-"
-            >
-
-              <div className="mb-4 flex items-center justify-between">
-
-                <h3 className="font-semibold text-white">
-                  Your Camera
+            <div className="rounded-xl border border-[#1E2B45] bg-[#0A0D14] p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-xs font-semibold text-[#F1F5F9] uppercase tracking-wider">
+                  Candidate Stream
                 </h3>
-
-                <div className="flex items-center gap-3">
-
+                <div className="flex items-center gap-2">
                   <span
-                    className="
-rounded-full
-bg-blue-500/10
-px-3
-py-1
-text-xs
-font-medium
-text-blue-300
-"
+                    className={`rounded px-2 py-0.5 text-[10px] font-mono uppercase font-semibold ${
+                      cameraOn
+                        ? "bg-[#062319] text-[#34D399] border border-[#047857]/40"
+                        : "bg-[#141B2D] text-[#64748B] border border-[#2D3E63]"
+                    }`}
                   >
-                    {cameraOn ? "ON" : "OFF"}
+                    {cameraOn ? "CAMERA ON" : "CAMERA OFF"}
                   </span>
-
                   <button
                     onClick={() => {
                       if (cameraOn) {
@@ -659,623 +614,288 @@ text-blue-300
                         setCameraOn(true);
                       }
                     }}
-                    className="
-flex
-items-center
-gap-2
-rounded-xl
-bg-white/10
-px-3
-py-2
-text-xs
-text-white
-hover:bg-white/20
-transition
-"
+                    className="flex items-center gap-1.5 rounded-lg bg-[#141B2D] border border-[#2D3E63] px-2.5 py-1 text-xs text-[#F1F5F9] hover:bg-[#1A233A] transition cursor-pointer"
                   >
                     {cameraOn ? (
                       <>
-                        <FaVideoSlash />
-                        Turn Off
+                        <VideoOff size={13} />
+                        <span>Mute</span>
                       </>
                     ) : (
                       <>
-                        <FaVideo />
-                        Turn On
+                        <Video size={13} />
+                        <span>Enable</span>
                       </>
                     )}
                   </button>
-
                 </div>
-
               </div>
 
               {cameraOn ? (
-
                 <video
                   ref={webcamRef}
                   autoPlay
                   muted
                   playsInline
-                  className="
-h-40
-w-full
-rounded-2xl
-object-cover
-bg-black
-shadow-lg
-"
+                  className="h-36 w-full rounded-lg object-cover bg-black border border-[#161F33]"
                 />
-
               ) : (
-
-                <div className="
-flex
-h-40
-flex-col
-items-center
-justify-center
-rounded-2xl
-border
-border-dashed
-border-white/10
-bg-[#111827]
-">
-
-                  <FaVideoSlash
-                    size={40}
-                    className="text-slate-500"
-                  />
-
-                  <p className="mt-4 text-sm text-slate-400">
-                    Camera Disabled
-                  </p>
-
+                <div className="flex h-36 flex-col items-center justify-center rounded-lg border border-dashed border-[#1E2B45] bg-[#06080B]">
+                  <VideoOff size={28} className="text-[#64748B]" />
+                  <p className="mt-2 text-xs text-[#64748B]">Camera Stream Disabled</p>
                 </div>
-
               )}
-
             </div>
 
-            {/* STATUS */}
-
-            <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-4">
-
-              <div className="flex items-center justify-between">
-
-                <span className="text-sm text-slate-400">
-                  Interview Progress
-                </span>
-
-                <span
-                  className={`rounded-full px-3 py-1 text-xs font-semibold ${isUserTurn
-                    ? "bg-green-500/20 text-green-400"
-                    : "bg-blue-500/20 text-blue-300"
-                    }`}
-                >
-                  {isUserTurn ? "Your Turn" : "AI Speaking"}
-                </span>
-
-              </div>
-
-              <div className="mt-6">
-
-                <div className="mb-2 flex justify-between text-xs text-slate-400">
-
-                  <span>Progress</span>
-
-                  <span>
-                    {currentIndex + 1} / {questions.length}
+            {/* Status & Timer Card */}
+            <div className="rounded-xl border border-[#1E2B45] bg-[#0A0D14] p-4 flex-1 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider">
+                    Turn Status
                   </span>
-
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      isUserTurn
+                        ? "bg-[#062319] text-[#34D399] border border-[#047857]/40"
+                        : "bg-[#0D1E3A] text-[#93C5FD] border border-[#2563EB]/40"
+                    }`}
+                  >
+                    {isUserTurn ? "● Your Turn (Speak)" : "● AI Speaking"}
+                  </span>
                 </div>
 
-                <div className="h-2 rounded-full bg-white/10 overflow-hidden">
-
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{
-                      width: `${((currentIndex + 1) / questions.length) * 100}%`,
-                    }}
-                    transition={{ duration: .5 }}
-                    className="h-full rounded-full bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400"
-                  />
-
+                <div className="flex justify-center py-2">
+                  <Timer timeLeft={timeLeft} totalTime={currentQuestion?.timeLimit} />
                 </div>
-
               </div>
 
-              <div className="my-6 border-t border-white/10"></div>
-
-              <div className="flex justify-center">
-
-                <Timer
-                  timeLeft={timeLeft}
-                  totalTime={currentQuestion?.timeLimit}
-                />
-
-              </div>
-
-              <div className="my-6 border-t border-white/10"></div>
-
-              <div className="grid grid-cols-2 gap-4">
-
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center">
-
-                  <h3 className="text-3xl font-bold text-blue-400">
+              <div className="grid grid-cols-2 gap-2.5 pt-3 border-t border-[#161F33]">
+                <div className="rounded-lg border border-[#161F33] bg-[#0E131F] p-2.5 text-center">
+                  <span className="text-lg font-bold text-[#38BDF8] font-mono tabular-nums">
                     {currentIndex + 1}
-                  </h3>
-
-                  <p className="mt-1 text-xs uppercase tracking-wider text-slate-500">
-                    Current
-                  </p>
-
+                  </span>
+                  <p className="text-[10px] uppercase tracking-wider text-[#64748B] mt-0.5">Current Q</p>
                 </div>
-
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center">
-
-                  <h3 className="text-3xl font-bold text-violet-400">
+                <div className="rounded-lg border border-[#161F33] bg-[#0E131F] p-2.5 text-center">
+                  <span className="text-lg font-bold text-[#F1F5F9] font-mono tabular-nums">
                     {questions.length}
-                  </h3>
-
-                  <p className="mt-1 text-xs uppercase tracking-wider text-slate-500">
-                    Total
-                  </p>
-
+                  </span>
+                  <p className="text-[10px] uppercase tracking-wider text-[#64748B] mt-0.5">Total Qs</p>
                 </div>
-
               </div>
-
             </div>
-
           </div>
 
-          {/* RIGHT SECTION STARTS */}
-
-          <div className="flex-1 p-8 flex flex-col">
-
-            {/* Header */}
-
-            <div className="flex items-center justify-between mb-8">
-
-              <div>
-
-                <span className="inline-flex items-center rounded-full border border-blue-500/20 bg-blue-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-blue-300">
-                  AI Technical Interview
-                </span>
-
-                <h2 className="mt-5 text-3xl font-bold text-white">
-                  Answer The Question Carefully
-                </h2>
-
-                <p className="mt-2 text-slate-400">
-                  Think clearly before submitting your answer.
-                </p>
-
-              </div>
-              <div className="flex items-center gap-4">
-
-                <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={toggleFullscreen}
-                  className="
-rounded-2xl
-border
-border-blue-500/20
-bg-blue-500/10
-px-3
-py-2
-font-semibold
-text-blue-300
-hover:bg-blue-500/20
-transition
-"
-                >
-                  <div className="flex items-center gap-3">
-                    <FaExpand />
-                    {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+          {/* RIGHT SECTION: QUESTION, RESPONSE & ACTIONS */}
+          <div className="flex-1 p-6 sm:p-8 flex flex-col justify-between bg-[#0A0D14]">
+            <div>
+              {/* Header Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-[#0D1E3A] text-[#93C5FD] border border-[#2563EB]/30">
+                      Technical Assessment
+                    </span>
+                    {interviewData?.targetCompany && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-[#141B2D] text-[#38BDF8] border border-[#1E2B45]">
+                        <Building2 size={12} />
+                        <span>{interviewData.targetCompany}</span>
+                      </span>
+                    )}
+                    <span className="text-xs font-mono text-[#64748B]">
+                      Question {currentIndex + 1} of {questions.length}
+                    </span>
                   </div>
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowExitDialog(true)}
-                  className="
-    rounded-2xl
-    border
-    border-red-500/20
-    bg-red-500/10
-    px-3
-    py-2
-    font-semibold
-    text-red-400
-    transition
-    hover:bg-red-500/20
-    "
-                >
-                  Exit
-                </motion.button>
-
-                <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl px-6 py-4 text-center">
-
-                  <p className="text-xs uppercase tracking-widest text-slate-500">
-                    Progress
-                  </p>
-
-                  <h3 className="mt-2 text-3xl font-bold bg-gradient-to-r from-blue-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
-                    {currentIndex + 1}/{questions.length}
-                  </h3>
-
-                </div>
-
-              </div>
-
-            </div>
-
-            {/* Progress */}
-
-            <div className="mb-8 h-2 overflow-hidden rounded-full bg-white/10">
-
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{
-                  width: `${((currentIndex + 1) / questions.length) * 100}%`,
-                }}
-                transition={{ duration: .5 }}
-                className="h-full rounded-full bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400"
-              />
-
-            </div>
-
-      
-
-      
-            {/* ================= QUESTION  ================= */}
-
-            {!isIntroPhase && currentQuestion && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35 }}
-                className="
-relative
-mt-8
-rounded-3xl
-border
-border-white/10
-bg-[#1F2937]
-p-8
-shadow-lg
-flex
-flex-col
-justify-center
-"
-              >
-                {/* Glow */}
-                <div className="absolute -top-10 -right-10 h-36 w-36 rounded-full bg-blue-500/10 blur-3xl" />
-
-                {/* Header */}
-                <div className="flex items-center gap-4">
-                  <div
-                    className="
-          flex
-          h-12
-          w-12
-          items-center
-          justify-center
-          rounded-full
-          bg-gradient-to-r
-          from-blue-600
-          to-violet-600
-          text-lg
-          font-bold
-          text-white
-        "
-                  >
-                    {currentIndex + 1}
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-semibold uppercase tracking-widest text-blue-300">
-                      Question {currentIndex + 1}
-                    </p>
-
-                    <p className="mt-1 text-sm text-slate-400">
-                      Take a moment to understand the question before answering.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Question */}
-                <div className="mt-8">
-                  <h2
-                    className="
-                    text-2xl
-font-semibold
-leading-relaxed
-
-text-white
-whitespace-pre-wrap
-break-words
-"
-                  >
-                    {currentQuestion?.question}
+                  <h2 className="text-xl sm:text-2xl font-bold text-[#F1F5F9]">
+                    Articulate Your Solution
                   </h2>
                 </div>
-              </motion.div>
-            )}
 
-            {/* Answer */}
+                <div className="flex items-center gap-2.5">
+                  <button
+                    onClick={toggleFullscreen}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#1E2B45] bg-[#0E131F] text-xs font-medium text-[#94A3B8] hover:text-[#F1F5F9] hover:bg-[#141B2D] transition cursor-pointer"
+                  >
+                    {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                    <span className="hidden sm:inline">{isFullscreen ? "Exit Fullscreen" : "Fullscreen"}</span>
+                  </button>
 
-            <textarea
-              placeholder="Start speaking or type your answer here..."
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-              className="
-mt-6
-min-h-[180px]
-w-full
-rounded-3xl
-border
-border-white/10
-bg-white/5
-backdrop-blur-xl
-p-6
-text-base
-leading-8
-text-white
-placeholder:text-slate-500
-resize-none
-outline-none
-transition-all
-duration-300
-focus:border-blue-500
-focus:ring-4
-focus:ring-blue-500/10
-"
-            />
+                  <button
+                    onClick={() => setShowExitDialog(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#B91C1C]/40 bg-[#280B0B] text-xs font-medium text-[#F87171] hover:bg-[#B91C1C]/30 transition cursor-pointer"
+                  >
+                    <LogOut size={14} />
+                    <span>Exit</span>
+                  </button>
+                </div>
+              </div>
 
-            <div className="mt-3 flex items-center justify-between">
+              {/* Progress Indicator */}
+              <div className="mb-6 h-1.5 overflow-hidden rounded-full bg-[#141B2D]">
+                <div
+                  className="h-full rounded-full bg-[#2563EB] transition-all duration-300"
+                  style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
+                />
+              </div>
 
-              <p className="text-sm font-medium text-slate-400">
-                {answer.length} Characters
-              </p>
+              {/* Question Card */}
+              {!isIntroPhase && currentQuestion && (
+                <div className="rounded-xl border border-[#1E2B45] bg-[#0E131F] p-6 shadow-lg mb-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="w-6 h-6 rounded-full bg-[#2563EB] text-white flex items-center justify-center text-xs font-bold font-mono">
+                      {currentIndex + 1}
+                    </span>
+                    <span className="text-xs font-semibold text-[#38BDF8] uppercase tracking-wider">
+                      Technical Question
+                    </span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-medium text-[#F1F5F9] leading-relaxed whitespace-pre-wrap break-words">
+                    {currentQuestion?.question}
+                  </h3>
+                </div>
+              )}
 
-              <p className="text-sm text-slate-500">
-                AI evaluates Confidence • Communication • Technical Skills
-              </p>
-
+              {/* Answer Input Area */}
+              <div>
+                <textarea
+                  placeholder="Start speaking into your microphone or type your response here..."
+                  value={answer}
+                  onChange={(e) => setAnswer(e.target.value)}
+                  className="min-h-[160px] w-full rounded-xl border border-[#1E2B45] bg-[#06080B] p-4 text-sm leading-relaxed text-[#F1F5F9] placeholder:text-[#64748B] resize-none outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/30 transition"
+                />
+                <div className="mt-2 flex items-center justify-between text-xs text-[#64748B]">
+                  <span className="font-mono tabular-nums">{answer.length} Characters recorded</span>
+                  <span>AI evaluates Technical Depth • Communication • Structure</span>
+                </div>
+              </div>
             </div>
 
-            {!feedback ? (
-
-              isSubmitting ? (
-
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="
-mt-8
-rounded-3xl
-border
-border-blue-500/20
-bg-blue-500/10
-backdrop-blur-xl
-p-8
-"
-                >
-
-                  <h3 className="text-xl font-semibold text-white">
-                    AI is analyzing your answer...
-                  </h3>
-
-                  <p className="mt-3 text-slate-400">
-                    Evaluating technical knowledge, confidence and communication.
-                  </p>
-
-                  <div className="mt-6 h-2 overflow-hidden rounded-full bg-white/10">
-
-                    <motion.div
-                      animate={{
-                        width:
-                          thinkingStep === 1
-                            ? "30%"
-                            : thinkingStep === 2
-                              ? "65%"
-                              : "100%",
-                      }}
-                      transition={{ duration: 0.5 }}
-                      className="h-full rounded-full bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400"
-                    />
-
+            {/* Bottom Actions / AI Feedback */}
+            <div className="pt-6 mt-6 border-t border-[#161F33]">
+              {!feedback ? (
+                isSubmitting ? (
+                  <div className="rounded-xl border border-[#8B5CF6]/40 bg-[#13122B] p-5">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-[#C4B5FD] mb-2">
+                      <Sparkles size={16} className="animate-pulse" />
+                      <span>Synthesizing answer evaluation...</span>
+                    </div>
+                    <p className="text-xs text-[#94A3B8] mb-3">
+                      Analyzing technical accuracy, delivery cadence, and core competencies.
+                    </p>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-[#06080B]">
+                      <div
+                        className="h-full rounded-full bg-[#8B5CF6] transition-all duration-500"
+                        style={{
+                          width: thinkingStep === 1 ? "35%" : thinkingStep === 2 ? "70%" : "100%",
+                        }}
+                      />
+                    </div>
                   </div>
-
-                </motion.div>
-
-              ) : (
-
-                <div className="mt-8 flex gap-4">
-
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    whileHover={{ scale: 1.05 }}
-                    onClick={toggleMic}
-                    className="
-flex
-h-16
-w-16
-items-center
-justify-center
-rounded-2xl
-bg-gradient-to-r
-from-blue-600
-to-violet-600
-text-white
-shadow-[0_0_25px_rgba(59,130,246,.35)]
-"
-                  >
-                    {isMicOn ? (
-                      <FaMicrophone size={22} />
-                    ) : (
-                      <FaMicrophoneSlash size={22} />
-                    )}
-                  </motion.button>
-
-                  <motion.button
-                    onClick={submitAnswer}
-                    disabled={isSubmitting}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.97 }}
-                    className="
-flex-1
-rounded-2xl
-bg-gradient-to-r
-from-blue-600
-via-violet-600
-to-cyan-500
-py-4
-font-semibold
-text-white
-shadow-[0_0_35px_rgba(59,130,246,.35)]
-disabled:opacity-50
-"
-                  >
-                    Submit Answer
-                  </motion.button>
-
-                </div>
-
-              )
-
-            ) : (
-
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="
-mt-8
-rounded-3xl
-border
-border-blue-500/20
-bg-blue-500/10
-backdrop-blur-xl
-p-6
-"
-              >
-
-                <h3 className="mb-3 text-lg font-semibold text-blue-300">
-                  AI Feedback
-                </h3>
-
-                <p className="leading-8 text-slate-300">
-                  {feedback}
-                </p>
-
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={handleNext}
-                  disabled={isFinishing}
-                  className="
-mt-6
-w-full
-rounded-2xl
-bg-gradient-to-r
-from-blue-600
-via-violet-600
-to-cyan-500
-py-4
-font-semibold
-text-white
-shadow-[0_0_30px_rgba(59,130,246,.30)]
-disabled:opacity-60
-"
-                >
-                  {isFinishing
-                    ? "Finalizing Interview..."
-                    : currentIndex + 1 === questions.length
-                    ? "Finish Interview"
-                    : "Next Question"}
-                </motion.button>
-
-                {finishError && (
-                  <div className="mt-4 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-center">
-                    <p className="text-sm text-red-300 font-medium mb-2">{finishError}</p>
+                ) : (
+                  <div className="flex gap-3">
                     <button
-                      onClick={finishInterview}
-                      disabled={isFinishing}
-                      className="px-4 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-white text-xs font-semibold transition"
+                      type="button"
+                      onClick={toggleMic}
+                      className={`h-12 w-12 rounded-xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                        isMicOn
+                          ? "bg-[#0D1E3A] border border-[#2563EB] text-[#38BDF8]"
+                          : "bg-[#280B0B] border border-[#B91C1C] text-[#F87171]"
+                      }`}
+                      aria-label={isMicOn ? "Mute Microphone" : "Unmute Microphone"}
                     >
-                      {isFinishing ? "Retrying..." : "Retry Finishing Interview"}
+                      {isMicOn ? <Mic size={20} /> : <MicOff size={20} />}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={submitAnswer}
+                      disabled={isSubmitting}
+                      className="flex-1 h-12 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] active:bg-[#1E40AF] text-white text-sm font-semibold transition-all shadow-md cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Submit Response for Evaluation
                     </button>
                   </div>
-                )}
-              </motion.div>
+                )
+              ) : (
+                <div className="rounded-xl border border-[#8B5CF6]/40 bg-[#13122B] p-5 space-y-4">
+                  <div>
+                    <h4 className="text-xs font-semibold text-[#C4B5FD] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                      <Sparkles size={14} />
+                      <span>AI Evaluator Feedback</span>
+                    </h4>
+                    <p className="text-xs sm:text-sm text-[#F1F5F9] leading-relaxed">
+                      {feedback}
+                    </p>
+                  </div>
 
-            )}
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    disabled={isFinishing}
+                    className="w-full h-11 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-semibold transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {isFinishing
+                      ? "Finalizing Assessment Report..."
+                      : currentIndex + 1 === questions.length
+                      ? "Conclude Interview & Compile Report"
+                      : "Proceed to Next Question →"}
+                  </button>
 
+                  {finishError && (
+                    <div className="p-3 rounded-lg border border-[#B91C1C]/40 bg-[#280B0B] text-center">
+                      <p className="text-xs text-[#F87171] mb-2">{finishError}</p>
+                      <button
+                        onClick={finishInterview}
+                        disabled={isFinishing}
+                        className="px-3 py-1 rounded bg-[#B91C1C]/40 hover:bg-[#B91C1C]/60 text-white text-xs font-semibold transition cursor-pointer"
+                      >
+                        {isFinishing ? "Retrying..." : "Retry Finalizing"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Exit Confirmation Dialog */}
       {showExitDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="w-full max-w-md rounded-3xl border border-white/10 bg-[#111827] p-8 shadow-[0_20px_80px_rgba(0,0,0,0.5)]"
-          >
-
-            <h2 className="text-2xl font-bold text-white">
-              Exit Interview?
-            </h2>
-
-            <p className="mt-4 leading-7 text-slate-400">
-              Your interview is currently in progress.
-              If you leave now, your current progress may not be saved.
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#06080B]/80 backdrop-blur-md">
+          <div className="w-full max-w-md rounded-xl border border-[#1E2B45] bg-[#0E131F] p-6 shadow-2xl shadow-black/80">
+            <h3 className="text-lg font-bold text-[#F1F5F9]">Exit Active Interview?</h3>
+            <p className="mt-2 text-xs sm:text-sm text-[#94A3B8] leading-relaxed">
+              Your interview is currently in progress. Exiting will abort this session and unsubmitted questions will not be scored.
             </p>
-
-            <div className="mt-8 flex gap-4">
-
+            <div className="mt-6 flex justify-end gap-3">
               <button
                 onClick={() => setShowExitDialog(false)}
-                className="flex-1 rounded-2xl border border-white/10 bg-white/5 py-3 font-medium text-white hover:bg-white/10"
+                className="px-4 py-2 rounded-lg border border-[#1E2B45] bg-[#0A0D14] text-xs font-medium text-[#F1F5F9] hover:bg-[#141B2D] transition cursor-pointer"
               >
-                Continue
+                Resume Interview
               </button>
-
               <button
                 onClick={() => {
                   stopMic();
                   stopCamera();
-
                   if (recognitionRef.current) {
                     recognitionRef.current.abort();
                   }
-
                   window.speechSynthesis.cancel();
-
                   setShowExitDialog(false);
-
-                  toast.info("Interview exited.");
-
+                  toast.info("Interview session exited.");
                   navigate("/");
                 }}
-                className="flex-1 rounded-2xl bg-red-600 py-3 font-semibold text-white hover:bg-red-700"
+                className="px-4 py-2 rounded-lg bg-[#EF4444] hover:bg-[#DC2626] text-xs font-semibold text-white transition cursor-pointer"
               >
-                Exit
+                Confirm Exit
               </button>
-
             </div>
-
-          </motion.div>
-
+          </div>
         </div>
-      )
-      }
+      )}
     </>
   );
 }

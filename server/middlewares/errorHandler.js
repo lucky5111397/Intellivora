@@ -1,8 +1,20 @@
 import multer from "multer";
 
+/**
+ * Global Express Error-Handling Middleware
+ * Catches unhandled errors from synchronous and asynchronous route handlers,
+ * maps operational errors (CORS, Multer upload limits, 4xx client errors),
+ * and prevents stack trace leakage in production.
+ *
+ * @param {Error} err
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ * @param {import("express").NextFunction} next
+ */
 function errorHandler(err, req, res, next) {
   const isProd = process.env.NODE_ENV === "production";
-  console.error(`[ERROR HANDLER] ${req.method} ${req.originalUrl}:`, err.stack || err.message || err);
+  const safeUrl = String(req.originalUrl || "").replace(/[\r\n]/g, "");
+  console.error("[ERROR HANDLER]", req.method, safeUrl, err.stack || err.message || err);
 
   if (res.headersSent) {
     return next(err);

@@ -1,6 +1,12 @@
 /**
- * In-memory sliding-window rate limiter.
- * Protects endpoints from brute-force attacks and API exhaustion.
+ * Factory for creating in-memory sliding-window rate limiting middleware.
+ * Prevents endpoint exhaustion and brute-force attacks by tracking request timestamps per client IP.
+ *
+ * @param {Object} options
+ * @param {number} [options.windowMs=900000] - Window duration in milliseconds (default: 15 minutes).
+ * @param {number} [options.max=100] - Maximum requests allowed within the window.
+ * @param {string} [options.message] - Client-facing error message upon rate limit exhaustion.
+ * @returns {import("express").RequestHandler} Express middleware function.
  */
 function createRateLimiter({
   windowMs = 15 * 60 * 1000,
@@ -42,7 +48,6 @@ function createRateLimiter({
     const now = Date.now();
     const timestamps = hits.get(ip) || [];
 
-    // Filter to requests within the window
     const recent = timestamps.filter((t) => now - t < windowMs);
 
     if (recent.length >= max) {
@@ -84,6 +89,12 @@ export const generalLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 500,
   message: "Too many requests. Please try again later.",
+});
+
+export const newsletterLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 requests per 15 min
+  message: "Too many subscription attempts. Please try again later.",
 });
 
 export default createRateLimiter;

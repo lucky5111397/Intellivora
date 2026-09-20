@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAptitude } from '../context/aptitudeContext';
 import { categoriesData } from '../data/topicsData';
+import { BackButton } from '@/components/ui';
 
 function formatPracticeTime(seconds = 0) {
   if (!seconds || seconds <= 0) return '0 mins';
@@ -41,7 +42,10 @@ export default function AptitudeDashboard() {
 
   return (
     <div className="bg-apt-bg min-h-screen text-apt-text font-family-jakarta p-4 sm:p-6 lg:p-8 overflow-x-hidden">
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div>
+          <BackButton to="/" fallback="/" />
+        </div>
 
         {/* 1. Hero Header */}
         <section className="relative overflow-hidden bg-apt-surface-mid rounded-2xl shadow-md p-6 sm:p-10 border border-apt-outline-dim">

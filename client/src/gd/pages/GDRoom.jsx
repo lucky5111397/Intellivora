@@ -23,6 +23,7 @@ import { useSpeechQueue } from "../audio/useSpeechQueue";
 import { useSpeechRecognition } from "../audio/useSpeechRecognition";
 import { useMediaStream } from "../audio/useMediaStream";
 import { toast } from "sonner";
+import { AmbientBackground } from "../../components/ui/AmbientBackground";
 
 export default function GDRoom() {
   const { id } = useParams();
@@ -341,9 +342,10 @@ export default function GDRoom() {
   return (
     <div
       onClickCapture={primeAudioOnGesture}
-      className="min-h-screen bg-[#080b12] text-slate-100 flex flex-col selection:bg-indigo-500/20 selection:text-indigo-300"
+      className="relative min-h-screen bg-[#06080B] text-[#F1F5F9] flex flex-col selection:bg-[#2563EB] selection:text-white overflow-hidden"
     >
-      <header className="sticky top-0 z-50 w-full bg-[#0d111a]/95 border-b border-white/[0.08] backdrop-blur-xl px-4 sm:px-6 py-2.5 flex flex-col md:flex-row items-center justify-between gap-3 shadow-md">
+      <AmbientBackground variant="subtle" />
+      <header className="sticky top-0 z-50 w-full bg-[#0A0D14]/95 border-b border-[#1E293B] backdrop-blur-xl px-4 sm:px-6 py-2.5 flex flex-col md:flex-row items-center justify-between gap-3 shadow-md">
         {/* Left: Branding & Status */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 bg-[#080b12] px-3 py-1 rounded-full border border-white/[0.08]">
