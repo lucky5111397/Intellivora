@@ -33,6 +33,27 @@ const GDLobby = lazy(() => import("./gd/pages/GDLobby"));
 const GDRoom = lazy(() => import("./gd/pages/GDRoom"));
 const GDAnalysis = lazy(() => import("./gd/pages/GDAnalysis"));
 
+// Candidate platform pages
+const DsaCatalog = lazy(() => import("./pages/prepare/DsaCatalog"));
+const DsaWorkspace = lazy(() => import("./pages/prepare/DsaWorkspace"));
+const QuizCatalog = lazy(() => import("./pages/prepare/QuizCatalog"));
+const QuizScreen = lazy(() => import("./pages/prepare/QuizScreen"));
+const QuizResult = lazy(() => import("./pages/prepare/QuizResult"));
+const SqlWorkspace = lazy(() => import("./pages/prepare/SqlWorkspace"));
+const SystemDesignCatalog = lazy(() => import("./pages/prepare/SystemDesignCatalog"));
+const SystemDesignWorkspace = lazy(() => import("./pages/prepare/SystemDesignWorkspace"));
+const MistakeBankPage = lazy(() => import("./pages/prepare/MistakeBankPage"));
+const MockPlacementSetup = lazy(() => import("./pages/assess/MockPlacementSetup"));
+const MockPlacementChamber = lazy(() => import("./pages/assess/MockPlacementChamber"));
+const MockPlacementReport = lazy(() => import("./pages/assess/MockPlacementReport"));
+const InterviewReplayHub = lazy(() => import("./pages/assess/InterviewReplayHub"));
+const JdAnalyzerPage = lazy(() => import("./pages/career/JdAnalyzerPage"));
+const CareerRoadmapPage = lazy(() => import("./pages/career/CareerRoadmapPage"));
+const CompanyPreparationPage = lazy(() => import("./pages/career/CompanyPreparationPage"));
+const JobTrackerPage = lazy(() => import("./pages/career/JobTrackerPage"));
+const ProfilePage = lazy(() => import("./pages/profile/ProfilePage"));
+const CreditsPage = lazy(() => import("./pages/credits/CreditHistoryPage"));
+
 // Administrative Pages
 const AdminDashboard = lazy(() => import("./admin/pages/AdminDashboard"));
 const AdminUsers = lazy(() => import("./admin/pages/AdminUsers"));
@@ -178,6 +199,35 @@ function App() {
                 <Route path="analysis/:id" element={<GDAnalysis />} />
               </Route>
               <Route path="/report/:id" element={<InterviewReport />} />
+
+              {/* Preparation workspace */}
+              <Route path="/prepare/dsa" element={<DsaCatalog mode="dsa" />} />
+              <Route path="/prepare/dsa/:slug" element={<DsaWorkspace />} />
+              <Route path="/prepare/coding" element={<DsaCatalog mode="coding" />} />
+              <Route path="/prepare/coding/:slug" element={<DsaWorkspace />} />
+              <Route path="/prepare/quiz" element={<QuizCatalog />} />
+              <Route path="/prepare/quiz/screen/:attemptId" element={<QuizScreen />} />
+              <Route path="/prepare/quiz/result/:attemptId" element={<QuizResult />} />
+              <Route path="/prepare/sql" element={<SqlWorkspace />} />
+              <Route path="/prepare/sql/:slug" element={<SqlWorkspace />} />
+              <Route path="/prepare/system-design" element={<SystemDesignCatalog />} />
+              <Route path="/prepare/system-design/:slug" element={<SystemDesignWorkspace />} />
+              <Route path="/prepare/mistakes" element={<MistakeBankPage />} />
+
+              {/* Assessment workflows */}
+              <Route path="/assess/placement" element={<MockPlacementSetup />} />
+              <Route path="/assess/placement/:id" element={<MockPlacementChamber />} />
+              <Route path="/assess/placement/:id/report" element={<MockPlacementReport />} />
+              <Route path="/assess/replay" element={<InterviewReplayHub />} />
+              <Route path="/assess/replay/:id" element={<InterviewReplayHub />} />
+
+              {/* Career workflows */}
+              <Route path="/career/jd-analyzer" element={<JdAnalyzerPage />} />
+              <Route path="/career/roadmap" element={<CareerRoadmapPage />} />
+              <Route path="/career/company-preparation" element={<CompanyPreparationPage />} />
+              <Route path="/career/job-tracker" element={<JobTrackerPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/credits" element={<CreditsPage />} />
             </Route>
 
             {/* Administrative Operations */}
