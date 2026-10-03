@@ -1,13 +1,57 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import path from "node:path";
 
 // ─── PDF Validator ───────────────────────────────────────────────────────────
 import { hasPdfMagicBytes } from "../utils/pdfValidator.js";
+import { extractTextFromPdf } from "../services/pdfExtractor.service.js";
+import { verifyFirebaseIdToken, resetCustomVerifier } from "../services/firebaseAuth.service.js";
+import jwt from "jsonwebtoken";
 
 describe("hasPdfMagicBytes", () => {
   it("accepts a valid PDF header buffer", () => {
     const buf = Buffer.from([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e]); // %PDF-1.
     assert.equal(hasPdfMagicBytes(buf), true);
+  });
+
+  describe("resume upload ownership", () => {
+    it("does not allow a different user to extract an uploaded resume", async () => {
+      const uploadId = "11111111-1111-4111-8111-111111111111";
+      const uploadPath = path.resolve("uploads", "resumes");
+      const ownedFile = path.join(uploadPath, `${uploadId}-owner-user-123-${Date.now()}.pdf`);
+
+      await fs.mkdir(uploadPath, { recursive: true });
+      await fs.writeFile(ownedFile, Buffer.from("%PDF-1.7"));
+
+      try {
+        await assert.rejects(
+          extractTextFromPdf(uploadId, "different-user-456"),
+          (error) => error.status === 404
+        );
+      } finally {
+        await fs.unlink(ownedFile).catch(() => {});
+      }
+    });
+  });
+
+  describe("Firebase token verification", () => {
+    it("does not accept a forged token outside the test environment", async () => {
+      const originalEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = "production";
+      resetCustomVerifier();
+
+      const forgedToken = jwt.sign(
+        { sub: "attacker", email: "attacker@example.com" },
+        "not-a-firebase-key"
+      );
+
+      try {
+        await assert.rejects(verifyFirebaseIdToken(forgedToken), /Invalid token issuer|verification failed/);
+      } finally {
+        process.env.NODE_ENV = originalEnv;
+      }
+    });
   });
 
   it("rejects a non-PDF buffer", () => {

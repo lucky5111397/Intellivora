@@ -7,7 +7,7 @@ const resumeUploadPath = path.resolve("uploads", "resumes");
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const findUploadedFile = async (uploadId) => {
+const findUploadedFile = async (uploadId, userId) => {
   if (!UUID_REGEX.test(uploadId)) {
     const error = new Error("Invalid uploadId format. Must be a valid UUID.");
     error.status = 400;
@@ -15,7 +15,7 @@ const findUploadedFile = async (uploadId) => {
   }
 
   const files = await fs.promises.readdir(resumeUploadPath);
-  const matched = files.find((file) => file.startsWith(`${uploadId}-`));
+  const matched = files.find((file) => file.startsWith(`${uploadId}-${userId}-`));
   if (!matched) {
     const error = new Error("Uploaded resume file not found for the provided uploadId.");
     error.status = 404;
@@ -24,14 +24,19 @@ const findUploadedFile = async (uploadId) => {
   return path.join(resumeUploadPath, matched);
 };
 
-export const extractTextFromPdf = async (uploadId) => {
+export const extractTextFromPdf = async (uploadId, userId) => {
   if (!uploadId || typeof uploadId !== "string") {
     const error = new Error("uploadId is required and must be a string.");
     error.status = 400;
     throw error;
   }
+  if (!userId || typeof userId !== "string") {
+    const error = new Error("Authenticated user is required to extract a resume.");
+    error.status = 401;
+    throw error;
+  }
 
-  const filePath = await findUploadedFile(uploadId);
+  const filePath = await findUploadedFile(uploadId, userId);
 
   try {
     let fileBuffer;

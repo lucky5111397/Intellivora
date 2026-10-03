@@ -44,6 +44,19 @@ function errorHandler(err, req, res, next) {
     });
   }
 
+  // Handle Zod validation errors
+  if (err.name === "ZodError" || (err.issues && Array.isArray(err.issues))) {
+    return res.status(400).json({
+      success: false,
+      message: "Request validation failed.",
+      errors: err.issues.map((i) => ({
+        field: i.path.join("."),
+        message: i.message,
+        rule: i.code,
+      })),
+    });
+  }
+
   // Check for explicit operational HTTP status codes (4xx)
   const explicitStatus = err.statusCode || err.status;
   if (explicitStatus && explicitStatus >= 400 && explicitStatus < 500) {

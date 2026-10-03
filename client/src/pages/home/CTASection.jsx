@@ -45,7 +45,7 @@ export function CTASection({ onStart, onExplore }) {
                         leftIcon={SlidersHorizontal}
                         onClick={onExplore}
                     >
-                        Browse Modules & Syllabi
+                        Browse Modules & Syllabus
                     </Button>
                 </div>
                 <p className="text-xs text-[#94A3B8] max-w-xl">

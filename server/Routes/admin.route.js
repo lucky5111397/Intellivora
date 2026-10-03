@@ -24,7 +24,13 @@ import {
   getAllPayments,
   getPaymentDetail,
 } from "../controllers/admin.controller.js";
+import { getAdminCreditTransactions } from "../controllers/creditLedger.controller.js";
 import { generalLimiter } from "../middlewares/rateLimiter.js";
+import { validate } from "../middlewares/validate.js";
+import {
+  adminCreditUpdateSchema,
+  paginationQuerySchema,
+} from "../validators/credit.validator.js";
 
 const adminRouter = express.Router();
 adminRouter.use(generalLimiter);
@@ -33,7 +39,20 @@ adminRouter.use(generalLimiter);
 // Users
 adminRouter.get("/users", isAuth, isAdmin, getAllUsers);
 adminRouter.patch("/users/:id", isAuth, isAdmin, updateUser);
-adminRouter.patch("/users/:id/credits", isAuth, isAdmin, updateUserCredits);
+adminRouter.patch(
+  "/users/:id/credits",
+  isAuth,
+  isAdmin,
+  validate(adminCreditUpdateSchema),
+  updateUserCredits
+);
+adminRouter.get(
+  "/users/:id/credit-history",
+  isAuth,
+  isAdmin,
+  validate(paginationQuerySchema),
+  getAdminCreditTransactions
+);
 adminRouter.delete("/users/:id", isAuth, isAdmin, deleteUser);
 
 // Interviews
@@ -60,7 +79,7 @@ adminRouter.delete("/resume/:id", isAuth, isAdmin, deleteResumeAnalysis);
 adminRouter.get("/payments", isAuth, isAdmin, getAllPayments);
 adminRouter.get("/payments/:id", isAuth, isAdmin, getPaymentDetail);
 
-// Newsletter Subscribers
+// Newsletter
 adminRouter.get("/newsletter", isAuth, isAdmin, getAllSubscribers);
 adminRouter.delete("/newsletter/:id", isAuth, isAdmin, deleteSubscriber);
 
@@ -68,4 +87,3 @@ adminRouter.delete("/newsletter/:id", isAuth, isAdmin, deleteSubscriber);
 adminRouter.get("/analytics", isAuth, isAdmin, getAnalytics);
 
 export default adminRouter;
-
