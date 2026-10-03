@@ -7,6 +7,10 @@ import { Provider } from "react-redux";
 import store from "./redux/store.js";
 import { Toaster } from "sonner";
 
+if (import.meta.env.DEV) {
+  window.__store = store;
+}
+
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <Provider store={store}>
