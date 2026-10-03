@@ -15,6 +15,14 @@ import historyRouter from "./Routes/history.route.js";
 import gdRouter from "./Routes/gd.route.js";
 import adminRouter from "./Routes/admin.route.js";
 import newsletterRouter from "./Routes/newsletter.route.js";
+import dsaRouter from "./Routes/dsa.route.js";
+import questionBankRouter from "./Routes/questionBank.route.js";
+import quizRouter from "./Routes/quiz.route.js";
+import sqlRouter from "./Routes/sql.route.js";
+import systemDesignRouter from "./Routes/systemDesign.route.js";
+import mistakeRouter from "./Routes/mistake.route.js";
+import careerRouter from "./Routes/career.route.js";
+import placementRouter from "./Routes/placement.route.js";
 import errorHandler from "./middlewares/errorHandler.js";
 import securityHeaders from "./middlewares/securityHeaders.js";
 import { generalLimiter } from "./middlewares/rateLimiter.js";
@@ -58,7 +66,11 @@ app.use(securityHeaders);
 // Global rate limiting
 app.use(generalLimiter);
 
-app.use(express.json());
+app.use(
+  "/api/payment/webhook",
+  express.raw({ type: "application/json", limit: "1mb" })
+);
+app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
 
 // Health check endpoint (verifies MongoDB database readiness)
@@ -74,8 +86,6 @@ app.get("/health", (req, res) => {
 
 // Log environment
 console.log("[SERVER] Allowed CORS Origins:", allowedOrigins);
-console.log("[SERVER] NODE_ENV:", process.env.NODE_ENV);
-console.log("[SERVER] CLIENT_URL from env:", process.env.CLIENT_URL);
 
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
@@ -87,6 +97,14 @@ app.use("/api/history", historyRouter);
 app.use("/api/gd", gdRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/newsletter", newsletterRouter);
+app.use("/api/dsa", dsaRouter);
+app.use("/api/questions", questionBankRouter);
+app.use("/api/quizzes", quizRouter);
+app.use("/api/sql", sqlRouter);
+app.use("/api/system-design", systemDesignRouter);
+app.use("/api/mistakes", mistakeRouter);
+app.use("/api/career", careerRouter);
+app.use("/api/placement", placementRouter);
 
 app.use(errorHandler);
 

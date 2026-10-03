@@ -1,6 +1,7 @@
 import React from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import Navbar from "../Navbar";
+import Navbar from "../navbar/Navbar";
+import BackNavigation from "../navigation/BackNavigation";
 import Footer from "../Footer";
 
 export function AppLayout() {
@@ -21,6 +22,7 @@ export function AppLayout() {
     return (
         <div className="min-h-screen flex flex-col bg-[#06080B] text-[#F1F5F9] selection:bg-[#2563EB] selection:text-white">
             <Navbar />
+            <BackNavigation />
             <main className="flex-1 w-full flex flex-col">
                 <Outlet />
             </main>
@@ -30,4 +32,3 @@ export function AppLayout() {
 }
 
 export default AppLayout;
-
