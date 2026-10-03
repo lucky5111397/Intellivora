@@ -75,8 +75,9 @@ export async function verifyFirebaseIdToken(idToken) {
 
   const { header, payload } = decodedToken;
 
-  // In test environment or test mock tokens (starts with "test-token-" or "mock-"), allow decoded payload
-  if (process.env.NODE_ENV === "test" || idToken.startsWith("mock-") || idToken.startsWith("test-")) {
+  // Test-only fixtures may use decoded payloads; every non-test environment must
+  // continue through issuer, audience, expiry, and signature verification.
+  if (process.env.NODE_ENV === "test") {
     return {
       uid: payload.user_id || payload.sub || "test-user-id",
       email: payload.email || null,
@@ -146,4 +147,3 @@ export async function verifyFirebaseIdToken(idToken) {
     throw err;
   }
 }
-

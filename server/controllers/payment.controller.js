@@ -2,6 +2,7 @@ import crypto from "crypto";
 import Payment from "../models/payment.model.js";
 import razorpay from "../services/razorpay.service.js";
 import User from "../models/user.model.js";
+import CreditLedgerService from "../services/creditLedger.service.js";
 
 /**
  * Payment & Billing Controller
@@ -188,28 +189,42 @@ export const verifyPayment = async (req, res) => {
 
     // Replay/idempotency protection: if not modified, payment was already paid
     if (!updatedPayment) {
-      const currentUser = await User.findById(req.userId);
+      const currentUser = await User.findById(req.userId).select("-__v");
+      const userObj = currentUser?.toObject ? currentUser.toObject() : { ...currentUser };
+      const planName = getPlanDisplayName(existingPayment.planId);
+      userObj.currentPlan = planName;
+      userObj.plan = planName;
+
       return res.status(200).json({
         success: true,
         message: "Payment already verified.",
-        user: currentUser,
+        user: userObj,
         alreadyProcessed: true,
       });
     }
 
-    // Only the single atomic winner increments user credits
-    const updatedUser = await User.findByIdAndUpdate(
-      updatedPayment.userId,
-      {
-        $inc: { credits: updatedPayment.credits },
-      },
-      { new: true }
-    );
+    // Only the single atomic winner increments user credits and records ledger
+    await CreditLedgerService.add({
+      userId: updatedPayment.userId,
+      amount: updatedPayment.credits,
+      type: "topup",
+      feature: "payment",
+      referenceId: updatedPayment._id,
+      referenceModel: "Payment",
+      description: `Payment Plan Top-up (${getPlanDisplayName(updatedPayment.planId)})`,
+      idempotencyKey: safeOrderId,
+    });
+
+    const updatedUser = await User.findById(updatedPayment.userId).select("-__v");
+    const userObj = updatedUser?.toObject ? updatedUser.toObject() : { ...updatedUser };
+    const planName = getPlanDisplayName(updatedPayment.planId);
+    userObj.currentPlan = planName;
+    userObj.plan = planName;
 
     return res.status(200).json({
       success: true,
       message: "Payment verified and credits added",
-      user: updatedUser,
+      user: userObj,
     });
   } catch (error) {
     console.error("[Payment] Verification error:", error.message);
@@ -222,28 +237,30 @@ export const verifyPayment = async (req, res) => {
 
 /**
  * Razorpay Webhook Handler for asynchronous server-to-server confirmation.
- * Verifies signature using RAZORPAY_WEBHOOK_SECRET (or RAZORPAY_KEY_SECRET fallback)
+ * Verifies the raw request body using RAZORPAY_WEBHOOK_SECRET
  * and atomically credits user accounts for order.paid and payment.captured events.
  */
 export const handleRazorpayWebhook = async (req, res) => {
   try {
     const signature = req.headers["x-razorpay-signature"];
-    const webhookSecret =
-      process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET;
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
 
     if (!webhookSecret) {
       console.warn("[Razorpay Webhook] Webhook secret not configured.");
-      return res.status(500).json({ success: false, message: "Webhook secret not configured." });
+      return res.status(401).json({ success: false, message: "Webhook unavailable." });
     }
 
     if (!signature) {
       return res.status(400).json({ success: false, message: "Missing webhook signature." });
     }
 
-    const payload = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+    if (!Buffer.isBuffer(req.body)) {
+      return res.status(400).json({ success: false, message: "Invalid webhook payload." });
+    }
+
     const expectedSignature = crypto
       .createHmac("sha256", webhookSecret)
-      .update(payload)
+      .update(req.body)
       .digest("hex");
 
     const expectedBuf = Buffer.from(expectedSignature, "utf8");
@@ -256,7 +273,12 @@ export const handleRazorpayWebhook = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid webhook signature." });
     }
 
-    const event = typeof req.body === "object" ? req.body : JSON.parse(req.body);
+    let event;
+    try {
+      event = JSON.parse(req.body.toString("utf8"));
+    } catch {
+      return res.status(400).json({ success: false, message: "Invalid webhook payload." });
+    }
     const eventType = event.event;
 
     if (eventType === "payment.captured" || eventType === "order.paid") {

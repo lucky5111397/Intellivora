@@ -34,7 +34,7 @@ export const extractResumeText = async (req, res, next) => {
   try {
     const { uploadId } = req.body;
 
-    const extractedText = await extractTextFromPdf(uploadId);
+    const extractedText = await extractTextFromPdf(uploadId, req.userId);
 
     return res.status(200).json({
       success: true,

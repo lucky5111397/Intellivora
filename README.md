@@ -1,532 +1,917 @@
+<div align="center">
+
+<img src="docs/screenshots/Home-Live-Desktop.png" alt="Intellivora home page on desktop" width="90%">
+
 # Intellivora
 
-> Autonomous Career Preparation, Recruitment Simulation, and Assessment Platform
+### Interview, assessment, coding, and career-preparation workspaces
 
-[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
-[![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A518-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![Express](https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white)](https://expressjs.com/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Tests](https://img.shields.io/badge/Tests-266%20Passing-22C55E?logo=node.js&logoColor=white)](https://nodejs.org/)
+<img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React 19">
+<img src="https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite 8">
+<img src="https://img.shields.io/badge/Express-5-000000?style=flat-square&logo=express&logoColor=white" alt="Express 5">
+<img src="https://img.shields.io/badge/MongoDB-Mongoose-47A248?style=flat-square&logo=mongodb&logoColor=white" alt="MongoDB with Mongoose">
+<img src="https://img.shields.io/badge/Firebase-Auth-FFCA28?style=flat-square&logo=firebase&logoColor=black" alt="Firebase Authentication">
+<img src="https://img.shields.io/badge/Gemini%20%2F%20OpenRouter-AI-8E75B2?style=flat-square" alt="Google Gemini and OpenRouter AI">
 
-Intellivora is a full-stack career preparation and recruitment simulation platform built on the MERN stack. It unifies essential hiring evaluation stages into a cohesive workflow: AI-driven mock technical interviews with speech interaction, timed multi-category aptitude assessments, ATS resume compatibility analysis, and multi-agent group discussions. Candidates receive automated evaluations, multi-pillar performance rubrics, and unified progress analytics to systematically prepare for modern recruitment funnels.
+[Overview](#-overview) · [Quick start](#-quick-start) · [Features](#-features) · [Architecture](#-architecture) · [API](#-api-overview)
 
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Product Showcase](#product-showcase)
-- [Core Features](#core-features)
-  - [1. AI Mock Technical Interviews](#1-ai-mock-technical-interviews)
-  - [2. Multi-Agent Group Discussion Simulator](#2-multi-agent-group-discussion-simulator)
-  - [3. Timed Aptitude Assessments](#3-timed-aptitude-assessments)
-  - [4. ATS Resume Intelligence](#4-ats-resume-intelligence)
-  - [5. Progress & Learning Analytics](#5-progress--learning-analytics)
-  - [6. Authentication & User Profile](#6-authentication--user-profile)
-  - [7. Credit Economy & Billing](#7-credit-economy--billing)
-  - [8. Administrative Operations](#8-administrative-operations)
-  - [9. Role-Specific Preparation Tracks](#9-role-specific-preparation-tracks)
-- [System Architecture](#system-architecture)
-- [Technology Stack](#technology-stack)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Environment Configuration](#environment-configuration)
-  - [Running Locally](#running-locally)
-- [Environment Variables](#environment-variables)
-- [Testing & Quality Assurance](#testing--quality-assurance)
-- [Code Quality & Security](#code-quality--security)
-- [License](#license)
+</div>
 
 ---
 
-## Overview
+## 📚 Contents
 
-Modern technical recruitment funnels are rigorous, multi-staged, and fragmented:
-
-1. **Screening Gatekeepers**: Applicant tracking systems screen and rank resumes against target role benchmarks before recruiter review.
-2. **Standardized Filtering**: Timed numerical, verbal, and logical aptitude tests eliminate candidates early in the pipeline.
-3. **Behavioral & Leadership Trials**: Group discussions assess interpersonal communication, floor-share balance, and argument synthesis under pressure.
-4. **Technical Panels**: Conversational technical interviews challenge domain knowledge, architectural reasoning, and communication cadence.
-
-Candidates typically prepare across disparate websites, static question banks, and disconnected tools. **Intellivora unites the entire recruitment journey into a single platform.** Candidates experience continuous evaluation, unified historical analytics, authoritative credit management, and structured feedback across every stage of preparation.
-
----
-
-## Product Showcase
-
-### Product Overview
-![Home & Candidate Workspace](docs/screenshots/HomePage.png)
-*Unified candidate workspace featuring dark telemetry aesthetic, multi-module overview cards, preparation methodology journey, and dual guest/user navigation.*
+- [Overview](#-overview)
+- [Quick start](#-quick-start)
+- [Features](#-features)
+- [Showcase](#-showcase)
+- [Technology stack](#-technology-stack)
+- [Architecture](#-architecture)
+- [Project structure](#-project-structure)
+- [Scripts and testing](#-scripts-and-testing)
+- [API overview](#-api-overview)
+- [Authentication and authorization](#-authentication--authorization)
+- [Security](#-security)
 
 ---
 
-### AI Mock Interview
+## 🔎 Overview
 
-| Interview Chamber | Evaluation Scorecard |
-| :---: | :---: |
-| ![Interactive AI Interview Chamber](docs/screenshots/AI-Interview.png) | ![Interview Diagnostic Scorecard](docs/screenshots/Interview-Scorecard.png) |
-| *Conversational AI avatar, real-time speech-to-text transcription, speech synthesis audio, question timer, and dynamic prompt delivery.* | *Multi-dimensional rubric scoring (Confidence, Communication, Correctness), question-by-question score trajectory, and actionable evaluator feedback.* |
+Intellivora is a web platform for practicing technical interviews, assessments,
+coding and SQL exercises, group discussions, resume analysis, and career
+preparation workflows.
 
----
+The React/Vite client brings these workflows into one authenticated workspace.
+The Express/Mongoose server handles authentication, validation, domain services,
+persistence, AI integrations, payments, and administrative operations.
 
-### Aptitude Diagnostic
+### At a glance
 
-| Timed Assessment Screen | Solution & Accuracy Review |
-| :---: | :---: |
-| ![Timed Aptitude Assessment Screen](docs/screenshots/Aptitude.png) | ![Aptitude Solution & Accuracy Review](docs/screenshots/Aptitude-Solution-Review.png) |
-| *Standardized testing environment, multi-category question banks, persistent session recovery across browser refreshes, and countdown timer.* | *Post-test diagnostic breakdown, net candidate score, accuracy percentage, time tracking, and step-by-step mathematical derivations.* |
+| Area | Included |
+| --- | --- |
+| Practice modules | Interview, Aptitude, Group Discussion, DSA, Quiz, SQL, and System Design |
+| Career workflows | Resume analysis, JD Analyzer, Career Roadmap, Company Preparation, and Job Tracker |
+| Assessment workflows | Mock Placement, interview reports, aptitude results, and Group Discussion analysis |
+| Operations | Mistake Bank, credits, Razorpay payments, unified history, progress analytics, and admin pages |
+| Server route groups | 19 mounted groups: health plus 18 `/api` route prefixes |
 
----
+<details>
+<summary><strong>How it works</strong></summary>
 
-### Group Discussion Simulator
+1. A visitor opens the Home page or `/auth`.
+2. Firebase handles Google or phone sign-in.
+3. The client hydrates the account through `GET /api/user/current-user`.
+4. `ProtectedRoute` allows authenticated users into preparation, assessment,
+   profile, career, and credit workflows.
+5. The client sends requests through the shared Axios API client.
+6. Express applies CORS, security headers, rate limiting, authentication,
+   authorization, and configured Zod validation.
+7. Controllers call domain services and Mongoose models, with external calls to
+   Firebase, Gemini/OpenRouter, Razorpay, or MongoDB where required.
+8. The client renders the relevant workspace, result, report, progress, or
+   history view.
 
-| Multi-Agent GD Chamber | 4-Pillar Debrief & Telemetry |
-| :---: | :---: |
-| ![Multi-Agent GD Chamber](docs/screenshots/AI-Group-Discussion.png) | ![GD Debrief & 4-Pillar Telemetry](docs/screenshots/GD-Debrief-Radar.png) |
-| *5-participant topology (Candidate, Central Orchestrator, 3 distinct AI peers), live floor-share telemetry metering, and speech interruption handling.* | *4-pillar competency matrix (Articulation, Leadership, Active Listening, Critical Thinking), floor-share metrics, and executive evaluator synthesis.* |
+</details>
 
----
-
-### Resume / ATS Compatibility
-![ATS Analysis & Compatibility Report](docs/screenshots/ATS-Score.png)
-*In-memory PDF text extraction, role-calibrated ATS compatibility scoring, keyword gap identification, interview readiness score, and structured strengths/weaknesses breakdown.*
-
----
-
-### Progress & Long-Term Analytics
-![Unified Progress Dashboard](docs/screenshots/Progress-Analytics.png)
-*Unified longitudinal tracking across all preparation modules, overall trajectory scoring, technical score curves, aptitude accuracy trends, and module distribution.*
-
----
-
-### Administrative Operations
-![Admin Operations Hub](docs/screenshots/Admin-Operations-Hub.png)
-*Authoritative administrative console displaying platform-wide telemetry, user registration volumes, revenue reconciliation, module activity share, and user management directory.*
+<p align="right"><a href="#intellivora">Back to top</a></p>
 
 ---
 
-## Core Features
-
-### 1. AI Mock Technical Interviews
-- **Role & Experience Calibration**: Configurable parameters for target job roles (Frontend, Backend, Full Stack, DevOps, Distributed Systems) and experience brackets (Fresher, Intermediate, Senior).
-- **Target Company Calibration**: Custom weighting calibrated to specific company profiles (e.g., Google, Amazon, Meta) prioritizing algorithms, system design, or behavioral competencies.
-- **Dynamic Question Synthesis**: AI Gateway generates structured question tiers (theoretical fundamentals, practical problem-solving, architectural design) calibrated to resume skills.
-- **Interactive Chamber**: Live browser microphone input via Web Speech API, synchronized AI voice avatar with video playback, real-time question timers, and optional camera diagnostics.
-- **Answer Evaluation**: Instant LLM scoring on clarity, technical correctness, and communication structure.
-- **Granular Evaluation Scorecards**: Immediate post-interview assessment evaluating Confidence, Communication Cadence, and Technical Correctness with actionable feedback and downloadable PDF reports.
-- **Session Recovery**: Persistent session tracking via `sessionStorage` and backend endpoint `GET /api/interview/:id` prevents loss of active sessions during browser refreshes.
-
-### 2. Multi-Agent Group Discussion Simulator
-- **Multi-Agent Deliberation**: Simulates a 5-participant discussion chamber comprising the candidate, an impartial Central Orchestrator, and 3 distinct AI peers:
-  - **Agent 1 (Analytical)**: Empirical, data-driven, statistical arguments.
-  - **Agent 2 (Pragmatic)**: Practical, execution-oriented, implementation perspective.
-  - **Agent 3 (Visionary & Ethical)**: Human-centric, societal impact, forward-looking perspective.
-- **Real-Time Audio & Floor-Share Telemetry**: Hands-free Web Speech API input, priority-based interruption handling (candidate speech immediately suspends AI peers), and speaking floor-share metering.
-- **4-Pillar Evaluation Rubric**: Scores candidate performance across:
-  1. *Articulation & Clarity*
-  2. *Leadership & Initiative*
-  3. *Active Listening & Responsiveness*
-  4. *Critical Thinking & Depth*
-- **Refund Safeguard**: If a session is aborted with 0 candidate contributions, credits are automatically refunded to preserve user balance.
-
-### 3. Timed Aptitude Assessments
-- **Curated Category Banks**: Comprehensive assessment banks covering Quantitative Aptitude, Logical Reasoning, Verbal Ability, and Core Technical fundamentals.
-- **Authoritative Timing & Navigation**: Server-synchronized countdown timer, question palette navigation with review flagging, and automatic submission triggers upon timer expiration.
-- **Resilient State Persistence**: Local storage cache persistence (`recoverActiveTest`) prevents progress loss across accidental page reloads.
-- **Step-by-Step Solution Review**: Question-by-question review displaying candidate selections, correct answers, negative marking penalties, and mathematical derivations.
-- **Category Mastery Tracking**: Historical accuracy trends aggregated by sub-discipline (e.g., Percentages, Ratio & Proportion, Averages).
-
-### 4. ATS Resume Intelligence
-- **In-Memory PDF Extraction**: Extracts structured text from PDF resumes on the server without storing raw candidate document files in permanent storage.
-- **Role-Calibrated Compatibility Scoring**: AI benchmark matching against candidate target roles, computing overall ATS score, resume readability, and interview readiness.
-- **Keyword & Skill Gap Diagnostics**: Identifies missing core technologies, structural deficiencies, and concrete phrasing improvements.
-- **Actionable Bullet Recommendations**: Sentence-by-sentence optimization suggestions to improve ATS parsing accuracy.
-
-### 5. Progress & Learning Analytics
-- **Unified Longitudinal Dashboard**: Aggregates performance data across all 4 training pillars (Interviews, Aptitude, Group Discussions, Resume Audits).
-- **Trajectory Curves**: Chronological score progression graphs illustrating improvement over time.
-- **Readiness Index**: Benchmark indicators estimating candidate readiness for live recruitment drives.
-- **Target Company Alignment**: Real-time recalibration of performance scores based on the selected company target profile.
-
-### 6. Authentication & User Profile
-- **Dual-Layer Authentication**: Firebase client authentication (Email/Password and Google OAuth) synchronized with backend Mongoose `User` models via signed JWT cookies.
-- **Session Management**: Secure HTTP-only cookies with SameSite protection and automatic session verification on application bootstrap.
-- **Password Reset Flow**: Email-based credential recovery powered by Firebase Authentication.
-- **User Profile Management**: Configurable candidate details including display name, target role, experience level, and target company preferences.
-
-### 7. Credit Economy & Billing
-- **Transparent Credit Accounting**:
-  - **Welcome Bonus**: 100 introductory credits on registration.
-  - **Mock Interviews**: 100 credits (Short), 150 credits (Standard), 250 credits (Full Assessment).
-  - **ATS Resume Analysis**: 200 credits per complete audit.
-  - **Group Discussion Simulator**: 150 credits per 10-minute session.
-  - **Aptitude Assessments**: Free for registered candidates.
-- **Server-Authoritative Pricing**:
-  - **Pro**: ₹199 for 500 credits.
-  - **Ultra**: ₹499 for 1,500 credits.
-- **Cryptographic Payment Verification**: Razorpay payment orders generated on the backend with signature verification using HMAC SHA-256 via timing-safe comparison (`crypto.timingSafeEqual`).
-
-### 8. Administrative Operations
-- **Platform Telemetry Hub**: Overview of registered users, platform volume, completed sessions, and financial reconciliation.
-- **User Moderation Directory**: Account status inspection, role management (candidate vs. admin), and manual credit adjustments.
-- **Session Inspection**: Audit logs for interviews, aptitude attempts, GD deliberations, and payment histories.
-- **Newsletter Subscription Manager**: Subscriber list inspection, search, and subscription status moderation.
-
-### 9. Role-Specific Preparation Tracks
-- Tailored curriculum landing pages and preparation advice for:
-  - `/use-cases/software-engineers` (Data structures, algorithms, system design)
-  - `/use-cases/data-analysts` (SQL, statistics, data visualization, business problem solving)
-  - `/use-cases/product-business` (Product sense, metrics, stakeholder management)
-  - `/use-cases/campus-placements` (Aptitude fundamentals, GD confidence, foundational tech)
-  - `/use-cases/consultants` (Case interviews, structured communication, mental math)
-
----
-
-## System Architecture
-
-```mermaid
-flowchart TD
-    subgraph Client["Client Application (React 19 + Vite 8)"]
-        UI["User Interface & React Router v7"]
-        AuthCtx["Auth State & ProtectedRoute Guard"]
-        AudioEngine["Web Speech STT / TTS Audio Engine"]
-        AptCtx["Aptitude Context & Session Recovery"]
-        GDCtx["GD Context & State Reducer"]
-        AdminGuard["AdminProtectedRoute Guard"]
-    end
-
-    subgraph Server["Backend API Server (Express 5 + Node.js)"]
-        API["REST API Router (/api/*)"]
-        SecHeaders["Security Headers Middleware"]
-        RateLimiter["Sliding-Window Rate Limiters"]
-        AuthMW["isAuth (JWT in HTTP-Only Cookie)"]
-        AdminMW["isAdmin (Role Authorization Guard)"]
-        ErrMW["Centralized Error Handler"]
-
-        subgraph Routers["Router Layer (10 Routers)"]
-            rAuth["/api/auth"]
-            rUser["/api/user"]
-            rInt["/api/interview"]
-            rGD["/api/gd"]
-            rApt["/api/aptitude"]
-            rRes["/api/resume"]
-            rHist["/api/history"]
-            rPay["/api/payment"]
-            rAdmin["/api/admin"]
-            rNews["/api/newsletter"]
-        end
-
-        subgraph Services["Domain Services"]
-            GDOpt["gdOrchestrator.service"]
-            GDEval["gdEvaluation.service"]
-            AptSvc["aptitude.service"]
-            PDFSvc["pdfExtractor.service"]
-            AIGateway["Centralized AI Gateway"]
-            RazorpaySvc["razorpay.service"]
-        end
-    end
-
-    subgraph External["External Services & Datastores"]
-        Mongo[("MongoDB Atlas Database")]
-        Firebase["Firebase Authentication"]
-        OpenRouter["OpenRouter (Llama 3.3, Gemma 3)"]
-        Gemini["Google Gemini (gemini-2.5-flash-lite)"]
-        Razorpay["Razorpay Payment Gateway"]
-    end
-
-    UI --> API
-    AudioEngine --> UI
-    API --> SecHeaders
-    SecHeaders --> RateLimiter
-    RateLimiter --> AuthMW
-    AuthMW --> Routers
-    AdminGuard --> AdminMW
-    AdminMW --> rAdmin
-    Routers --> Services
-    Routers --> ErrMW
-
-    rAuth --> Firebase
-    Routers --> Mongo
-    rRes --> PDFSvc
-    rGD --> GDOpt
-    rGD --> GDEval
-    rApt --> AptSvc
-    Services --> AIGateway
-    AIGateway --> OpenRouter
-    AIGateway --> Gemini
-    rPay --> RazorpaySvc
-    RazorpaySvc --> Razorpay
-```
-
----
-
-## Technology Stack
-
-| Domain | Technology | Description |
-| :--- | :--- | :--- |
-| **Frontend Framework** | React 19, Vite 8 | Component rendering and fast HMR bundling |
-| **Routing & Protection** | React Router v7 | Client routing with `ProtectedRoute` and `AdminProtectedRoute` |
-| **Styling & Design** | Tailwind CSS v4 | Dark telemetry design system, responsive glassmorphism |
-| **State Management** | Redux Toolkit, React Context | User session slice and module-level state reducers |
-| **Animation & Feedback** | Motion (Framer Motion v12), Sonner | Interactive transitions, animated progress meters, toasts |
-| **Data Visualization** | Recharts, Circular Progressbar | Radar charts, trajectory spline curves, skill meters |
-| **Media & Audio** | Web Speech API, MediaStream API | SpeechSynthesis voice output, SpeechRecognition STT |
-| **Document Processing** | jsPDF, jspdf-autotable, PDF.js | Client scorecard PDF generation and server PDF parsing |
-| **Backend Framework** | Node.js (ESM), Express 5 | RESTful API service with modular routing |
-| **Database & ODM** | MongoDB Atlas, Mongoose 9 | Document persistence, compound indexing, atomic operations |
-| **Authentication** | JWT (HTTP-Only Cookie), Firebase | Dual-layer auth: Firebase client provider and secure JWT |
-| **AI Orchestration** | `@google/genai`, OpenRouter API | Centralized AI Gateway with circuit breaker and fallbacks |
-| **Billing & Payments** | Razorpay Node SDK, Node Crypto | Server-authoritative order creation and HMAC verification |
-| **Testing & Quality** | `node:test`, `oxlint` | Zero-dependency native Node test runner and static linter |
-
----
-
-## Project Structure
-
-```
-Intellivora/
-├── client/                          # Frontend Single Page Application (Vite + React)
-│   ├── src/
-│   │   ├── admin/                   # Administrative module
-│   │   │   ├── components/          # Admin navigation and table components
-│   │   │   ├── pages/               # AdminDashboard, AdminUsers, AdminInterviews, etc.
-│   │   │   └── adminApi.js          # Axios client for administrative endpoints
-│   │   ├── aptitude/                # Aptitude module
-│   │   │   ├── context/             # Aptitude state reducer and context provider
-│   │   │   ├── data/                # Question bank repositories
-│   │   │   ├── pages/               # AptitudeDashboard, TopicSelection, TestSetup, etc.
-│   │   │   └── aptitudeApi.js       # Axios client for aptitude endpoints
-│   │   ├── components/              # Shared components (Navbar, Footer, ProtectedRoute, etc.)
-│   │   │   ├── layout/              # AppLayout shell and responsive containers
-│   │   │   ├── results/             # ScoreSummary, MetricGrid, AIInsight, ResultActions
-│   │   │   └── ui/                  # Button, Badge, Skeleton, ErrorState primitives
-│   │   ├── config/                  # Configuration (pricingPlans, companyProfiles)
-│   │   ├── gd/                      # AI Group Discussion module
-│   │   │   ├── audio/               # Web Speech audio profiles, speech queue manager
-│   │   │   ├── context/             # GD session state reducer and provider
-│   │   │   └── pages/               # GDOverview, GDSetup, GDLobby, GDRoom, GDAnalysis
-│   │   ├── pages/                   # Primary application routes
-│   │   │   ├── home.jsx             # Candidate workspace landing page
-│   │   │   ├── Auth.jsx             # Sign in, register, and password recovery
-│   │   │   ├── InterviewPage.jsx    # 3-step interview coordinator with recovery
-│   │   │   ├── InterviewReport.jsx  # Deep-linked interview evaluation report
-│   │   │   ├── InterviewHistory.jsx # Unified activity ledger
-│   │   │   ├── Progress.jsx         # Longitudinal analytics dashboard
-│   │   │   ├── Pricing.jsx          # Credit purchase and Razorpay checkout
-│   │   │   ├── Resume.jsx           # ATS resume upload and score inspection
-│   │   │   ├── static/              # Privacy, Terms, Security, About, Careers, etc.
-│   │   │   └── use-cases/           # Role-specific landing pages
-│   │   ├── redux/                   # Redux Toolkit userSlice and global store
-│   │   ├── utils/                   # PDF generators, progress API client, Firebase config
-│   │   ├── App.jsx                  # Route definitions and session hydration
-│   │   ├── index.css                # Tailwind utility layers and design tokens
-│   │   └── main.jsx                 # React root bootstrap with Redux Provider
-│   ├── tests/                       # Client test suite (103 tests)
-│   ├── .env.example                 # Frontend environment template
-│   └── package.json                 # Client dependencies and scripts
-│
-├── server/                          # Backend REST API Server (Express 5 + Node.js)
-│   ├── config/                      # Database connection and company profiles
-│   ├── controllers/                 # REST endpoint request controllers (10 controllers)
-│   ├── middlewares/                 # Middleware (isAuth, isAdmin, rateLimiter, securityHeaders)
-│   ├── models/                      # Mongoose data schemas (9 models)
-│   ├── Routes/                      # Express route declarations (10 routers)
-│   ├── services/                    # AI Gateway, GD orchestrator, PDF parser, Razorpay
-│   ├── tests/                       # Server test suite (163 tests)
-│   ├── index.js                     # Express bootstrap, CORS, middleware, and listen
-│   ├── .env.example                 # Server environment template
-│   └── package.json                 # Server dependencies and scripts
-│
-├── docs/                            # Documentation assets
-│   └── screenshots/                 # 10 verified product screenshots
-├── .gitignore                       # Git exclusions
-└── README.md                        # Project documentation
-```
-
----
-
-## Getting Started
+## 📦 Quick start
 
 ### Prerequisites
-- **Node.js**: `v18.0.0` or higher (`node -v`)
-- **npm**: `v9.0.0` or higher (`npm -v`)
-- **MongoDB**: Local MongoDB instance or MongoDB Atlas cluster connection string
-- **Google Gemini API Key**: Acquired via Google AI Studio
-- **OpenRouter API Key**: (Optional but recommended for full AI fallback cascade)
-- **Razorpay Account**: Test mode Key ID and Secret for payment simulation
-- **Firebase Project**: Web app credentials for authentication
 
-### Environment Configuration
+You need Node.js and npm, a MongoDB connection configured through
+`MONGODB_URL`, a Firebase project, a Gemini and/or OpenRouter API key, and
+Razorpay keys if you use payment flows.
 
-1. **Configure Server Environment**:
-   ```bash
-   cp server/.env.example server/.env
-   ```
-   Edit `server/.env`:
-   ```env
-   PORT=8000
-   NODE_ENV=development
-   CLIENT_URL=http://localhost:5173
-   MONGODB_URL=your_mongodb_connection_string
-   JWT_SECRET=your_jwt_secret_key_minimum_32_characters
-   OPENROUTER_API_KEY=your_openrouter_api_key
-   GEMINI_API_KEY=your_gemini_api_key
-   RAZORPAY_KEY_ID=rzp_test_your_key_id
-   RAZORPAY_KEY_SECRET=your_razorpay_key_secret
-   RAZORPAY_WEBHOOK_SECRET=your_razorpay_webhook_secret
-   ADMIN_EMAIL=admin@example.com
-   FIREBASE_PROJECT_ID=your-firebase-project-id
-   ```
+### Install
 
-2. **Configure Client Environment**:
-   ```bash
-   cp client/.env.example client/.env
-   ```
-   Edit `client/.env`:
-   ```env
-   VITE_SERVER_URL=http://localhost:8000
-   VITE_FIREBASE_APIKEY=your_firebase_api_key
-   VITE_FIREBASE_AUTH_DOMAIN=your-app.firebaseapp.com
-   VITE_FIREBASE_PROJECT_ID=your-firebase-project-id
-   VITE_FIREBASE_STORAGE_BUCKET=your-app.firebasestorage.app
-   VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-   VITE_FIREBASE_APP_ID=your_firebase_app_id
-   VITE_RAZORPAY_KEY_ID=rzp_test_your_key_id
-   VITE_ADMIN_EMAIL=admin@example.com
-   ```
-
-### Running Locally
-
-1. **Install Dependencies**:
-   ```bash
-   # Install server dependencies
-   cd server && npm install
-
-   # Install client dependencies
-   cd ../client && npm install
-   ```
-
-2. **Launch Backend Service**:
-   ```bash
-   cd server
-   npm run dev
-   ```
-   *Express server starts listening on `http://localhost:8000`*
-
-3. **Launch Frontend Service**:
-   ```bash
-   cd client
-   npm run dev
-   ```
-   *Vite development server starts on `http://localhost:5173`*
-
----
-
-## Environment Variables
-
-### Backend (`server/.env`)
-
-| Variable | Purpose | Required |
-| :--- | :--- | :---: |
-| `PORT` | Port number on which Express listens (default: 8000) | No |
-| `NODE_ENV` | Runtime environment (`development` or `production`) | Yes |
-| `CLIENT_URL` | Allowed client origin for CORS credentials | Yes |
-| `MONGODB_URL` | MongoDB connection URI string | Yes |
-| `JWT_SECRET` | Secret key for signing and verifying session JWTs | Yes |
-| `OPENROUTER_API_KEY` | API key for OpenRouter AI models | Optional |
-| `GEMINI_API_KEY` | API key for Google Gemini completion models | Yes |
-| `RAZORPAY_KEY_ID` | Razorpay public key ID for payment creation | Yes |
-| `RAZORPAY_KEY_SECRET` | Razorpay secret key for signature verification | Yes |
-| `RAZORPAY_WEBHOOK_SECRET` | Secret for verifying incoming Razorpay webhooks | Optional |
-| `ADMIN_EMAIL` | Email address authorized for `/admin` access | Yes |
-| `FIREBASE_PROJECT_ID` | Firebase Project ID for token audience validation | Optional |
-
-### Frontend (`client/.env`)
-
-| Variable | Purpose | Required |
-| :--- | :--- | :---: |
-| `VITE_SERVER_URL` | Base URL of the backend Express API | Yes |
-| `VITE_FIREBASE_APIKEY` | Firebase Web API key | Yes |
-| `VITE_FIREBASE_AUTH_DOMAIN` | Firebase Authentication domain | Yes |
-| `VITE_FIREBASE_PROJECT_ID` | Firebase project identifier | Yes |
-| `VITE_FIREBASE_STORAGE_BUCKET` | Firebase storage bucket domain | Yes |
-| `VITE_FIREBASE_MESSAGING_SENDER_ID` | Firebase Cloud Messaging sender ID | Yes |
-| `VITE_FIREBASE_APP_ID` | Firebase Web application identifier | Yes |
-| `VITE_RAZORPAY_KEY_ID` | Razorpay key ID for client checkout initialization | Yes |
-| `VITE_ADMIN_EMAIL` | Controls UI visibility of the administrative console | Yes |
-
----
-
-## Testing & Quality Assurance
-
-Intellivora employs the Node.js native test runner (`node:test`) for zero-dependency test execution across both backend and frontend layers.
+From the repository root:
 
 ```bash
-# Run client test suite (103 tests)
-cd client && node --test tests/*.test.js
-
-# Run client linter (0 errors)
-cd client && npm run lint
-
-# Run client production build verification
-cd client && npm run build
-
-# Run server test suite (163 tests)
-cd server && node --test tests/*.test.js
-
-# Verify server syntax across all files
-cd server && node -c index.js
+npm --prefix client install
+npm --prefix server install
 ```
 
-### Verified Test Suite Breakdown
+### Environment files
 
-```
-================================================================================
-TEST EXECUTION SUMMARY
-================================================================================
-Client Test Suites:  39 passed (103 tests, 0 failures)
-Server Test Suites:  55 passed (163 tests, 0 failures)
---------------------------------------------------------------------------------
-TOTAL AUTOMATED TESTS: 266 PASSED / 266 TOTAL (100% PASS RATE)
-================================================================================
+Both `client/.env.example` and `server/.env.example` exist.
+
+**macOS, Linux, or Git Bash**
+
+```bash
+cp client/.env.example client/.env
+cp server/.env.example server/.env
 ```
 
-- **Client Tests (103 tests)**:
-  - Navigation, route matching, auth hydration, and `ProtectedRoute` behavior
-  - GD audio profiles, participant topology, and floor-share calculations
-  - Form validation, error normalization, and state reducer lifecycles
-  - Target company profiles, question preview models, and progress dashboard metrics
-- **Server Tests (163 tests)**:
-  - AI Gateway error categorization, circuit breaker, and cascade fallbacks
-  - GD session creation, turn submission, and credit refund logic
-  - Multi-agent speaker selection algorithm and pacing controls
-  - Mongoose schema constraints for `User`, `Interview`, `GDSession`, `ResumeAnalysis`, `AptitudeAttempt`, `Payment`, and `NewsletterSubscriber`
-  - PDF header magic byte verification, sliding-window rate limiters, and error sanitization
-  - Admin metrics aggregation, user moderation, and newsletter deduplication
+**Windows Command Prompt**
+
+```bat
+copy client\.env.example client\.env
+copy server\.env.example server\.env
+```
+
+<details>
+<summary>Environment variables</summary>
+
+| Variable | Used in | Purpose |
+| --- | --- | --- |
+| `VITE_SERVER_URL` | Client API client, `App.jsx` | Server API origin |
+| `VITE_FIREBASE_APIKEY` | Client Firebase config | Firebase client configuration |
+| `VITE_FIREBASE_AUTH_DOMAIN` | Client Firebase config | Firebase client configuration |
+| `VITE_FIREBASE_PROJECT_ID` | Client Firebase config | Firebase client configuration |
+| `VITE_FIREBASE_STORAGE_BUCKET` | Client Firebase config | Firebase client configuration |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | Client Firebase config | Firebase client configuration |
+| `VITE_FIREBASE_APP_ID` | Client Firebase config | Firebase client configuration |
+| `VITE_RAZORPAY_KEY_ID` | Client payment UI | Razorpay client checkout key |
+| `VITE_ADMIN_EMAIL` | `AdminProtectedRoute` | Client-side admin route check |
+| `PORT` | `server/index.js` | Express listening port |
+| `NODE_ENV` | Server middleware and auth services | Runtime environment |
+| `CLIENT_URL` | `server/index.js` | Additional allowed CORS origin |
+| `MONGODB_URL` | Database connection config | MongoDB connection string |
+| `JWT_SECRET` | Auth controller and `isAuth` | JWT signing and verification secret |
+| `OPENROUTER_API_KEY` | OpenRouter service | OpenRouter credential |
+| `OPENROUTER_FREE_MODELS` | OpenRouter service | Optional comma-separated model list |
+| `GEMINI_API_KEY` | Gemini service | Gemini credential |
+| `GEMINI_MODEL` | Gemini and AI task profiles | Default Gemini model |
+| `GEMINI_FAST_MODEL` | AI task profiles | Fast-task Gemini model |
+| `GEMINI_EVAL_MODEL` | AI task profiles | Evaluation-task Gemini model |
+| `RAZORPAY_KEY_ID` | Razorpay service | Razorpay server key |
+| `RAZORPAY_KEY_SECRET` | Razorpay service | Razorpay server secret |
+| `RAZORPAY_WEBHOOK_SECRET` | Payment controller | Webhook verification secret |
+| `ADMIN_EMAIL` | `isAdmin` middleware | Server-side admin authorization email |
+| `FIREBASE_PROJECT_ID` | Firebase auth service | Optional token audience check |
+| `GD_CREDIT_COST` | Credits config | Optional Group Discussion credit cost |
+
+</details>
+
+### Run locally
+
+Run in two terminals from the repository root.
+
+**Terminal 1 — client**
+
+```bash
+npm --prefix client run dev
+```
+
+**Terminal 2 — server**
+
+```bash
+npm --prefix server run dev
+```
+
+Example URLs:
+
+- Client: `http://localhost:5173`
+- Server: `http://localhost:8000`
+
+<p align="right"><a href="#intellivora">Back to top</a></p>
 
 ---
 
-## Code Quality & Security
+## 🧩 Features
 
-- **HTTP-Only Cookie Sessions**: Authentication tokens (JWT) are issued with `HttpOnly`, `SameSite=Strict` (or `Lax` in development), and `Secure` attributes, safeguarding sessions against Cross-Site Scripting (XSS) extraction.
-- **Client UX Protection vs. Backend Authorization**: Frontend `<ProtectedRoute />` and `<AdminProtectedRoute />` handle UX redirection. The backend `isAuth` and `isAdmin` middlewares act as the authoritative security boundaries, validating tokens and roles independently on every request.
-- **Sliding-Window Rate Limiting**: All 10 backend routers are protected by in-house sliding-window rate limiters with specific burst capacities (e.g., auth: 20 req/15 min; AI operations: 60 req/15 min; newsletter: 5 req/hour).
-- **CodeQL Vulnerability Remediation**: Remediated 45 security findings identified during automated CodeQL audits:
-  - Strict type casting and input validation to prevent NoSQL injection
-  - Safe object handling to prevent prototype pollution
-  - Controlled hashed filenames to prevent path traversal
-  - Log sanitization to prevent log injection
-  - Linear-time regular expressions to prevent ReDoS
-- **Data Minimization on Resumes**: Candidate PDF resumes are processed in-memory on the server. Only structured analytical summaries (ATS score, keyword matches, improvements) are persisted. Raw resume files and unparsed text are not permanently retained.
-- **Timing-Safe Cryptographic Billing**: Razorpay signatures are verified using HMAC SHA-256 with timing-safe comparison via `crypto.timingSafeEqual` to prevent timing discrepancy attacks.
-- **Automated File Cleanup**: Uploaded files are processed within managed lifecycles with cleanup performed in `finally` blocks to remove temporary files across success and failure paths.
-- **CORS Allowlist**: Cross-Origin Resource Sharing is restricted to explicit origin allowlists (`http://localhost:5173`, `http://localhost:5174`, and configured `CLIENT_URL`).
+<table>
+<tr>
+<td width="33%" valign="top">
+
+### 🎤 Interview
+
+Generate questions, submit answers, finish interviews, upload a resume for
+interview preparation, and review reports, history, and replay sessions.
+
+`/interview` · `/history` · `/report/:id`
+
+<details>
+<summary>Details</summary>
+
+Interview requests include question generation, interview creation, answer
+submission, completion, report retrieval, listing, lookup, and deletion.
+Interview routes use the AI rate limiter and require authentication.
+
+</details>
+
+</td>
+<td width="33%" valign="top">
+
+### ⏰ Aptitude
+
+Browse categories and topics, configure a test, save answers, recover an active
+attempt, submit it, and review results and progress.
+
+`/aptitude`
+
+<details>
+<summary>Details</summary>
+
+The server supports categories, topics, progress, attempt creation, answer
+saving, active-attempt lookup, attempt listing, results, and deletion.
+
+</details>
+
+</td>
+<td width="33%" valign="top">
+
+### 💬 Group Discussion
+
+Move from overview and setup into a lobby and live room, then complete or abort
+a session and review its analysis.
+
+`/gd` · `/gd/setup` · `/gd/room/:id`
+
+<details>
+<summary>Details</summary>
+
+The Group Discussion API supports overview, session creation, lobby readiness,
+turn submission, completion, abortion, and session lookup. All routes require
+authentication and use the AI rate limiter.
+
+</details>
+
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
+
+### 💻 DSA
+
+Browse problems, run sample code, submit code, request AI hints, review
+submission history, and track coding progress.
+
+`/prepare/dsa` · `/prepare/dsa/:slug`
+
+<details>
+<summary>Details</summary>
+
+The server also exposes prototype code execution and supported-language lookup.
+DSA workspace requests are authenticated and validated where configured.
+
+</details>
+
+</td>
+<td width="33%" valign="top">
+
+### 📝 Quiz
+
+Browse quiz categories, start a quiz, submit it, open its result, and review
+quiz history.
+
+`/prepare/quiz` · `/prepare/quiz/screen/:attemptId`
+
+<details>
+<summary>Details</summary>
+
+Quiz routes include category lookup, start, submit, history, and result
+retrieval. Start and submit requests use request validation.
+
+</details>
+
+</td>
+<td width="33%" valign="top">
+
+### 💽 SQL
+
+Browse SQL problems, open a problem workspace, and execute SQL.
+
+`/prepare/sql` · `/prepare/sql/:slug`
+
+<details>
+<summary>Details</summary>
+
+SQL problem browsing and lookup are public route operations; SQL execution
+requires authentication and request validation.
+
+</details>
+
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
+
+### 🧱 System Design
+
+Browse system-design problems, open a workspace, save drafts, view attempts,
+and submit an evaluation.
+
+`/prepare/system-design` · `/prepare/system-design/:slug`
+
+<details>
+<summary>Details</summary>
+
+The server provides problem listing, problem lookup, authenticated attempt
+lookup, draft saving, and authenticated evaluation.
+
+</details>
+
+</td>
+<td width="33%" valign="top">
+
+### 📄 Resume & ATS
+
+Upload a resume PDF, extract its text, and analyze it for the resume workflow
+and interview preparation.
+
+`/resume`
+
+<details>
+<summary>Details</summary>
+
+Resume upload uses file handling and PDF validation middleware. The API exposes
+upload, extraction, and analysis operations.
+
+</details>
+
+</td>
+<td width="33%" valign="top">
+
+### 🧭 Career tools
+
+Analyze a job description, generate a Career Roadmap, update milestones, view
+Company Preparation, and manage applications in the Job Tracker.
+
+`/career/jd-analyzer` · `/career/roadmap` · `/career/job-tracker`
+
+<details>
+<summary>Details</summary>
+
+Career routes cover JD analysis, roadmap read/generation, milestone updates,
+job listing/creation/update/deletion, target companies, and company preparation.
+
+</details>
+
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
+
+### 🚀 Mock Placement
+
+Start a placement drive, return session state, submit rounds, list placement
+history, and review a placement report.
+
+`/assess/placement`
+
+<details>
+<summary>Details</summary>
+
+The client provides setup, chamber, and report pages. The server validates
+placement start, session parameters, and round submissions.
+
+</details>
+
+</td>
+<td width="33%" valign="top">
+
+### 🧠 Mistake Bank
+
+Collect mistakes across preparation modules, filter them, revise notes, update
+status, and track module statistics.
+
+`/prepare/mistakes`
+
+<details>
+<summary>Details</summary>
+
+Sources are `quiz`, `aptitude`, `dsa`, `sql`, `interview`, `system_design`,
+and `manual`. Statuses are `unresolved`, `reviewing`, and `mastered`.
+Re-recording the same question in the same module increments `attemptCount`;
+re-recording a mastered mistake returns it to `unresolved`.
+
+</details>
+
+</td>
+<td width="33%" valign="top">
+
+### 💳 Credits & Payments
+
+View credit history and use Razorpay order, verification, and webhook flows.
+
+`/credits` · `/pricing`
+
+<details>
+<summary>Details</summary>
+
+Order creation and payment verification require authentication. The webhook is
+public and uses the payment rate limiter. Group Discussion credit cost can be
+configured with `GD_CREDIT_COST`.
+
+</details>
+
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
+
+### 🔧 Admin
+
+Review users, analytics, newsletter subscribers, interviews, aptitude attempts,
+Group Discussion sessions, resume analyses, and payments.
+
+`/admin`
+
+<details>
+<summary>Details</summary>
+
+The client includes 13 administrative pages, including list and detail views.
+Server admin routes apply both `isAuth` and `isAdmin`; the configured admin
+email is `ADMIN_EMAIL` on the server and `VITE_ADMIN_EMAIL` on the client.
+
+</details>
+
+</td>
+<td width="33%" valign="top">
+
+### 👤 Profile & history
+
+Manage profile data, review unified history, and follow progress analytics across
+the platform.
+
+`/profile` · `/history` · `/progress`
+
+<details>
+<summary>Details</summary>
+
+The user API provides current-user hydration, profile reads and updates,
+profile lookup by ID, and credit transaction history. The history API provides
+unified history, progress analytics, and history-item deletion.
+
+</details>
+
+</td>
+<td width="33%" valign="top">
+
+### 🔐 Authentication
+
+Sign in with Google or phone authentication through Firebase and continue with
+an application JWT session.
+
+`/auth`
+
+<details>
+<summary>Details</summary>
+
+The client observes Firebase auth state. The server verifies Firebase ID tokens,
+then `isAuth` checks the JWT from the `token` HttpOnly cookie or an
+Authorization Bearer header.
+
+</details>
+
+</td>
+</tr>
+</table>
+
+<p align="right"><a href="#intellivora">Back to top</a></p>
 
 ---
 
-## License
+## 📸 Showcase
 
-This project is licensed under the [ISC License](LICENSE).
+### Interview and assessment
+
+<table>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/screenshots/AI-Interview.png" alt="AI Interview workspace" width="100%">
+<p align="center"><sub>Interview workspace</sub></p>
+</td>
+<td width="50%" valign="top">
+<img src="docs/screenshots/Interview-Scorecard.png" alt="Interview scorecard" width="100%">
+<p align="center"><sub>Interview scorecard</sub></p>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/screenshots/Aptitude.png" alt="Aptitude assessment screen" width="100%">
+<p align="center"><sub>Aptitude assessment</sub></p>
+</td>
+<td width="50%" valign="top">
+<img src="docs/screenshots/Aptitude-Solution-Review.png" alt="Aptitude solution review" width="100%">
+<p align="center"><sub>Aptitude solution review</sub></p>
+</td>
+</tr>
+</table>
+
+### Group Discussion and progress
+
+<table>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/screenshots/AI-Group-Discussion.png" alt="AI Group Discussion room" width="100%">
+<p align="center"><sub>Group Discussion room</sub></p>
+</td>
+<td width="50%" valign="top">
+<img src="docs/screenshots/GD-Debrief-Radar.png" alt="Group Discussion debrief" width="100%">
+<p align="center"><sub>Group Discussion debrief</sub></p>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/screenshots/Progress-Analytics.png" alt="Progress analytics dashboard" width="100%">
+<p align="center"><sub>Progress analytics</sub></p>
+</td>
+<td width="50%" valign="top">
+<img src="docs/screenshots/Mistake-Bank.png" alt="Mistake Bank workspace" width="100%">
+<p align="center"><sub>Mistake Bank</sub></p>
+</td>
+</tr>
+</table>
+
+### Preparation and operations
+
+<table>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/screenshots/DSA-Catalog.png" alt="DSA catalog" width="100%">
+<p align="center"><sub>DSA catalog</sub></p>
+</td>
+<td width="50%" valign="top">
+<img src="docs/screenshots/Quiz-Catalog.png" alt="Quiz catalog" width="100%">
+<p align="center"><sub>Quiz catalog</sub></p>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/screenshots/ATS-Score.png" alt="ATS resume score" width="100%">
+<p align="center"><sub>ATS resume score</sub></p>
+</td>
+<td width="50%" valign="top">
+<img src="docs/screenshots/Admin-Operations-Hub.png" alt="Admin operations hub" width="100%">
+<p align="center"><sub>Admin operations hub</sub></p>
+</td>
+</tr>
+</table>
+
+### Home and account
+
+<table>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/screenshots/HomePage.png" alt="Intellivora Home page" width="100%">
+<p align="center"><sub>Home page</sub></p>
+</td>
+<td width="50%" valign="top">
+<img src="docs/screenshots/Auth-Login.png" alt="Authentication screen" width="100%">
+<p align="center"><sub>Authentication</sub></p>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/screenshots/Candidate-Profile.png" alt="Candidate profile" width="100%">
+<p align="center"><sub>Candidate profile</sub></p>
+</td>
+<td width="50%" valign="top">
+<img src="docs/screenshots/Profile-Dropdown.png" alt="Profile dropdown" width="100%">
+<p align="center"><sub>Profile dropdown</sub></p>
+</td>
+</tr>
+</table>
+
+<p align="right"><a href="#intellivora">Back to top</a></p>
+
+---
+
+## 🧰 Technology stack
+
+**Frontend**
+
+<img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React 19">
+<img src="https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite 8">
+<img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4">
+<img src="https://img.shields.io/badge/Redux_Toolkit-2-764ABC?style=flat-square&logo=redux&logoColor=white" alt="Redux Toolkit 2">
+<img src="https://img.shields.io/badge/React_Router-7-CA4245?style=flat-square&logo=reactrouter&logoColor=white" alt="React Router 7">
+<img src="https://img.shields.io/badge/Axios-1-5A29E4?style=flat-square&logo=axios&logoColor=white" alt="Axios">
+<img src="https://img.shields.io/badge/Motion-12-FF0055?style=flat-square" alt="Motion">
+<img src="https://img.shields.io/badge/Recharts-3-22B5BF?style=flat-square" alt="Recharts">
+
+**Backend**
+
+<img src="https://img.shields.io/badge/Node.js-ES_Modules-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js ES modules">
+<img src="https://img.shields.io/badge/Express-5-000000?style=flat-square&logo=express&logoColor=white" alt="Express 5">
+<img src="https://img.shields.io/badge/Zod-4-3068B7?style=flat-square" alt="Zod 4">
+<img src="https://img.shields.io/badge/Multer-2-4B5563?style=flat-square" alt="Multer 2">
+<img src="https://img.shields.io/badge/pdfjs--dist-6-B91C1C?style=flat-square" alt="pdfjs-dist 6">
+
+**Data**
+
+<img src="https://img.shields.io/badge/MongoDB%20%2F%20Mongoose-47A248?style=flat-square&logo=mongodb&logoColor=white" alt="MongoDB with Mongoose">
+
+**Auth**
+
+<img src="https://img.shields.io/badge/Firebase-12-FFCA28?style=flat-square&logo=firebase&logoColor=black" alt="Firebase">
+<img src="https://img.shields.io/badge/JWT-9-000000?style=flat-square" alt="JSON Web Token">
+
+**AI**
+
+<img src="https://img.shields.io/badge/Google_GenAI-2-4285F4?style=flat-square&logo=google&logoColor=white" alt="Google GenAI">
+<img src="https://img.shields.io/badge/OpenRouter-AI-8E75B2?style=flat-square" alt="OpenRouter">
+
+**Payments**
+
+<img src="https://img.shields.io/badge/Razorpay-2-528FF0?style=flat-square" alt="Razorpay">
+
+The client also uses Lucide React, React Icons, React Circular Progressbar,
+jsPDF, jsPDF AutoTable, Sonner, and Tailwind CSS's Vite plugin.
+
+<p align="right"><a href="#intellivora">Back to top</a></p>
+
+---
+
+## 🏛 Architecture
+
+```mermaid
+flowchart LR
+    Browser["React / Vite client"]
+    API["Axios API client<br/>/api + credentials"]
+    Express["Express application"]
+    Middleware["CORS<br/>security headers<br/>rate limits"]
+    Guards["Auth / admin guards<br/>Zod validation"]
+    Routes["Route modules"]
+    Controllers["Controllers"]
+    Services["Domain services"]
+    Models["Mongoose models"]
+    Mongo["MongoDB"]
+    Firebase["Firebase Auth<br/>Google public keys"]
+    AI["Gemini / OpenRouter"]
+    Razorpay["Razorpay"]
+
+    Browser --> API --> Express
+    Express --> Middleware --> Guards --> Routes
+    Routes --> Controllers --> Services --> Models --> Mongo
+    Services --> Firebase
+    Services --> AI
+    Services --> Razorpay
+
+    classDef client fill:#1e3a8a,stroke:#93c5fd,color:#fff
+    classDef server fill:#14532d,stroke:#86efac,color:#fff
+    classDef data fill:#713f12,stroke:#fde68a,color:#fff
+    classDef external fill:#581c87,stroke:#d8b4fe,color:#fff
+
+    class Browser,API client
+    class Express,Middleware,Guards,Routes,Controllers,Services server
+    class Models,Mongo data
+    class Firebase,AI,Razorpay external
+```
+
+The client and server are separate packages. Express mounts the route modules,
+applies middleware before routes, and connects services to Mongoose models and
+external integrations. The shared Axios client sends credentials with API
+requests.
+
+## 📁 Project structure
+
+<details>
+<summary>Annotated repository tree</summary>
+
+```text
+.
+├── client/
+│   ├── public/                 Static client assets
+│   ├── src/
+│   │   ├── admin/              Administrative pages and APIs
+│   │   ├── aptitude/           Aptitude workflow pages and components
+│   │   ├── components/         Layout, guards, and shared components
+│   │   ├── gd/                 Group Discussion workflow
+│   │   ├── pages/              Public, protected, preparation, career, and profile pages
+│   │   ├── redux/              Redux store and user slice
+│   │   ├── services/           Client API modules
+│   │   └── utils/              Firebase and client utilities
+│   └── tests/                  Client test files
+├── server/
+│   ├── Routes/                 Express route modules
+│   ├── config/                 Database and domain configuration
+│   ├── controllers/            Request handlers
+│   ├── middlewares/            Auth, admin, validation, upload, and hardening
+│   ├── models/                 Mongoose models
+│   ├── services/               AI, payment, profile, analysis, and execution services
+│   ├── tests/                  Server test files
+│   ├── utils/                  Server utilities
+│   └── validators/              Zod request schemas
+└── docs/
+    └── screenshots/            Existing UI screenshots used above
+```
+
+</details>
+
+---
+
+## 🧪 Scripts and testing
+
+### Client
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the Vite development server |
+| `npm run build` | Build the client |
+| `npm run lint` | Run Oxlint |
+| `npm run preview` | Preview the client build |
+
+### Server
+
+| Command | Purpose |
+| --- | --- |
+| `npm start` | Start `node index.js` |
+| `npm run dev` | Start `nodemon index.js` |
+
+Test files are present under `client/tests/` and `server/tests/`. Neither
+package declares an npm test script or a test-runner script. The configured
+client checks are:
+
+```bash
+cd client
+npm run lint
+npm run build
+```
+
+The example configuration uses `http://localhost:5173` for the client and
+`http://localhost:8000` for the server. The database readiness endpoint is
+`http://localhost:8000/health` with the example server port.
+
+---
+
+## 🔌 API overview
+
+The server mounts the following route groups:
+
+| Group | Base path | Auth | Covers |
+| --- | --- | --- | --- |
+| Health | `/health` | None | Database readiness |
+| Auth | `/api/auth` | Firebase credential | Google/phone auth and logout |
+| User | `/api/user` | Required | Current user, profile, and credits |
+| Interview | `/api/interview` | Required | Questions, answers, reports, and history |
+| Resume | `/api/resume` | Required | Upload, extraction, and analysis |
+| Aptitude | `/api/aptitude` | Required | Categories, attempts, answers, and results |
+| Group Discussion | `/api/gd` | Required | Session lifecycle and analysis |
+| History | `/api/history` | Required | Unified history and progress |
+| Payment | `/api/payment` | Mixed | Orders, verification, and webhooks |
+| Admin | `/api/admin` | Admin | Users, analytics, records, newsletter, and payments |
+| Newsletter | `/api/newsletter` | None | Newsletter subscription |
+| DSA | `/api/dsa` | Required | Problems, execution, hints, submissions, and progress |
+| Questions | `/api/questions` | Mixed | Question categories and questions |
+| Quizzes | `/api/quizzes` | Mixed | Categories, attempts, results, and history |
+| SQL | `/api/sql` | Mixed | Problems and execution |
+| System Design | `/api/system-design` | Mixed | Problems, drafts, attempts, and evaluation |
+| Mistake Bank | `/api/mistakes` | Required | Records, statuses, notes, and statistics |
+| Career | `/api/career` | Mixed | JD analysis, roadmap, companies, and jobs |
+| Placement | `/api/placement` | Required | Placement sessions, rounds, history, and reports |
+
+<p><sub>Legend: <strong>Required</strong> uses <code>isAuth</code>; <strong>Admin</strong> uses <code>isAuth</code> and <code>isAdmin</code>; <strong>Mixed</strong> contains both public and authenticated routes.</sub></p>
+
+<details>
+<summary><strong>Authentication, user, interview, resume, and assessment endpoints</strong></summary>
+
+| Method | Endpoint | Auth | Purpose |
+| --- | --- | --- | --- |
+| `POST` | `/api/auth/google` | Firebase credential | Google authentication |
+| `POST` | `/api/auth/phone` | Firebase credential | Phone authentication |
+| `GET`, `POST` | `/api/auth/logout` | None | Logout |
+| `GET` | `/api/user/current-user` | Required | Current user |
+| `GET` | `/api/user/profile` | Required | Current profile |
+| `PUT` | `/api/user/profile` | Required + validation | Update profile |
+| `GET` | `/api/user/profile/:userId` | Required + validation | Read profile by ID |
+| `GET` | `/api/user/credits/transactions` | Required + validation | Credit transactions |
+| `POST` | `/api/interview/resume` | Required + upload | Resume-assisted interview analysis |
+| `POST` | `/api/interview/generate-questions` | Required | Generate questions |
+| `POST` | `/api/interview/create-interview` | Required | Create interview |
+| `POST` | `/api/interview/submit-answer` | Required | Submit answer |
+| `POST` | `/api/interview/finish` | Required | Finish interview |
+| `GET` | `/api/interview/get-interviews` | Required | List interviews |
+| `GET` | `/api/interview/report/:id` | Required | Interview report |
+| `GET` | `/api/interview/:id` | Required | Interview by ID |
+| `DELETE` | `/api/interview/delete-interview/:id` | Required | Delete interview |
+| `POST` | `/api/resume/upload` | Required + upload | Upload resume PDF |
+| `POST` | `/api/resume/extract` | Required | Extract resume text |
+| `POST` | `/api/resume/analyze` | Required | Analyze resume |
+| `GET` | `/api/aptitude/categories` | Required | List aptitude categories |
+| `GET` | `/api/aptitude/categories/:category/topics` | Required | List category topics |
+| `GET` | `/api/aptitude/progress` | Required | Aptitude progress |
+| `POST` | `/api/aptitude/attempts` | Required | Start attempt |
+| `POST`, `PATCH` | `/api/aptitude/attempts/:id/answers` | Required | Save answer |
+| `POST`, `PATCH` | `/api/aptitude/attempts/:id/save-answer` | Required | Save answer alias |
+| `POST` | `/api/aptitude/attempts/:id/submit` | Required | Submit attempt |
+| `GET` | `/api/aptitude/attempts` | Required | List attempts |
+| `GET` | `/api/aptitude/attempts/active` | Required | Active attempt |
+| `GET` | `/api/aptitude/attempts/:id` | Required | Attempt by ID |
+| `GET` | `/api/aptitude/attempts/:id/result` | Required | Attempt result |
+| `DELETE` | `/api/aptitude/attempts/:id` | Required | Delete attempt |
+| `GET` | `/api/history/`, `/api/history/unified` | Required | Unified history |
+| `GET` | `/api/history/progress` | Required | Progress analytics |
+| `DELETE` | `/api/history/:type/:id` | Required | Delete history item |
+
+</details>
+
+<details>
+<summary><strong>Group Discussion, preparation, career, and placement endpoints</strong></summary>
+
+| Method | Endpoint | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/gd/overview` | Required | Group Discussion overview |
+| `POST` | `/api/gd/session/create` | Required | Create session |
+| `GET` | `/api/gd/session/:id` | Required | Get session |
+| `POST` | `/api/gd/session/:id/lobby-ready` | Required | Mark lobby ready |
+| `POST` | `/api/gd/session/:id/turn` | Required | Submit turn |
+| `POST` | `/api/gd/session/:id/complete` | Required | Complete session |
+| `POST` | `/api/gd/session/:id/abort` | Required | Abort session |
+| `GET` | `/api/dsa/problems/:slug` | Required | DSA problem |
+| `POST` | `/api/dsa/problems/:slug/run` | Required + validation | Run sample code |
+| `POST` | `/api/dsa/problems/:slug/submit` | Required + validation | Submit code |
+| `POST` | `/api/dsa/problems/:slug/hint` | Required + validation | Get AI hint |
+| `GET` | `/api/dsa/history/:slug` | Required + validation | Submission history |
+| `GET` | `/api/dsa/progress` | Required | Coding progress |
+| `GET` | `/api/questions/categories` | None | Question categories |
+| `GET` | `/api/questions` | Validation | Question list |
+| `GET` | `/api/questions/:slug` | Validation | Question by slug |
+| `GET` | `/api/quizzes/categories` | None | Quiz categories |
+| `POST` | `/api/quizzes/start` | Required + validation | Start quiz |
+| `POST` | `/api/quizzes/:id/submit` | Required + validation | Submit quiz |
+| `GET` | `/api/quizzes/history` | Required | Quiz history |
+| `GET` | `/api/quizzes/:id` | Required | Quiz result |
+| `GET` | `/api/sql/problems` | None | SQL problems |
+| `GET` | `/api/sql/:slug` | Validation | SQL problem |
+| `POST` | `/api/sql/:slug/execute` | Required + validation | Execute SQL |
+| `GET` | `/api/system-design/problems` | None | System Design problems |
+| `GET` | `/api/system-design/:slug` | Validation | System Design problem |
+| `GET` | `/api/system-design/:slug/attempt` | Required + validation | Get attempt |
+| `PUT` | `/api/system-design/:slug/draft` | Required + validation | Save draft |
+| `POST` | `/api/system-design/:slug/evaluate` | Required + validation | Evaluate submission |
+| `GET` | `/api/mistakes` | Required + validation | Filter mistakes |
+| `POST` | `/api/mistakes` | Required + validation | Record mistake |
+| `GET` | `/api/mistakes/stats` | Required | Mistake statistics |
+| `PATCH` | `/api/mistakes/:id/status` | Required + validation | Update status |
+| `PATCH` | `/api/mistakes/:id/notes` | Required + validation | Update notes |
+| `DELETE` | `/api/mistakes/:id` | Required + validation | Delete mistake |
+| `POST` | `/api/career/analyze-jd` | Required + validation | Analyze JD |
+| `GET`, `POST` | `/api/career/roadmap` | Required | Read or generate roadmap |
+| `PATCH` | `/api/career/roadmap/milestone` | Required + validation | Update milestone |
+| `GET`, `POST` | `/api/career/jobs` | Required | List or create job |
+| `PATCH`, `DELETE` | `/api/career/jobs/:id` | Required | Update or delete job |
+| `GET` | `/api/career/companies` | None | Target companies |
+| `GET` | `/api/career/companies/:company` | None | Company preparation |
+| `GET` | `/api/placement/history` | Required | Placement history |
+| `POST` | `/api/placement/start` | Required + validation | Start placement |
+| `GET` | `/api/placement/:id` | Required + validation | Placement state |
+| `POST` | `/api/placement/:id/round/:roundNum` | Required + validation | Submit round |
+| `GET` | `/api/placement/:id/report` | Required + validation | Placement report |
+
+</details>
+
+<details>
+<summary><strong>Payment, newsletter, and admin endpoints</strong></summary>
+
+| Method | Endpoint | Auth | Purpose |
+| --- | --- | --- | --- |
+| `POST` | `/api/payment/order` | Required | Create Razorpay order |
+| `POST` | `/api/payment/verify` | Required | Verify payment |
+| `POST` | `/api/payment/webhook` | None | Razorpay webhook |
+| `POST` | `/api/newsletter/subscribe` | None | Subscribe to newsletter |
+| `GET` | `/api/admin/users` | Admin | List users |
+| `PATCH` | `/api/admin/users/:id` | Admin | Update user |
+| `PATCH` | `/api/admin/users/:id/credits` | Admin + validation | Update user credits |
+| `GET` | `/api/admin/users/:id/credit-history` | Admin + validation | User credit history |
+| `DELETE` | `/api/admin/users/:id` | Admin | Delete user |
+| `GET`, `DELETE` | `/api/admin/interviews`, `/api/admin/interviews/:id` | Admin | Manage interviews |
+| `GET`, `DELETE` | `/api/admin/aptitude`, `/api/admin/aptitude/:id` | Admin | Manage aptitude attempts |
+| `GET`, `DELETE` | `/api/admin/gd`, `/api/admin/gd/:id` | Admin | Manage Group Discussion sessions |
+| `GET`, `DELETE` | `/api/admin/resume`, `/api/admin/resume/:id` | Admin | Manage resume analyses |
+| `GET` | `/api/admin/payments`, `/api/admin/payments/:id` | Admin | View payments |
+| `GET`, `DELETE` | `/api/admin/newsletter`, `/api/admin/newsletter/:id` | Admin | Manage subscribers |
+| `GET` | `/api/admin/analytics` | Admin | Admin analytics |
+
+</details>
+
+<p align="right"><a href="#intellivora">Back to top</a></p>
+
+---
+
+## 🔑 Authentication & authorization
+
+1. Firebase initializes from the client `VITE_FIREBASE_*` configuration.
+2. Google or phone sign-in produces a Firebase credential sent to the auth API.
+3. The server verifies the Firebase ID token and establishes the application
+   session.
+4. The client requests `/api/user/current-user` and stores the returned user in
+   Redux.
+5. `ProtectedRoute` waits for auth hydration and redirects missing users to
+   `/auth`.
+6. `isAuth` reads the `token` cookie first, then a Bearer Authorization header,
+   verifies the JWT, attaches `req.userId`, and checks account status.
+7. `AdminProtectedRoute` compares the signed-in email with `VITE_ADMIN_EMAIL`.
+8. `isAdmin` compares the authenticated user's email with `ADMIN_EMAIL` after
+   `isAuth`.
+
+## 🔒 Security
+
+See [SECURITY.md](SECURITY.md) for the vulnerability reporting policy.
+
+The server includes Firebase ID-token verification, JWT verification, banned and
+deactivated account checks, server-side admin authorization, Zod request
+validation, explicit credentialed CORS origins, response security headers,
+production HSTS, and general, authentication, AI, payment, and newsletter rate
+limiters.
+
+<div align="center">
+
+<sub>Built by [Lucky Gupta](https://github.com/lucky5111397) · [Portfolio](https://luckygupta.vercel.app)</sub>
+
+</div>

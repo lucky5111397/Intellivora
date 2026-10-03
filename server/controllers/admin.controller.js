@@ -7,6 +7,7 @@ import ResumeAnalysis from "../models/resumeAnalysis.model.js";
 import Payment from "../models/payment.model.js";
 import NewsletterSubscriber from "../models/newsletterSubscriber.model.js";
 import { getPlanDisplayName } from "./payment.controller.js";
+import CreditLedgerService from "../services/creditLedger.service.js";
 
 /**
  * Admin Console Controller
@@ -228,31 +229,23 @@ export const updateUserCredits = async (req, res) => {
       });
     }
 
-    let updatedCredits;
-
-    if (typeof newCredits === "number" && !isNaN(newCredits)) {
-      updatedCredits = Math.max(0, Math.round(newCredits));
-    } else if (typeof amount === "number" && !isNaN(amount)) {
-      updatedCredits = Math.max(0, user.credits + Math.round(amount));
-    } else {
-      return res.status(400).json({
-        success: false,
-        message: "Either 'amount' (relative change) or 'newCredits' (absolute value) must be provided as a number.",
-      });
-    }
-
-    user.credits = updatedCredits;
-    await user.save();
+    const { transaction, updatedCredits, user: updatedUser } = await CreditLedgerService.adminAdjust({
+      userId: id,
+      amount,
+      newCredits,
+      reason: req.body.reason,
+    });
 
     return res.status(200).json({
       success: true,
       message: `User credits updated to ${updatedCredits}.`,
       user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        credits: user.credits,
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        credits: updatedUser.credits,
       },
+      transaction,
     });
   } catch (error) {
     console.error("[Admin Controller] updateUserCredits error:", error.message);

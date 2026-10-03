@@ -20,6 +20,30 @@ export function CapabilitiesSection({ onStart }) {
         },
     };
 
+    const platformPillars = [
+        {
+            label: "Prepare",
+            title: "Practice deeply",
+            description: "DSA, SQL, technical quizzes, and system design practice built for real interview readiness.",
+            items: ["DSA & coding", "System design", "SQL practice", "Technical quiz"],
+            path: "/prepare/dsa",
+        },
+        {
+            label: "Assess",
+            title: "Measure performance",
+            description: "Mock interviews, aptitude benchmarking, GD rounds, and placement simulations in one flow.",
+            items: ["AI interview", "Aptitude", "GD", "Mock placement"],
+            path: "/interview",
+        },
+        {
+            label: "Career",
+            title: "Turn insights into action",
+            description: "ATS reviews, JD analysis, roadmap planning, company prep, and job tracking for momentum.",
+            items: ["ATS / resume", "JD analyzer", "Roadmap", "Job tracker"],
+            path: "/resume",
+        },
+    ];
+
     return (
         <section id="modules" className="w-full py-20 sm:py-28 border-t border-[#161F33] bg-[#06080B] relative overflow-hidden">
             {/* Subtle Ambient Section Glow */}
@@ -27,6 +51,60 @@ export function CapabilitiesSection({ onStart }) {
             <div className="absolute bottom-1/4 right-0 w-[500px] h-[500px] bg-[#8B5CF6]/5 blur-[160px] pointer-events-none rounded-full" />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5 }}
+                    className="text-center max-w-3xl mx-auto mb-12"
+                >
+                    <Badge variant="brand" size="md" className="mb-4">
+                        Platform Architecture
+                    </Badge>
+                    <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-[#F1F5F9] mb-5 font-sans">
+                        Prepare. Assess. Advance.
+                    </h2>
+                    <p className="text-base sm:text-lg text-[#94A3B8] leading-relaxed">
+                        Intellivora combines the fundamentals of practice, the rigor of assessment, and the actionability of career intelligence in a single workflow.
+                    </p>
+                </motion.div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-16">
+                    {platformPillars.map((pillar) => (
+                        <motion.div
+                            key={pillar.label}
+                            initial={{ opacity: 0, y: 18 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.45 }}
+                            className="rounded-2xl border border-[#1E2B45] bg-[#0A0D14] p-5 shadow-lg shadow-black/40"
+                        >
+                            <div className="inline-flex items-center gap-2 rounded-full border border-[#2563EB]/35 bg-[#0D1E3A] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#93C5FD] mb-4">
+                                {pillar.label}
+                            </div>
+                            <h3 className="text-xl font-bold text-[#F1F5F9] mb-3">{pillar.title}</h3>
+                            <p className="text-sm text-[#94A3B8] leading-relaxed mb-4">{pillar.description}</p>
+                            <div className="space-y-2 text-xs text-[#C9D3E4]">
+                                {pillar.items.map((item) => (
+                                    <div key={item} className="flex items-center gap-2">
+                                        <CheckCircle2 size={14} className="text-[#22C55E] shrink-0" />
+                                        <span>{item}</span>
+                                    </div>
+                                ))}
+                            </div>
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => onStart(pillar.path)}
+                                className="mt-5 w-full justify-center"
+                                rightIcon={ArrowRight}
+                            >
+                                Open {pillar.label}
+                            </Button>
+                        </motion.div>
+                    ))}
+                </div>
+
                 {/* Section Header */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}

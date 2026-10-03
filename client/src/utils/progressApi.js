@@ -1,14 +1,12 @@
-import axios from "axios";
-import { ServerUrl } from "../App";
+import { apiClient } from "../services/apiClient.js";
 
 /**
  * Fetches candidate learning trajectory and progress analytics across all modules.
  * Returns { interviewTrend, aptitudeTrend, gdTrend, summaryStats }
  */
 export const fetchProgressData = async () => {
-  const response = await axios.get(`${ServerUrl}/api/history/progress`, {
-    withCredentials: true,
-  });
+  const response = await apiClient.get("/history/progress");
   return response.data;
 };
 
+export default { fetchProgressData };
